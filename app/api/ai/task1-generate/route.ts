@@ -3,23 +3,81 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
+const VALID_TYPES = ['bar', 'line', 'pie', 'table', 'process', 'map'] as const;
+type ValidType = typeof VALID_TYPES[number];
+
+function resolveChartType(reqType?: string, topic?: string): ValidType {
+  const normReq = (reqType || '').toLowerCase().trim();
+  if (VALID_TYPES.includes(normReq as ValidType)) {
+    return normReq as ValidType;
+  }
+
+  // Detect type from user prompt/topic string
+  const textToSearch = `${normReq} ${topic || ''}`.toLowerCase();
+  if (/\b(pie|tròn|bánh)\b/i.test(textToSearch) || textToSearch.includes('biểu đồ tròn') || textToSearch.includes('pie chart')) {
+    return 'pie';
+  }
+  if (/\b(map|bản đồ|quy hoạch)\b/i.test(textToSearch) || textToSearch.includes('sơ đồ vị trí') || textToSearch.includes('mặt bằng')) {
+    return 'map';
+  }
+  if (/\b(process|quy trình|chu trình|vòng đời|sản xuất|chế tạo|các bước|tiến trình)\b/i.test(textToSearch) || textToSearch.includes('sơ đồ quy trình') || textToSearch.includes('process diagram')) {
+    return 'process';
+  }
+  if (/\b(table|bảng)\b/i.test(textToSearch) || textToSearch.includes('bảng số liệu') || textToSearch.includes('bảng dữ liệu') || textToSearch.includes('data table')) {
+    return 'table';
+  }
+  if (/\b(bar|cột)\b/i.test(textToSearch) || textToSearch.includes('biểu đồ cột') || textToSearch.includes('cột chồng') || textToSearch.includes('bar chart')) {
+    return 'bar';
+  }
+  if (/\b(line|đường)\b/i.test(textToSearch) || textToSearch.includes('biểu đồ đường') || textToSearch.includes('đường biểu diễn') || textToSearch.includes('line graph')) {
+    return 'line';
+  }
+
+  // If random or not specified, pick one evenly across all types in JS to prevent Gemini from always picking "line"
+  const randomIndex = Math.floor(Math.random() * VALID_TYPES.length);
+  return VALID_TYPES[randomIndex];
+}
+
 export async function POST(req: Request) {
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json({ error: 'Chưa cấu hình GEMINI_API_KEY.' }, { status: 500 });
   }
 
+  let requestedType: string | undefined;
+  let customTopic: string | undefined;
+
+  try {
+    const body = await req.json();
+    requestedType = body.chartType || body.type;
+    customTopic = body.customTopic || body.topic || body.prompt;
+  } catch {
+    // If request has no json body or invalid json, proceed with undefined
+  }
+
+  const targetType = resolveChartType(requestedType, customTopic);
+  const cleanTopic = customTopic?.trim();
+
+  const typeNameMap: Record<ValidType, string> = {
+    bar: 'Bar Chart (biểu đồ cột)',
+    line: 'Line Graph (biểu đồ đường theo thời gian)',
+    pie: 'Pie Chart (biểu đồ tròn tỉ lệ %)',
+    table: 'Table (bảng số liệu so sánh)',
+    process: 'Process Diagram (sơ đồ quy trình từng bước)',
+    map: 'Map (bản đồ so sánh 2 thời điểm trước/sau)',
+  };
+
   const prompt = `
 You are an IELTS Task 1 question generator. Your job is to create realistic IELTS Academic Writing Task 1 data.
 
-Randomly pick ONE of the following chart/diagram types:
-- "bar" (bar chart — grouped or stacked)
-- "line" (line graph — multiple series over time)
-- "pie" (pie chart — single dataset)
-- "table" (data table — rows and columns)
-- "process" (process diagram — sequential steps)
-- "map" (map comparison — before/after or two locations)
+CRITICAL INSTRUCTION - CHART TYPE:
+The user has requested the chart/diagram type: "${targetType}" (${typeNameMap[targetType]}).
+You MUST generate data for type: "${targetType}".
+The JSON property "type" MUST BE EXACTLY "${targetType}".
+DO NOT generate any other chart type!
 
-Generate a complete, realistic IELTS Task 1 question. 
+${cleanTopic ? `USER REQUESTED TOPIC / REQUIREMENT:
+The user explicitly wants a question about: "${cleanTopic}".
+Generate the chart data, title, context, and numbers specifically tailored to this topic while maintaining IELTS Academic standard.` : `The topic should be realistic and similar to actual IELTS exam questions (e.g. energy, education, tourism, transport, population, environment, employment, housing, food, health, technology).`}
 
 Return ONLY a valid JSON object (no markdown, no backticks) with this structure:
 
@@ -128,10 +186,10 @@ For "map" type:
   ],
   "changes": ["Change 1 that a writer should mention", "Change 2", "Change 3"],
   "keyFeatures": ["Feature 1", "Feature 2"],
-  "writingTips": "Use past tense for the old map, present perfect or present tense for changes. Group changes by area."
+  "writingTips": "Use past tense for the old map, present perfect or present tense for changes. Group changes by area. Note: position MUST be one of: north, south, east, west, center, northeast, northwest, southeast, southwest."
 }
 
-Make sure the data is realistic and similar to actual IELTS exam questions. Topics can include: energy, education, tourism, transport, population, environment, employment, housing, food, health, technology.
+Make sure the data is realistic and similar to actual IELTS exam questions.
 `;
 
   // Dùng đúng fallback list như writing route
@@ -148,10 +206,15 @@ Make sure the data is realistic and similar to actual IELTS exam questions. Topi
   try {
     for (const modelName of fallbackModels) {
       try {
-        const model = genAI.getGenerativeModel({ model: modelName });
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            temperature: 0.75,
+          }
+        });
         result = await model.generateContent([prompt]);
         if (result) {
-          console.log(`Đã dùng thành công model: ${modelName}`);
+          console.log(`Đã dùng thành công model: ${modelName} cho dạng bài: ${targetType}`);
           break; // Thoát vòng lặp ngay nếu thành công
         }
       } catch (e: any) {
@@ -171,7 +234,9 @@ Make sure the data is realistic and similar to actual IELTS exam questions. Topi
 
     try {
       const data = JSON.parse(text);
-      if (!data.type) throw new Error('Missing type field');
+      if (!data.type) {
+        data.type = targetType;
+      }
       return NextResponse.json(data, { status: 200 });
     } catch (parseErr: any) {
       console.error('Lỗi Parse JSON từ Gemini:', text.slice(0, 200));
@@ -185,3 +250,4 @@ Make sure the data is realistic and similar to actual IELTS exam questions. Topi
     );
   }
 }
+

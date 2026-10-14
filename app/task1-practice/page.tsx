@@ -4,7 +4,7 @@ import {
   Loader2, Sparkles, RefreshCw, ChevronRight, BarChart2, TrendingUp,
   PieChart, Table2, Workflow, Map, CheckCircle, AlertCircle, Clock,
   ArrowRight, Info, History, Trash2, Save, Check, RotateCcw, TrendingUp as TVocab,
-  Volume2
+  Volume2, Search, X, SlidersHorizontal, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { useStore } from '@/lib/store';
@@ -72,6 +72,25 @@ const TYPE_META: Record<string, { label: string; color: string }> = {
   process: { label: 'Process Diagram', color: '#f59e0b' },
   map:     { label: 'Map',             color: '#ef4444' },
 };
+
+const CHART_TYPE_OPTIONS = [
+  { id: 'random', label: 'Ngẫu nhiên', icon: '🎲', desc: 'Đổi đều tất cả các dạng' },
+  { id: 'bar',     label: 'Bar Chart', icon: '📊', desc: 'Biểu đồ cột' },
+  { id: 'line',    label: 'Line Graph', icon: '📈', desc: 'Biểu đồ đường' },
+  { id: 'pie',     label: 'Pie Chart', icon: '🥧', desc: 'Biểu đồ tròn' },
+  { id: 'table',   label: 'Table', icon: '📋', desc: 'Bảng số liệu' },
+  { id: 'process', label: 'Process', icon: '🔄', desc: 'Sơ đồ quy trình' },
+  { id: 'map',     label: 'Map', icon: '🗺️', desc: 'Bản đồ so sánh' },
+];
+
+const SUGGESTED_PROMPTS = [
+  { label: '🥧 Pie: Cơ cấu năng lượng', type: 'pie', topic: 'Tỉ lệ sử dụng các nguồn năng lượng tái tạo và hóa thạch năm 2022' },
+  { label: '🔄 Quy trình: Sản xuất cà phê', type: 'process', topic: 'Quy trình thu hoạch, sơ chế và rang xay cà phê xuất khẩu' },
+  { label: '🗺️ Map: Đô thị hóa thị trấn ven biển', type: 'map', topic: 'Sự thay đổi cơ sở hạ tầng của thị trấn ven biển sau 20 năm phát triển' },
+  { label: '📊 Bar: Chi tiêu giáo dục & y tế', type: 'bar', topic: 'So sánh mức chi tiêu cho y tế và giáo dục ở các nước phát triển' },
+  { label: '📋 Table: Tỉ lệ việc làm theo ngành', type: 'table', topic: 'Bảng số liệu tỉ lệ lao động trong các nhóm ngành kinh tế' },
+  { label: '📈 Line: Lượng phát thải CO2 qua các năm', type: 'line', topic: 'Xu hướng lượng phát thải khí CO2 từ 1990 đến 2020 của các khu vực' },
+];
 
 function TypeIcon({ type, size = 15 }: { type: string; size?: number }) {
   switch (type) {
@@ -398,6 +417,9 @@ export default function Task1PracticePage() {
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [genError, setGenError] = useState('');
+  const [selectedType, setSelectedType] = useState<string>('random');
+  const [customTopic, setCustomTopic] = useState<string>('');
+  const [showCustomizer, setShowCustomizer] = useState<boolean>(true);
 
   // Per-sentence practice state
   const [currentSentenceIdx, setCurrentSentenceIdx] = useState(0);
@@ -420,7 +442,7 @@ export default function Task1PracticePage() {
 
   useEffect(() => { setMounted(true); setSessions(loadSessions()); }, []);
 
-  const generateChart = useCallback(async () => {
+  const generateChart = useCallback(async (overrideType?: string, overrideTopic?: string) => {
     setIsGenerating(true);
     setGenError('');
     setChartData(null);
@@ -433,17 +455,28 @@ export default function Task1PracticePage() {
     setAttemptCount(0);
     setSavedToWriting(false);
     try {
-      const res = await fetch('/api/ai/task1-generate', { method: 'POST' });
+      const typeToSend = overrideType ?? selectedType;
+      const topicToSend = overrideTopic !== undefined ? overrideTopic : customTopic;
+
+      const res = await fetch('/api/ai/task1-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chartType: typeToSend,
+          customTopic: topicToSend,
+        }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Lỗi server');
       setChartData(data);
       setPhase('practicing');
+      setShowCustomizer(false);
     } catch (e: any) {
       setGenError(e.message || 'Không thể tạo đề bài. Vui lòng thử lại.');
     } finally {
       setIsGenerating(false);
     }
-  }, []);
+  }, [selectedType, customTopic]);
 
   const gradeSentence = async () => {
     if (!chartData || !inputText.trim()) return;
@@ -544,8 +577,10 @@ export default function Task1PracticePage() {
 
   const handleNewFromHistory = useCallback(() => {
     setTab('practice');
-    setTimeout(() => generateChart(), 0);
-  }, [generateChart]);
+    const typeToUse = selectedSession?.chartData.type || 'random';
+    setSelectedType(typeToUse);
+    setTimeout(() => generateChart(typeToUse, ''), 0);
+  }, [generateChart, selectedSession]);
 
   if (!mounted) return <LoadingScreen />;
 
@@ -563,7 +598,7 @@ export default function Task1PracticePage() {
         </div>
         <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight z-10">Luyện IELTS Task 1</h1>
         <p className="text-gray-500 max-w-lg z-10 text-[13px] leading-relaxed">
-          AI tạo biểu đồ ngẫu nhiên. Viết từng câu — AI chấm điểm realtime — đạt <b>≥ {PASS_THRESHOLD}/100</b> mới qua câu tiếp.
+          Tùy chọn hoặc gõ dạng bài bạn muốn luyện (Bar, Line, Pie, Table, Process, Map) — AI tạo đề bài chuẩn IELTS. Viết từng câu — AI chấm realtime — đạt <b>≥ {PASS_THRESHOLD}/100</b> mới qua câu tiếp.
         </p>
         <div className="flex gap-2 bg-white/70 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-gray-200/60 z-10">
           <button onClick={() => setTab('practice')} className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'practice' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}>
@@ -578,14 +613,158 @@ export default function Task1PracticePage() {
       {/* ── PRACTICE TAB ── */}
       {tab === 'practice' && (
         <>
-          {/* Generate button */}
-          <div className="flex justify-center">
-            <button onClick={generateChart} disabled={isGenerating}
-              className="flex items-center gap-2 px-7 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-lg transition-all hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100">
-              {isGenerating ? <Loader2 size={18} className="animate-spin" /> : <Sparkles size={18} />}
-              {isGenerating ? 'AI đang tạo đề...' : chartData ? <><RefreshCw size={15} /> Tạo đề mới</> : 'Bắt đầu luyện tập'}
-            </button>
-          </div>
+          {/* ── CUSTOMIZER & GENERATOR PANEL ── */}
+          {(!chartData || showCustomizer) ? (
+            <div className="bg-white rounded-3xl p-5 md:p-6 shadow-sm border border-indigo-100/80 flex flex-col gap-4 transition-all">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 text-white flex items-center justify-center shadow-sm">
+                    <SlidersHorizontal size={16} />
+                  </span>
+                  <div>
+                    <h2 className="text-base font-extrabold text-gray-800">Chọn hoặc gõ dạng bài Task 1</h2>
+                    <p className="text-xs text-gray-400">Chọn dạng bài bạn muốn luyện hoặc gõ chủ đề chi tiết bên dưới</p>
+                  </div>
+                </div>
+                {chartData && (
+                  <button
+                    onClick={() => setShowCustomizer(false)}
+                    className="text-xs font-bold text-gray-400 hover:text-gray-600 px-2.5 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    Thu gọn
+                  </button>
+                )}
+              </div>
+
+              {/* Chart type badges */}
+              <div className="flex flex-wrap gap-2">
+                {CHART_TYPE_OPTIONS.map(opt => {
+                  const isSelected = selectedType === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setSelectedType(opt.id)}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
+                        isSelected
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md shadow-indigo-200 scale-[1.02]'
+                          : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-white hover:border-indigo-300 hover:text-indigo-600'
+                      }`}
+                    >
+                      <span className="text-sm">{opt.icon}</span>
+                      <span>{opt.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Custom Topic / Prompt Input */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={customTopic}
+                    onChange={e => setCustomTopic(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !isGenerating) {
+                        generateChart();
+                      }
+                    }}
+                    placeholder="Gõ dạng bài hoặc chủ đề chi tiết (VD: Pie chart năng lượng, Map quy hoạch, Quy trình làm bánh mì...)"
+                    className="w-full px-4 py-2.5 pl-10 pr-9 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-800 placeholder-gray-400"
+                  />
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                    <Search size={15} />
+                  </span>
+                  {customTopic && (
+                    <button
+                      type="button"
+                      onClick={() => setCustomTopic('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+                      title="Xóa nội dung"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Action Button */}
+                <button
+                  type="button"
+                  onClick={() => generateChart()}
+                  disabled={isGenerating}
+                  className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:opacity-95 text-white font-bold rounded-xl shadow-md transition-all hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100 text-xs sm:text-sm flex-shrink-0"
+                >
+                  {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                  {isGenerating
+                    ? 'AI đang tạo đề...'
+                    : chartData
+                    ? 'Tạo đề mới'
+                    : 'Tạo đề bài AI'}
+                </button>
+              </div>
+
+              {/* Quick suggested chips */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[11px] font-bold text-gray-400 flex items-center gap-1">
+                  💡 Gợi ý nhanh:
+                </span>
+                {SUGGESTED_PROMPTS.map((s, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setSelectedType(s.type);
+                      setCustomTopic(s.topic);
+                    }}
+                    className="text-[11px] font-medium px-2.5 py-1 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-colors border border-indigo-100"
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            /* Collapsed bar when chartData is present */
+            <div className="bg-white rounded-2xl px-5 py-3 shadow-sm border border-gray-200 flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-gray-400">Đang luyện:</span>
+                <span
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm"
+                  style={{ background: currentColor }}
+                >
+                  <TypeIcon type={chartData.type} size={12} />
+                  {currentMeta?.label}
+                </span>
+                {customTopic && (
+                  <span className="text-xs text-gray-500 bg-gray-50 border border-gray-100 px-2.5 py-0.5 rounded-md truncate max-w-[200px] sm:max-w-xs" title={customTopic}>
+                    {customTopic}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCustomizer(true)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3.5 py-1.5 rounded-xl transition-colors"
+                >
+                  <SlidersHorizontal size={13} />
+                  Đổi dạng bài / Nhập đề khác
+                  <ChevronDown size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => generateChart()}
+                  disabled={isGenerating}
+                  className="flex items-center gap-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3.5 py-1.5 rounded-xl shadow-sm transition-all disabled:opacity-60"
+                >
+                  {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                  Luyện đề khác
+                </button>
+              </div>
+            </div>
+          )}
 
           {genError && (
             <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
@@ -810,7 +989,7 @@ export default function Task1PracticePage() {
           {!chartData && !isGenerating && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
-                { icon: '🎲', title: 'AI tạo đề ngẫu nhiên', desc: 'Gemini tạo 1 trong 6 dạng: Bar chart, Line graph, Pie chart, Table, Process diagram, Map — dữ liệu thực tế.' },
+                { icon: '🎯', title: 'Tùy chọn & Gõ dạng bài', desc: 'Chủ động chọn hoặc gõ dạng đề mong muốn (Pie, Bar, Line, Table, Process, Map) để AI sinh đề chuẩn theo yêu cầu, tránh lặp lại biểu đồ đường.' },
                 { icon: '✍️', title: 'Chấm từng câu realtime', desc: `Viết 1 câu → AI chấm điểm 0–100. Đạt ≥ ${PASS_THRESHOLD}/100 mới qua câu tiếp. Có feedback ngữ pháp + từ vựng.` },
                 { icon: '💾', title: 'Lưu vào Bài mẫu Writing', desc: 'Mỗi câu xuất sắc có thể lưu thẳng vào bộ Writing Samples để ôn lại sau.' },
               ].map((c, i) => (
