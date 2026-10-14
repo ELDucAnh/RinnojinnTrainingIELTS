@@ -75,17 +75,24 @@ Format:
 }`;
 
     const fallbackModels = [
+      'gemini-1.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash-8b',
+      'gemini-2.0-flash-lite',
+      'gemini-1.5-flash-latest',
       'gemini-flash-latest',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash',
-      'gemini-pro-latest'
     ];
     let analysis: any;
     const errors: string[] = [];
 
     for (const modelName of fallbackModels) {
       try {
-        const model = genAI.getGenerativeModel({ model: modelName });
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            temperature: 0.3,
+          }
+        });
         const result = await model.generateContent(prompt);
         if (result) {
           let text = result.response.text();
@@ -101,18 +108,23 @@ Format:
         }
       } catch (e: any) {
         errors.push(`[${modelName}]: ${e.message}`);
-        console.warn(`[task1-grade] Model ${modelName} failed: ${e.message}`);
+        console.warn(`[task1-grade] Model Flash ${modelName} failed: ${e.message}`);
       }
     }
 
     if (!analysis) {
-      throw new Error('All Gemini models failed: ' + errors.join(' | '));
+      throw new Error('Tất cả mô hình Flash đều đang bận: ' + errors.join(' | '));
     }
 
     return NextResponse.json(analysis);
   } catch (error: any) {
     console.error('[task1-grade] Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const msg = error?.message || String(error);
+    const isQuotaError = msg.includes('429') || msg.includes('Quota exceeded') || msg.includes('Too Many Requests');
+    const friendlyMsg = isQuotaError
+      ? 'Hệ thống AI đang tạm thời đạt giới hạn lượt chấm (Rate Limit). Vui lòng đợi khoảng 15 giây rồi chấm lại nhé.'
+      : msg;
+    return NextResponse.json({ error: friendlyMsg }, { status: 500 });
   }
 }
 

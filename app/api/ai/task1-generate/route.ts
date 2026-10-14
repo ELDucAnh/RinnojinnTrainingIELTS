@@ -192,12 +192,14 @@ For "map" type:
 Make sure the data is realistic and similar to actual IELTS exam questions.
 `;
 
-  // Dùng đúng fallback list như writing route
+  // Chỉ dùng các mô hình Flash chính thức của Gemini để tối ưu tốc độ và không bị dính limit Pro
   const fallbackModels = [
+    'gemini-1.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash-8b',
+    'gemini-2.0-flash-lite',
+    'gemini-1.5-flash-latest',
     'gemini-flash-latest',
-    'gemini-3.6-flash',
-    'gemini-3.5-flash',
-    'gemini-pro-latest'
   ];
 
   let result: any;
@@ -219,11 +221,11 @@ Make sure the data is realistic and similar to actual IELTS exam questions.
         }
       } catch (e: any) {
         lastError = e;
-        console.warn(`Model ${modelName} bị lỗi hoặc quá tải: ${e.message}`);
+        console.warn(`Model Flash ${modelName} bị lỗi hoặc quá tải: ${e.message}`);
       }
     }
 
-    if (!result) throw lastError || new Error('All models failed');
+    if (!result) throw lastError || new Error('Tất cả mô hình Flash đều đang bận');
 
     const response = await result.response;
     let text = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
@@ -244,8 +246,13 @@ Make sure the data is realistic and similar to actual IELTS exam questions.
     }
   } catch (error: any) {
     console.error('Lỗi khi tạo đề Task 1:', error);
+    const msg = error?.message || String(error);
+    const isQuotaError = msg.includes('429') || msg.includes('Quota exceeded') || msg.includes('Too Many Requests');
+    const friendlyMsg = isQuotaError
+      ? 'Hệ thống AI Flash đang tạm thời đạt giới hạn lượt gọi (Rate Limit / Quota). Vui lòng đợi khoảng 15-30 giây rồi bấm thử lại.'
+      : 'Lỗi AI: ' + msg;
     return NextResponse.json(
-      { error: 'Lỗi AI: ' + (error.message || String(error)) },
+      { error: friendlyMsg },
       { status: 500 }
     );
   }

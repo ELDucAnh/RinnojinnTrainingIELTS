@@ -153,12 +153,14 @@ BẠN BẮT BUỘC PHẢI TRẢ VỀ KẾT QUẢ DƯỚI DẠNG CHUỖI JSON H�
       }
     }
 
-    // Mảng các model dự phòng xếp theo thứ tự ưu tiên (Dựa trên danh sách API Key thực tế)
+    // Mảng các model Flash dự phòng xếp theo thứ tự ưu tiên
     const fallbackModels = [
+      'gemini-1.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash-8b',
+      'gemini-2.0-flash-lite',
+      'gemini-1.5-flash-latest',
       'gemini-flash-latest',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash',
-      'gemini-pro-latest'
     ];
 
     let result;
@@ -174,7 +176,7 @@ BẠN BẮT BUỘC PHẢI TRẢ VỀ KẾT QUẢ DƯỚI DẠNG CHUỖI JSON H�
         }
       } catch (e: any) {
         lastError = e;
-        console.warn(`Model ${modelName} bị lỗi hoặc quá tải: ${e.message}`);
+        console.warn(`Model Flash ${modelName} bị lỗi hoặc quá tải: ${e.message}`);
       }
     }
 
