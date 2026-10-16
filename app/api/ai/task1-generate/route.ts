@@ -192,47 +192,46 @@ For "map" type:
 Make sure the data is realistic and similar to actual IELTS exam questions.
 `;
 
-  // Chỉ dùng các mô hình Flash chính thức của Gemini để tối ưu tốc độ và không bị dính limit Pro
+  // Mảng các model dự phòng xếp theo thứ tự ưu tiên (Flash -> Pro dự phòng khi Flash quá tải)
   const fallbackModels = [
-    'gemini-1.5-flash',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash-8b',
-    'gemini-2.0-flash-lite',
-    'gemini-1.5-flash-latest',
     'gemini-flash-latest',
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-8b',
+    'gemini-pro-latest',
+    'gemini-1.5-pro',
+    'gemini-1.5-flash-latest',
   ];
 
   let result: any;
   let lastError: any;
+  const errors: string[] = [];
 
   try {
     for (const modelName of fallbackModels) {
       try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            temperature: 0.75,
-          }
-        });
-        result = await model.generateContent([prompt]);
+        const model = genAI.getGenerativeModel({ model: modelName });
+        result = await model.generateContent(prompt);
         if (result) {
-          console.log(`Đã dùng thành công model: ${modelName} cho dạng bài: ${targetType}`);
+          console.log(`[task1-generate] Đã dùng thành công model: ${modelName} cho dạng bài: ${targetType}`);
           break; // Thoát vòng lặp ngay nếu thành công
         }
       } catch (e: any) {
         lastError = e;
-        console.warn(`Model Flash ${modelName} bị lỗi hoặc quá tải: ${e.message}`);
+        errors.push(`[${modelName}]: ${e.message}`);
+        console.warn(`[task1-generate] Model ${modelName} bị lỗi hoặc quá tải: ${e.message}`);
       }
     }
 
-    if (!result) throw lastError || new Error('Tất cả mô hình Flash đều đang bận');
+    if (!result) throw lastError || new Error('Tất cả mô hình đều đang bận: ' + errors.join(' | '));
 
     const response = await result.response;
-    let text = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+    let text = response.text().replace(/```json/gi, '').replace(/```/g, '').trim();
 
-    // Sometimes Gemini wraps in a top-level object key
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) text = jsonMatch[0];
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      text = text.substring(firstBrace, lastBrace + 1);
+    }
 
     try {
       const data = JSON.parse(text);
@@ -249,7 +248,7 @@ Make sure the data is realistic and similar to actual IELTS exam questions.
     const msg = error?.message || String(error);
     const isQuotaError = msg.includes('429') || msg.includes('Quota exceeded') || msg.includes('Too Many Requests');
     const friendlyMsg = isQuotaError
-      ? 'Hệ thống AI Flash đang tạm thời đạt giới hạn lượt gọi (Rate Limit / Quota). Vui lòng đợi khoảng 15-30 giây rồi bấm thử lại.'
+      ? 'Hệ thống AI đang tạm thời đạt giới hạn lượt gọi (Rate Limit / Quota). Vui lòng đợi khoảng 15-30 giây rồi bấm thử lại.'
       : 'Lỗi AI: ' + msg;
     return NextResponse.json(
       { error: friendlyMsg },

@@ -75,24 +75,19 @@ Format:
 }`;
 
     const fallbackModels = [
-      'gemini-1.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash-8b',
-      'gemini-2.0-flash-lite',
-      'gemini-1.5-flash-latest',
       'gemini-flash-latest',
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-8b',
+      'gemini-pro-latest',
+      'gemini-1.5-pro',
+      'gemini-1.5-flash-latest',
     ];
     let analysis: any;
     const errors: string[] = [];
 
     for (const modelName of fallbackModels) {
       try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          generationConfig: {
-            temperature: 0.3,
-          }
-        });
+        const model = genAI.getGenerativeModel({ model: modelName });
         const result = await model.generateContent(prompt);
         if (result) {
           let text = result.response.text();
@@ -108,12 +103,12 @@ Format:
         }
       } catch (e: any) {
         errors.push(`[${modelName}]: ${e.message}`);
-        console.warn(`[task1-grade] Model Flash ${modelName} failed: ${e.message}`);
+        console.warn(`[task1-grade] Model ${modelName} failed: ${e.message}`);
       }
     }
 
     if (!analysis) {
-      throw new Error('Tất cả mô hình Flash đều đang bận: ' + errors.join(' | '));
+      throw new Error('Tất cả mô hình đều đang bận: ' + errors.join(' | '));
     }
 
     return NextResponse.json(analysis);
