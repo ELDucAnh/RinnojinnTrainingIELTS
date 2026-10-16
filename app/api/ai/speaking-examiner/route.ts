@@ -33,11 +33,9 @@ export async function POST(req: NextRequest) {
 
     const fallbackModels = [
       'gemini-flash-latest',
-      'gemini-1.5-flash',
-      'gemini-1.5-flash-8b',
-      'gemini-pro-latest',
-      'gemini-1.5-pro',
-      'gemini-1.5-flash-latest',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-pro-latest'
     ];
 
     const prompt = SYSTEM_PROMPT.replace('{MODE}', mode || 'Full Test').replace('{TOPIC}', topic || 'Random');

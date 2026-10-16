@@ -192,14 +192,11 @@ For "map" type:
 Make sure the data is realistic and similar to actual IELTS exam questions.
 `;
 
-  // Mảng các model dự phòng xếp theo thứ tự ưu tiên (Flash -> Pro dự phòng khi Flash quá tải)
   const fallbackModels = [
     'gemini-flash-latest',
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-8b',
-    'gemini-pro-latest',
-    'gemini-1.5-pro',
-    'gemini-1.5-flash-latest',
+    'gemini-3.6-flash',
+    'gemini-3.5-flash',
+    'gemini-pro-latest'
   ];
 
   let result: any;
