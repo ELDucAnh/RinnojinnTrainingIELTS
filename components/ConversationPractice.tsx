@@ -52,35 +52,60 @@ export function ConversationPractice({ cards, onComplete }: ConversationPractice
 
   // Shared
   const [correctCount, setCorrectCount] = useState(0);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
+  const fetchExercises = useCallback(() => {
+    if (!cards || cards.length === 0) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setErrorMsg(null);
     const words = cards.map(c => c.term);
+
     fetch('/api/ai/generate-conversation', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ words })
     })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          alert('Lỗi từ AI: ' + data.error);
-          setConversation([]);
-        } else if (data.conversation && Array.isArray(data.conversation)) {
+      .then(async res => {
+        const text = await res.text();
+        let data: any;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          if (!res.ok) {
+            throw new Error(`Máy chủ phản hồi lỗi (Mã ${res.status}): ${text.slice(0, 150)}`);
+          }
+          throw new Error('Dữ liệu AI trả về không đúng định dạng JSON.');
+        }
+
+        if (!res.ok || data.error) {
+          throw new Error(data.error || `Lỗi từ AI (Mã ${res.status})`);
+        }
+
+        if (data.conversation && Array.isArray(data.conversation) && data.conversation.length > 0) {
           setConversation(data.conversation);
         } else {
-          alert('Lỗi: AI trả về sai định dạng!');
-          setConversation([]);
+          throw new Error('AI không tạo được bài tập nào phù hợp từ danh sách từ vựng.');
         }
-        setLoading(false);
       })
       .catch(err => {
-        console.error(err);
-        alert('Lỗi kết nối: ' + err.message);
+        console.error('Error generating conversation:', err);
+        setErrorMsg(err.message || 'Lỗi kết nối khi tạo bài tập.');
+        setConversation([]);
+      })
+      .finally(() => {
         setLoading(false);
       });
   }, [cards]);
+
+  useEffect(() => {
+    fetchExercises();
+  }, [fetchExercises]);
 
   // Gọi AI phân tích bản dịch
   const analyzeTranslation = async (userText: string, item: Extract<ConversationItem, { type: 'translate_typing' }>) => {
@@ -96,13 +121,22 @@ export function ConversationPractice({ cards, onComplete }: ConversationPractice
           vietnameseSentence: item.vietnamese,
         }),
       });
-      const data = await res.json();
-      if (!data.error) {
+      const text = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`Lỗi phản hồi từ máy chủ (HTTP ${res.status})`);
+      }
+      if (!res.ok || data.error) {
+        alert(data.error || 'Lỗi khi phân tích bản dịch.');
+      } else {
         setAnalysis(data);
         setIsTranslationCorrect((data.score ?? 0) >= PASS_THRESHOLD);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Analysis error:', err);
+      alert(err.message || 'Lỗi kết nối khi phân tích câu trả lời.');
     } finally {
       setIsAnalyzing(false);
     }
@@ -193,8 +227,24 @@ export function ConversationPractice({ cards, onComplete }: ConversationPractice
     );
   }
 
-  if (conversation.length === 0) {
-    return <div className="text-center py-10 font-bold text-red-500">Lỗi tạo bài tập. Bộ từ vựng cần có ít nhất 1 từ.</div>;
+  if (errorMsg || conversation.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-6 gap-4 bg-[var(--card)] rounded-2xl border border-[var(--border)] shadow-sm text-center">
+        <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
+          <AlertCircle size={28} />
+        </div>
+        <h3 className="font-bold text-lg text-[var(--text)]">Không thể tạo bài luyện viết Task 2</h3>
+        <p className="text-sm text-[var(--text-muted)] max-w-md">
+          {errorMsg || 'Bộ từ vựng cần có ít nhất 1 từ để AI có thể tạo bài tập.'}
+        </p>
+        <button
+          onClick={fetchExercises}
+          className="mt-2 px-5 py-2.5 rounded-xl bg-[var(--primary)] text-white font-semibold flex items-center gap-2 hover:opacity-90 transition-opacity"
+        >
+          <RotateCcw size={16} /> Thử lại
+        </button>
+      </div>
+    );
   }
 
   const currentItem = conversation[currentIdx];

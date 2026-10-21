@@ -276,7 +276,7 @@ function LearnContent() {
     match: 'Ghép thẻ',
     gravity: 'Gravity',
     test: 'Kiểm tra',
-    conversation: 'Luyện hội thoại',
+    conversation: 'Luyện viết Task 2',
     listening: 'Luyện nghe',
     reading: 'Luyện đọc'
   };

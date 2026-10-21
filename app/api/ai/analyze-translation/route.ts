@@ -2,6 +2,7 @@ export const maxDuration = 30;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GEMINI_FALLBACK_MODELS } from '@/lib/ai-models';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -59,18 +60,19 @@ Format:
   "correctedSentence": "..."
 }`;
 
-    const fallbackModels = [
-      'gemini-flash-latest',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash',
-      'gemini-pro-latest'
-    ];
+    const fallbackModels = GEMINI_FALLBACK_MODELS;
     let analysis: any;
     let errors: string[] = [];
 
     for (const modelName of fallbackModels) {
       try {
-        const model = genAI.getGenerativeModel({ model: modelName });
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.3,
+          }
+        });
         const result = await model.generateContent(prompt);
         if (result) {
           let responseText = result.response.text();

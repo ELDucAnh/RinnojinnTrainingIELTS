@@ -3,31 +3,44 @@ export const maxDuration = 60;
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+import { GEMINI_FALLBACK_MODELS } from '@/lib/ai-models';
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(req: NextRequest) {
   try {
     if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: 'Chưa cấu hình GEMINI_API_KEY' }, { status: 500 });
+      return NextResponse.json({ error: 'Chưa cấu hình GEMINI_API_KEY trong hệ thống' }, { status: 500 });
     }
 
     const { words } = await req.json();
 
-    if (!words || words.length === 0) {
-      return NextResponse.json({ error: 'Missing words' }, { status: 400 });
+    if (!words || !Array.isArray(words) || words.length === 0) {
+      return NextResponse.json({ error: 'Bộ từ vựng cần có ít nhất 1 từ để tạo bài luyện tập' }, { status: 400 });
     }
 
-    const prompt = `You are an expert IELTS Writing Task 2 coach. Output valid JSON only. Ensure exactly 10 items with 2 distinct task2Prompt values (5 items each).
+    // Lấy tối đa 8 từ ngẫu nhiên để prompt gọn, AI sinh nhanh tránh bị timeout 504
+    const selectedWords = words.length > 8
+      ? [...words].sort(() => 0.5 - Math.random()).slice(0, 8)
+      : words;
 
-Generate exactly 10 translation exercises based on these vocabulary words: ${words.join(', ')}
+    const prompt = `You are an expert IELTS Writing Task 2 coach. Output valid JSON only.
+
+Generate exactly 6 translation exercises based on these vocabulary words: ${selectedWords.join(', ')}
 
 STRICT RULES:
-- Pick exactly 2 different IELTS Task 2 essay topics (5 sentences per topic).
-- For topic 1: questions 1-5 (indices 0-4). For topic 2: questions 6-10 (indices 5-9).
-- Each sentence covers a DIFFERENT argument/sub-point of that topic (introduction, body point 1, body point 2, concession, conclusion etc).
+- Pick exactly 2 different IELTS Task 2 essay topics (3 sentences per topic, total 6 sentences).
+- For Topic 1 (indices 0-2):
+  1. Introduction / Paraphrase
+  2. Body 1 (main supporting argument)
+  3. Conclusion / Concession
+- For Topic 2 (indices 3-5):
+  1. Introduction / Context
+  2. Body Paragraph (complex argument)
+  3. Concession or Counter-argument
 - The Vietnamese sentence must be a natural, complex academic sentence related to that argument.
 - The English translation must be genuinely IELTS Writing Task 2 quality (band 7+): complex grammar, good collocations, cohesion.
-- Incorporate vocabulary words naturally.
+- Incorporate the target vocabulary words naturally.
 
 Output ONLY this JSON structure:
 {
@@ -35,25 +48,26 @@ Output ONLY this JSON structure:
     {
       "type": "translate_typing",
       "task2Prompt": "Full IELTS Task 2 question (2-3 sentences, as it would appear in the exam)",
-      "argument": "Brief label for this sub-point, e.g. 'Body 1: Main argument for...' or 'Introduction' or 'Counter-argument'",
+      "argument": "Brief label, e.g. 'Mở bài: Đặt vấn đề' or 'Thân bài 1: Luận điểm chính' or 'Phản biện & Kết luận'",
       "vietnamese": "Câu tiếng Việt học thuật phức tạp cần dịch ra tiếng Anh.",
       "expectedEnglish": "The expected band 7+ English translation using the vocabulary."
     }
   ]
 }`;
 
-    const fallbackModels = [
-      'gemini-flash-latest',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash',
-      'gemini-pro-latest'
-    ];
+    const fallbackModels = GEMINI_FALLBACK_MODELS;
     let parsedData: any;
     let errors: string[] = [];
 
     for (const modelName of fallbackModels) {
       try {
-        const model = genAI.getGenerativeModel({ model: modelName });
+        const model = genAI.getGenerativeModel({
+          model: modelName,
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.7,
+          }
+        });
         const result = await model.generateContent(prompt);
         if (result) {
           let responseText = result.response.text();
@@ -76,17 +90,26 @@ Output ONLY this JSON structure:
     }
 
     if (!parsedData) {
-      throw new Error('All Gemini models failed. Details: ' + errors.join(' | '));
+      throw new Error('Các mô hình AI đang tạm thời bận hoặc vượt giới hạn: ' + errors.join(' | '));
     }
 
     const conversation = Array.isArray(parsedData)
       ? parsedData
       : (parsedData.conversation || parsedData.items || Object.values(parsedData)[0]);
 
+    if (!Array.isArray(conversation) || conversation.length === 0) {
+      throw new Error('AI phản hồi dữ liệu rỗng. Vui lòng thử lại.');
+    }
+
     return NextResponse.json({ conversation });
 
   } catch (error: any) {
     console.error('Error generating writing practice:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const msg = error?.message || String(error);
+    const isQuotaError = msg.includes('429') || msg.includes('Quota exceeded') || msg.includes('Too Many Requests');
+    const friendlyMsg = isQuotaError
+      ? 'Hệ thống AI đang tạm thời đạt giới hạn lượt gọi (Rate Limit). Vui lòng đợi khoảng 15-30 giây rồi bấm thử lại.'
+      : msg;
+    return NextResponse.json({ error: friendlyMsg }, { status: 500 });
   }
 }

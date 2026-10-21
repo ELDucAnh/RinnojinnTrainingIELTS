@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GEMINI_FALLBACK_MODELS } from '@/lib/ai-models';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -31,12 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing conversation history' }, { status: 400 });
     }
 
-    const fallbackModels = [
-      'gemini-flash-latest',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash',
-      'gemini-pro-latest'
-    ];
+    const fallbackModels = GEMINI_FALLBACK_MODELS;
 
     const prompt = SYSTEM_PROMPT.replace('{MODE}', mode || 'Full Test').replace('{TOPIC}', topic || 'Random');
 

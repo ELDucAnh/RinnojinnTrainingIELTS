@@ -2,6 +2,7 @@ export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GEMINI_FALLBACK_MODELS } from '@/lib/ai-models';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -45,12 +46,7 @@ Output ONLY valid JSON:
   ]
 }`;
 
-    const fallbackModels = [
-      'gemini-flash-latest',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash',
-      'gemini-pro-latest'
-    ];
+    const fallbackModels = GEMINI_FALLBACK_MODELS;
     let data: any;
     let errors: string[] = [];
 

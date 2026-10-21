@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GEMINI_FALLBACK_MODELS } from '@/lib/ai-models';
 
 // Khởi tạo Gemini client với API Key từ biến môi trường
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -153,12 +154,7 @@ BẠN BẮT BUỘC PHẢI TRẢ VỀ KẾT QUẢ DƯỚI DẠNG CHUỖI JSON H�
       }
     }
 
-    const fallbackModels = [
-      'gemini-flash-latest',
-      'gemini-3.6-flash',
-      'gemini-3.5-flash',
-      'gemini-pro-latest'
-    ];
+    const fallbackModels = GEMINI_FALLBACK_MODELS;
 
     let result;
     let lastError;
