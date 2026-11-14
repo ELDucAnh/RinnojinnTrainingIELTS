@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { GEMINI_FALLBACK_MODELS } from '@/lib/ai-models';
+import { formatGeminiError, generateJsonWithFallback } from '@/lib/gemini-helper';
+import { normalizeOutline } from '@/lib/writing-practice-types';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+export const maxDuration = 30;
 
 const VALID_TYPES = ['bar', 'line', 'pie', 'table', 'process', 'map'] as const;
 type ValidType = typeof VALID_TYPES[number];
@@ -13,7 +13,6 @@ function resolveChartType(reqType?: string, topic?: string): ValidType {
     return normReq as ValidType;
   }
 
-  // Detect type from user prompt/topic string
   const textToSearch = `${normReq} ${topic || ''}`.toLowerCase();
   if (/\b(pie|tròn|bánh)\b/i.test(textToSearch) || textToSearch.includes('biểu đồ tròn') || textToSearch.includes('pie chart')) {
     return 'pie';
@@ -34,25 +33,103 @@ function resolveChartType(reqType?: string, topic?: string): ValidType {
     return 'line';
   }
 
-  // If random or not specified, pick one evenly across all types in JS to prevent Gemini from always picking "line"
   const randomIndex = Math.floor(Math.random() * VALID_TYPES.length);
   return VALID_TYPES[randomIndex];
 }
 
-export async function POST(req: Request) {
-  if (!process.env.GEMINI_API_KEY) {
-    return NextResponse.json({ error: 'Chưa cấu hình GEMINI_API_KEY.' }, { status: 500 });
-  }
+const OUTLINE_INSTRUCTIONS = `
+CRITICAL REQUIREMENT — 4-BODY VIETNAMESE OUTLINE ("outline"):
+You MUST also generate an "outline" array with EXACTLY 4 objects (bodyIndex 0, 1, 2, 3) in VIETNAMESE so the student can plan and translate their ideas into English themselves at IELTS Band 7.5+ standard.
+- Body 0: Introduction (Mở bài — Paraphrase đề bài: nêu rõ loại biểu đồ, đối tượng đo lường, địa điểm, thời gian, đơn vị).
+- Body 1: Overview (Tổng quan — Chỉ ra 2–3 xu hướng hoặc đặc điểm nổi bật nhất của dữ liệu; nhắc rõ KHÔNG chèn số liệu chi tiết).
+- Body 2: Detail Paragraph 1 (Thân bài 1 — Nhóm thông tin thứ nhất: chỉ rõ cần mô tả những nhóm/giai đoạn/khu vực/bước nào và trích rõ các số liệu cụ thể từ dữ liệu vừa tạo để học viên không bị sai số).
+- Body 3: Detail Paragraph 2 (Thân bài 2 — Nhóm thông tin còn lại: chỉ rõ các số liệu cụ thể còn lại, điểm đối chiếu/so sánh nổi bật và cách liên kết mạch lạc với Body 3).
 
+RULES FOR THE OUTLINE:
+1. Write ALL guidance ("role", "viGuide", "keyPoints", "linkingTip") in natural, clear VIETNAMESE (only keep chart proper nouns/labels/units where needed).
+2. DO NOT provide complete pre-written English sentences! Give ideas, structure, numbers, and Vietnamese conceptual cues so the learner writes and translates to English themselves.
+3. "viGuide" must be an array of 2–4 specific Vietnamese bullet points tailored to THIS exact chart's data.
+4. "keyPoints" must be an array of 2–4 concrete data points / comparisons / Vietnamese keywords from THIS chart.
+5. "linkingTip" must explain in Vietnamese how this body connects logically with the adjacent bodies.
+
+Outline JSON schema:
+"outline": [
+  {
+    "bodyIndex": 0,
+    "role": "Introduction — Mở bài (Paraphrase đề bài)",
+    "viGuide": ["...", "..."],
+    "keyPoints": ["...", "..."],
+    "linkingTip": "..."
+  },
+  {
+    "bodyIndex": 1,
+    "role": "Overview — Tổng quan xu hướng chính",
+    "viGuide": ["...", "..."],
+    "keyPoints": ["...", "..."],
+    "linkingTip": "..."
+  },
+  {
+    "bodyIndex": 2,
+    "role": "Body 3 — Thân bài 1 (Chi tiết nhóm 1)",
+    "viGuide": ["...", "..."],
+    "keyPoints": ["...", "..."],
+    "linkingTip": "..."
+  },
+  {
+    "bodyIndex": 3,
+    "role": "Body 4 — Thân bài 2 (Chi tiết nhóm 2 & đối chiếu)",
+    "viGuide": ["...", "..."],
+    "keyPoints": ["...", "..."],
+    "linkingTip": "..."
+  }
+]
+`;
+
+export async function POST(req: Request) {
   let requestedType: string | undefined;
   let customTopic: string | undefined;
+  let mode: string | undefined;
+  let existingChartData: any;
 
   try {
     const body = await req.json();
     requestedType = body.chartType || body.type;
     customTopic = body.customTopic || body.topic || body.prompt;
+    mode = body.mode;
+    existingChartData = body.chartData;
   } catch {
-    // If request has no json body or invalid json, proceed with undefined
+    // Proceed with defaults if body is empty
+  }
+
+  // Optional mode: regenerate Vietnamese 4-body outline for an existing chart
+  if (mode === 'outline-only' && existingChartData) {
+    try {
+      const outlinePrompt = `
+You are an expert IELTS Academic Writing Task 1 tutor.
+Given the following IELTS Task 1 chart data JSON, create a fresh, well-structured 4-body VIETNAMESE outline so the student can write and translate each body into Band 7.5+ English.
+
+Chart Data:
+${JSON.stringify(existingChartData, null, 2)}
+
+${OUTLINE_INSTRUCTIONS}
+
+Return ONLY a valid JSON object with the single key "outline":
+{
+  "outline": [ ... ]
+}
+`;
+      const { data } = await generateJsonWithFallback(outlinePrompt, 'task1-outline-regen', (parsed) => {
+        if (!Array.isArray(parsed?.outline) || parsed.outline.length === 0) {
+          throw new Error('Missing outline array');
+        }
+        return normalizeOutline(parsed.outline, 'task1');
+      });
+
+      return NextResponse.json({ outline: data }, { status: 200 });
+    } catch (error: any) {
+      const { message, status } = formatGeminiError(error, 'Lỗi tạo dàn ý Task 1: ');
+      return NextResponse.json({ error: message }, { status });
+    }
   }
 
   const targetType = resolveChartType(requestedType, customTopic);
@@ -68,7 +145,7 @@ export async function POST(req: Request) {
   };
 
   const prompt = `
-You are an IELTS Task 1 question generator. Your job is to create realistic IELTS Academic Writing Task 1 data.
+You are an IELTS Task 1 question generator and Vietnamese IELTS coach. Your job is to create realistic IELTS Academic Writing Task 1 data AND a 4-body Vietnamese writing outline for that exact data.
 
 CRITICAL INSTRUCTION - CHART TYPE:
 The user has requested the chart/diagram type: "${targetType}" (${typeNameMap[targetType]}).
@@ -95,8 +172,9 @@ For "bar" type:
     { "name": "Series 1", "values": [30, 45, 60] },
     { "name": "Series 2", "values": [20, 35, 55] }
   ],
-  "keyFeatures": ["Key trend 1 that a good writer should mention", "Key trend 2", "Key trend 3"],
-  "writingTips": "Focus on: overall trend, highest/lowest points, significant differences between groups."
+  "keyFeatures": ["Key trend 1", "Key trend 2", "Key trend 3"],
+  "writingTips": "Short summary tip",
+  "outline": [ ... ]
 }
 
 For "line" type:
@@ -104,7 +182,7 @@ For "line" type:
   "type": "line",
   "title": "Short descriptive title",
   "context": "The line graph below shows ...",
-  "prompt": "Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+  "prompt": "Summarise the information by selecting and reporting the main features, and make comparisons where relevant. Write at least 150 words.",
   "xLabel": "Year",
   "yLabel": "Unit label",
   "xValues": ["2000", "2005", "2010", "2015", "2020"],
@@ -113,7 +191,8 @@ For "line" type:
     { "name": "Country/Category B", "values": [40, 38, 42, 55, 70] }
   ],
   "keyFeatures": ["Feature 1", "Feature 2", "Feature 3"],
-  "writingTips": "Note the starting points, ending points, crossover points, and overall trend for each line."
+  "writingTips": "Short summary tip",
+  "outline": [ ... ]
 }
 
 For "pie" type:
@@ -121,7 +200,7 @@ For "pie" type:
   "type": "pie",
   "title": "Short descriptive title",
   "context": "The pie chart below shows ...",
-  "prompt": "Summarise the information by selecting and reporting the main features.",
+  "prompt": "Summarise the information by selecting and reporting the main features. Write at least 150 words.",
   "year": "2023",
   "unit": "%",
   "segments": [
@@ -132,7 +211,8 @@ For "pie" type:
     { "label": "Other", "value": 8 }
   ],
   "keyFeatures": ["Feature 1", "Feature 2"],
-  "writingTips": "Describe the largest and smallest segments, then group similar-sized segments."
+  "writingTips": "Short summary tip",
+  "outline": [ ... ]
 }
 
 For "table" type:
@@ -140,7 +220,7 @@ For "table" type:
   "type": "table",
   "title": "Short descriptive title",
   "context": "The table below shows ...",
-  "prompt": "Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+  "prompt": "Summarise the information by selecting and reporting the main features, and make comparisons where relevant. Write at least 150 words.",
   "headers": ["Country", "2000", "2010", "2020"],
   "rows": [
     ["USA", "280", "310", "330"],
@@ -149,7 +229,8 @@ For "table" type:
   ],
   "unit": "millions",
   "keyFeatures": ["Feature 1", "Feature 2"],
-  "writingTips": "Compare rows and columns systematically, note the overall pattern."
+  "writingTips": "Short summary tip",
+  "outline": [ ... ]
 }
 
 For "process" type:
@@ -157,7 +238,7 @@ For "process" type:
   "type": "process",
   "title": "Short descriptive title",
   "context": "The diagram below shows the process of ...",
-  "prompt": "Summarise the information by selecting and reporting the main features.",
+  "prompt": "Summarise the information by selecting and reporting the main features. Write at least 150 words.",
   "steps": [
     { "id": 1, "label": "Step 1 name", "description": "Brief description of what happens" },
     { "id": 2, "label": "Step 2 name", "description": "Brief description" },
@@ -167,7 +248,8 @@ For "process" type:
     { "id": 6, "label": "Step 6 name", "description": "Brief description" }
   ],
   "keyFeatures": ["Feature 1", "Feature 2"],
-  "writingTips": "Use passive voice and sequencing words (first, then, subsequently, finally). Describe ALL steps."
+  "writingTips": "Short summary tip",
+  "outline": [ ... ]
 }
 
 For "map" type:
@@ -175,7 +257,7 @@ For "map" type:
   "type": "map",
   "title": "Short descriptive title",
   "context": "The maps below show ...",
-  "prompt": "Summarise the information by selecting and reporting the main features, and make comparisons where relevant.",
+  "prompt": "Summarise the information by selecting and reporting the main features, and make comparisons where relevant. Write at least 150 words.",
   "location": "Name of the town/area",
   "period1": "1990",
   "period2": "2020",
@@ -185,68 +267,33 @@ For "map" type:
   "features2": [
     { "name": "Feature name", "position": "north", "icon": "🏗️", "description": "what exists now" }
   ],
-  "changes": ["Change 1 that a writer should mention", "Change 2", "Change 3"],
+  "changes": ["Change 1", "Change 2", "Change 3"],
   "keyFeatures": ["Feature 1", "Feature 2"],
-  "writingTips": "Use past tense for the old map, present perfect or present tense for changes. Group changes by area. Note: position MUST be one of: north, south, east, west, center, northeast, northwest, southeast, southwest."
+  "writingTips": "Note: position MUST be one of: north, south, east, west, center, northeast, northwest, southeast, southwest.",
+  "outline": [ ... ]
 }
 
-Make sure the data is realistic and similar to actual IELTS exam questions.
+${OUTLINE_INSTRUCTIONS}
+
+Make sure the data is realistic, internally consistent (e.g., pie segments add up to 100 if %), and the 4-body Vietnamese outline matches the exact numbers/details in the chart.
 `;
 
-  const fallbackModels = GEMINI_FALLBACK_MODELS;
-
-  let result: any;
-  let lastError: any;
-  const errors: string[] = [];
-
   try {
-    for (const modelName of fallbackModels) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        result = await model.generateContent(prompt);
-        if (result) {
-          console.log(`[task1-generate] Đã dùng thành công model: ${modelName} cho dạng bài: ${targetType}`);
-          break; // Thoát vòng lặp ngay nếu thành công
-        }
-      } catch (e: any) {
-        lastError = e;
-        errors.push(`[${modelName}]: ${e.message}`);
-        console.warn(`[task1-generate] Model ${modelName} bị lỗi hoặc quá tải: ${e.message}`);
+    const { data } = await generateJsonWithFallback(prompt, `task1-generate:${targetType}`, (parsed) => {
+      if (!parsed || typeof parsed !== 'object' || !parsed.context) {
+        throw new Error('Dữ liệu đề bài Task 1 không hợp lệ');
       }
-    }
-
-    if (!result) throw lastError || new Error('Tất cả mô hình đều đang bận: ' + errors.join(' | '));
-
-    const response = await result.response;
-    let text = response.text().replace(/```json/gi, '').replace(/```/g, '').trim();
-
-    const firstBrace = text.indexOf('{');
-    const lastBrace = text.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      text = text.substring(firstBrace, lastBrace + 1);
-    }
-
-    try {
-      const data = JSON.parse(text);
-      if (!data.type) {
-        data.type = targetType;
+      if (!parsed.type || !VALID_TYPES.includes(parsed.type)) {
+        parsed.type = targetType;
       }
-      return NextResponse.json(data, { status: 200 });
-    } catch (parseErr: any) {
-      console.error('Lỗi Parse JSON từ Gemini:', text.slice(0, 200));
-      return NextResponse.json({ error: 'AI trả về định dạng lỗi: ' + text.slice(0, 100) + '...' }, { status: 500 });
-    }
+      parsed.outline = normalizeOutline(parsed.outline, 'task1');
+      return parsed;
+    });
+
+    return NextResponse.json(data, { status: 200 });
   } catch (error: any) {
     console.error('Lỗi khi tạo đề Task 1:', error);
-    const msg = error?.message || String(error);
-    const isQuotaError = msg.includes('429') || msg.includes('Quota exceeded') || msg.includes('Too Many Requests');
-    const friendlyMsg = isQuotaError
-      ? 'Hệ thống AI đang tạm thời đạt giới hạn lượt gọi (Rate Limit / Quota). Vui lòng đợi khoảng 15-30 giây rồi bấm thử lại.'
-      : 'Lỗi AI: ' + msg;
-    return NextResponse.json(
-      { error: friendlyMsg },
-      { status: 500 }
-    );
+    const { message, status } = formatGeminiError(error, 'Lỗi AI: ');
+    return NextResponse.json({ error: message }, { status });
   }
 }
-

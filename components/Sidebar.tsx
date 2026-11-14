@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import {
   Home, Library, Folder, Plus, ChevronLeft, ChevronRight,
-  Settings, X, Clock, PenLine, Mic, Sparkles, BookMarked, Headphones, BarChart2
+  Settings, X, Clock, PenLine, PenTool, Mic, Sparkles, BookMarked, Headphones, BarChart2
 } from 'lucide-react';
 
 interface NavItemProps {
@@ -14,12 +14,14 @@ interface NavItemProps {
   label: string;
   active: boolean;
   collapsed: boolean;
+  onClick?: () => void;
 }
 
-function NavItem({ href, icon, label, active, collapsed }: NavItemProps) {
+function NavItem({ href, icon, label, active, collapsed, onClick }: NavItemProps) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={`sidebar-nav-item ${active ? 'active' : ''}`}
       title={collapsed ? label : undefined}
     >
@@ -132,6 +134,15 @@ export function Sidebar({ mobileOpen, onMobileClose, showCreateFolderModal }: Si
             label="Luyện Task 1"
             active={!!pathname?.startsWith('/task1-practice')}
             collapsed={collapsed}
+            onClick={onMobileClose}
+          />
+          <NavItem
+            href="/task2-practice"
+            icon={<PenTool size={18} className="text-emerald-500" />}
+            label="Luyện Task 2"
+            active={!!pathname?.startsWith('/task2-practice')}
+            collapsed={collapsed}
+            onClick={onMobileClose}
           />
           <NavItem
             href="/speaking"

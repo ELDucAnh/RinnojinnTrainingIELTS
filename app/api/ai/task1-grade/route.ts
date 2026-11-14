@@ -1,134 +1,176 @@
 export const maxDuration = 30;
 
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { GEMINI_FALLBACK_MODELS } from '@/lib/ai-models';
+import { formatGeminiError, generateJsonWithFallback } from '@/lib/gemini-helper';
+import {
+  countWords,
+  normalizeGradeResult,
+  OutlineBodyItem,
+  TASK1_BODY_TEMPLATES,
+} from '@/lib/writing-practice-types';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+interface PreviousBodyInput {
+  bodyIndex: number;
+  label?: string;
+  role?: string;
+  content: string;
+}
 
 export async function POST(req: NextRequest) {
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: 'Chưa cấu hình GEMINI_API_KEY' }, { status: 500 });
+    const body = await req.json();
+    const {
+      chartData,
+      outline,
+      previousBodies = [],
+      bodyIndex,
+      content,
+    }: {
+      chartData: any;
+      outline?: OutlineBodyItem[];
+      previousBodies?: PreviousBodyInput[];
+      bodyIndex: number;
+      content: string;
+    } = body;
+
+    if (!chartData || typeof bodyIndex !== 'number' || bodyIndex < 0 || bodyIndex > 3 || !content?.trim()) {
+      return NextResponse.json(
+        { error: 'Thiếu dữ liệu biểu đồ, chỉ số body hoặc nội dung bài viết.' },
+        { status: 400 }
+      );
     }
 
-    const { sentence, sentenceIndex, chartType, chartContext, chartTitle } = await req.json();
-
-    if (!sentence || !chartType || !chartContext) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const cleanContent = content.trim();
+    if (countWords(cleanContent) < 8) {
+      return NextResponse.json(
+        { error: 'Đoạn văn quá ngắn (cần tối thiểu 8 từ tiếng Anh) để AI chấm theo chuẩn Band 7.5.' },
+        { status: 400 }
+      );
     }
 
-    const sentenceRole = getSentenceRole(sentenceIndex);
+    const currentTemplate = TASK1_BODY_TEMPLATES[bodyIndex];
+    const currentOutline = Array.isArray(outline) ? outline[bodyIndex] : undefined;
 
-    const prompt = `You are an expert IELTS Academic Writing Task 1 examiner. Output valid JSON only.
+    const chartDataSummary = JSON.stringify(chartData, null, 2);
+    const fullOutlineSummary = Array.isArray(outline)
+      ? outline
+        .map(
+          (o, idx) =>
+            `- Body ${idx + 1} (${o.role}): ${(o.viGuide || []).join(' | ')}`
+        )
+        .join('\n')
+      : 'Không có dàn ý đính kèm.';
 
-You are evaluating ONE sentence written by a student to describe an IELTS Task 1 chart/diagram.
+    const previousBodiesText =
+      Array.isArray(previousBodies) && previousBodies.length > 0
+        ? previousBodies
+          .map(
+            (pb) =>
+              `[Body ${pb.bodyIndex + 1} — ${pb.role || TASK1_BODY_TEMPLATES[pb.bodyIndex]?.role || ''}]:\n"${pb.content}"`
+          )
+          .join('\n\n')
+        : 'Chưa có body nào trước đó (đây là Body 1 — phần mở đầu bài viết).';
 
-Chart type: ${chartType}
-Chart title: ${chartTitle || ''}
-Chart description: ${chartContext}
-Sentence number: ${sentenceIndex + 1} (${sentenceRole})
+    const prompt = `
+Bạn là một cựu giám khảo IELTS Academic Writing vô cùng khắt khe, chuẩn xác và công tâm.
+Học viên đang luyện viết IELTS Writing Task 1 theo từng Body (tổng cộng 4 Body: Body 1 Introduction, Body 2 Overview, Body 3 Detail 1, Body 4 Detail 2).
+Mục tiêu bắt buộc để qua được Body hiện tại là phải ĐẠT CHUẨN BAND 7.5 (Overall Band của Body >= 7.5 và không có tiêu chí nào dưới 7.0).
 
-Student's sentence: "${sentence}"
+=== ĐỀ BÀI & DỮ LIỆU BIỂU ĐỒ GỐC ===
+${chartDataSummary}
 
-Evaluate this single sentence for IELTS Task 1 Academic Writing quality.
+=== TOÀN BỘ DÀN Ý 4 BODY (TIẾNG VIỆT) ===
+${fullOutlineSummary}
 
-Consider:
-1. Is the language appropriate for Task 1 (formal, academic, objective)?
-2. Does it describe data accurately and in a way that makes sense for this chart type?
-3. Is the grammar correct?
-4. Is the vocabulary appropriate (precise, varied, academic)?
-5. Does it serve its intended function as sentence #${sentenceIndex + 1} (${sentenceRole})?
+=== CÁC BODY HỌC VIÊN ĐÃ VIẾT & ĐẠT TRƯỚC ĐÓ ===
+${previousBodiesText}
 
-Return a JSON object with:
-- "score": integer 0–100 (80+ to pass to the next sentence)
-- "grammarErrors": array — ALL grammar mistakes. Each: { "original": "...", "correction": "...", "explanation": "..." (in Vietnamese) }
-- "vocabularyTips": array — words/phrases that can be improved. Each: { "studentWord": "...", "betterAlternative": "...", "reason": "..." (in Vietnamese) }
-- "structureFeedback": string — overall feedback on this specific sentence in Vietnamese (2–3 sentences). Be specific about whether it works well for Task 1.
-- "correctedSentence": the fully corrected, improved version of the student's sentence
+=== BODY HIỆN TẠI ĐANG CHẤM ===
+- Vị trí: ${currentTemplate.label} (${currentOutline?.role || currentTemplate.role})
+- Dàn ý tiếng Việt cho Body này: ${currentOutline ? JSON.stringify(currentOutline.viGuide) : 'Theo chuẩn IELTS Task 1'}
+- Điểm dữ liệu gợi ý: ${currentOutline ? JSON.stringify(currentOutline.keyPoints) : 'Theo biểu đồ'}
+- Bài viết tiếng Anh của học viên cho Body ${bodyIndex + 1}:
+"""
+${cleanContent}
+"""
 
-Scoring guide (Target IELTS Band 7.5 standard):
-- 90–100: Flawless grammar, highly advanced/precise vocabulary, perfect academic tone, excellent complex sentence structures (Band 8.0+ level).
-- 80–89: Meets Band 7.5 standard. Very good grammar (minor slips allowed), uses a range of complex structures, very good control of academic vocabulary and data description.
-- 70–79: Meets Band 6.5-7.0 standard. Grammar is mostly correct but relies on simpler structures, vocabulary is accurate but basic, lacks the sophistication required for 7.5. (Must be scored < 80 to force user to improve).
-- 50–69: Meets Band 5.5-6.0 standard. Noticeable grammar errors, repetitive vocabulary, or mechanical descriptions. 
-- 0–49: Band 5.0 or below. Major errors, inaccurate data, or inappropriate tone.
+=== YÊU CẦU CHẤM ĐIỂM CHUẨN IELTS BAND 7.5 (4 TIÊU CHÍ) ===
+Hãy chấm đoạn văn trên theo ĐÚNG 4 tiêu chí IELTS Academic Writing Task 1:
+1. "task" — Task Achievement (TA):
+   - Body 1 (Intro): Có paraphrase chính xác ngữ cảnh, đối tượng, địa điểm, thời gian, đơn vị của biểu đồ không? Nếu copy nguyên xi đề bài hoặc sai thông tin -> trừ điểm nặng (<= 6.5).
+   - Body 2 (Overview): Có nêu được bức tranh tổng quan và ít nhất 2 xu hướng/đặc điểm nổi bật nhất không? Có lỡ chèn số liệu chi tiết quá mức vào Overview không?
+   - Body 3 & Body 4 (Detail 1 & 2): Có báo cáo chính xác 100% số liệu/bước/vị trí trong dữ liệu biểu đồ gốc không? Có chọn lọc, nhóm thông tin và so sánh rõ ràng không, hay chỉ liệt kê máy móc? Có bị lặp lại thông tin đã viết ở Body trước không?
+2. "cc" — Coherence and Cohesion (CC):
+   - Các câu bên trong Body có liên kết logic, dùng phép quy chiếu (this, these, respectively, the former...) và từ nối tự nhiên không?
+   - LIÊN KẾT VỚI CÁC BODY KHÁC: Body hiện tại có nối mạch tự nhiên với các body đã viết trước đó không (VD: Body 2 Overview chuyển từ Intro, Body 3 mở đầu phân tích chi tiết, Body 4 nối/đối chiếu mượt với Body 3 và khớp với Overview)?
+3. "lr" — Lexical Resource (LR):
+   - Từ vựng mô tả biểu đồ/quy trình/bản đồ có chính xác, mang tính học thuật (Band 7.5+ collocations), tránh lặp từ trong nội bộ Body và so với các Body trước?
+   - Từ vựng quá đơn giản/thông thường (vd chỉ dùng "increase, decrease, big, small, good") -> KHÔNG thể đạt 7.5+.
+4. "gra" — Grammatical Range and Accuracy (GRA):
+   - Có sử dụng đa dạng cấu trúc câu phức (mệnh đề quan hệ, mệnh đề phân từ, cấu trúc so sánh nâng cao, bị động chuẩn cho process/map, cấu trúc "while/whereas/with + V-ing/N") một cách tự nhiên và chính xác không?
+   - Có chia đúng thì (quá khứ/hiện tại/tương lai) nhất quán với các Body trước không?
+   - Nếu toàn câu đơn giản hoặc còn nhiều lỗi ngữ pháp/giới từ/mạo từ/dấu câu -> dưới 7.5.
 
-STRICT INSTRUCTION FOR BAND 7.5:
-To score 80 or above, the sentence MUST use sophisticated Task 1 vocabulary (e.g., 'a substantial proportion', 'experienced a dramatic surge', 'remained relatively stable') AND complex grammar structures (e.g., relative clauses, participle clauses, varied conjunctions). Simple sentences like "The number of cars increased in 2020" are grammatically correct but MUST receive a score BELOW 80 because they do not meet the Band 7.5 standard.
+KIỂM TRA ĐẶC BIỆT:
+- Nếu học viên viết bằng tiếng Việt, viết linh tinh, hoặc lạc đề hoàn toàn -> chấm <= 4.0 cho các tiêu chí liên quan.
+- Thang điểm mỗi tiêu chí là 0.0 đến 9.0 (chỉ dùng bước 0.5: ví dụ 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0).
+- KHÔNG chấm lỏng tay để cho qua nếu chưa đạt chất lượng Band 7.5 thực sự, nhưng cũng KHÔNG dìm điểm vô lý nếu bài thực sự đạt chuẩn Band 7.5–8.5.
 
-IMPORTANT:
-- All feedback (explanation, reason, structureFeedback) must be in Vietnamese.
-- Be extremely strict with the 80 threshold. If it's too simple, fail it (score < 80) and provide vocabulary/structure tips.
-- Output ONLY valid JSON, no markdown.
-
-Format:
+YÊU CẦU ĐẦU RA JSON (BẮT BUỘC CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG MARKDOWN):
 {
-  "score": 75,
+  "criteria": {
+    "task": {
+      "band": 7.0,
+      "reason": "Giải thích chi tiết bằng tiếng Việt: đạt điểm ở đâu và BỊ MẤT ĐIỂM ở đâu, vì sao (đặc biệt nêu rõ thiếu ý, sai số liệu, hoặc lặp ý với body trước nếu có).",
+      "evidence": ["Trích dẫn chính xác cụm/câu gây mất điểm hoặc thiếu sót cụ thể"]
+    },
+    "cc": {
+      "band": 7.5,
+      "reason": "Giải thích chi tiết bằng tiếng Việt về mạch lạc nội bộ và liên kết với các body trước; nếu < 7.5 hoặc < 9.0 phải nêu rõ mất điểm ở chỗ nào và vì sao.",
+      "evidence": ["Trích dẫn cụ thể nếu có"]
+    },
+    "lr": {
+      "band": 6.5,
+      "reason": "Giải thích chi tiết bằng tiếng Việt: từ vựng nào còn cơ bản, lặp lại từ các body trước hay dùng sai collocation khiến mất điểm.",
+      "evidence": ["Trích dẫn từ/cụm từ bị trừ điểm"]
+    },
+    "gra": {
+      "band": 7.0,
+      "reason": "Giải thích chi tiết bằng tiếng Việt: lỗi ngữ pháp hoặc lý do thiếu đa dạng cấu trúc câu phức gây mất điểm.",
+      "evidence": ["Trích dẫn câu/lỗi gây mất điểm"]
+    }
+  },
+  "crossBodyFeedback": "Nhận xét chuyên sâu bằng tiếng Việt về sự liên kết giữa Body hiện tại với các Body trước đó (và định hướng cho Body sau nếu còn): từ nối chuyển đoạn, sự nhất quán thì/dữ liệu, tránh trùng lặp ý/từ.",
   "grammarErrors": [
-    { "original": "...", "correction": "...", "explanation": "..." }
+    {
+      "original": "Cụm từ/câu sai",
+      "correction": "Cách sửa chuẩn",
+      "explanation": "Giải thích bản chất lỗi ngữ pháp bằng tiếng Việt"
+    }
   ],
   "vocabularyTips": [
-    { "studentWord": "...", "betterAlternative": "...", "reason": "..." }
+    {
+      "studentWord": "Từ/cụm từ còn đơn giản hoặc lặp",
+      "betterAlternative": "Từ/cụm từ học thuật Band 7.5–8.5 thay thế",
+      "reason": "Giải thích sắc thái và lý do nâng cấp bằng tiếng Việt"
+    }
   ],
-  "structureFeedback": "...",
-  "correctedSentence": "..."
-}`;
+  "generalFeedback": "Tổng kết ngắn gọn (2–4 câu) bằng tiếng Việt: Body này đã đạt chuẩn Band 7.5 chưa và cần ưu tiên sửa điểm nào nhất.",
+  "modelUpgrade": "CHỈ viết 1 phiên bản nâng cấp Band 8.0+ hoàn chỉnh cho Body này (để tham khảo sau khi đạt)."
+}
+`;
 
-    const fallbackModels = GEMINI_FALLBACK_MODELS;
-    let analysis: any;
-    const errors: string[] = [];
-
-    for (const modelName of fallbackModels) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent(prompt);
-        if (result) {
-          let text = result.response.text();
-          text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
-          const first = text.indexOf('{');
-          const last = text.lastIndexOf('}');
-          if (first !== -1 && last !== -1 && last > first) {
-            text = text.substring(first, last + 1);
-          }
-          analysis = JSON.parse(text);
-          console.log(`[task1-grade] Đã dùng thành công model: ${modelName}`);
-          break;
-        }
-      } catch (e: any) {
-        errors.push(`[${modelName}]: ${e.message}`);
-        console.warn(`[task1-grade] Model ${modelName} failed: ${e.message}`);
+    const { data } = await generateJsonWithFallback(prompt, `task1-grade:body-${bodyIndex + 1}`, (parsed) => {
+      if (!parsed || !parsed.criteria) {
+        throw new Error('AI trả về thiếu trường criteria');
       }
-    }
+      return normalizeGradeResult(parsed);
+    });
 
-    if (!analysis) {
-      throw new Error('Tất cả mô hình đều đang bận: ' + errors.join(' | '));
-    }
-
-    return NextResponse.json(analysis);
+    return NextResponse.json(data, { status: 200 });
   } catch (error: any) {
     console.error('[task1-grade] Error:', error);
-    const msg = error?.message || String(error);
-    const isQuotaError = msg.includes('429') || msg.includes('Quota exceeded') || msg.includes('Too Many Requests');
-    const friendlyMsg = isQuotaError
-      ? 'Hệ thống AI đang tạm thời đạt giới hạn lượt chấm (Rate Limit). Vui lòng đợi khoảng 15 giây rồi chấm lại nhé.'
-      : msg;
-    return NextResponse.json({ error: friendlyMsg }, { status: 500 });
+    const { message, status } = formatGeminiError(error, 'Lỗi chấm điểm Task 1: ');
+    return NextResponse.json({ error: message }, { status });
   }
-}
-
-function getSentenceRole(index: number): string {
-  const roles: Record<number, string> = {
-    0: 'Overview sentence — introduce what the chart shows',
-    1: 'General trend / most striking feature',
-    2: 'Specific data point 1 (highest/lowest/dominant)',
-    3: 'Specific data point 2 or comparison',
-    4: 'Another comparison or supporting detail',
-    5: 'Trend or change over time',
-    6: 'Contrast or exception',
-    7: 'Additional notable figure',
-    8: 'Summarizing pattern or concluding observation',
-    9: 'Final overall comment or clincher',
-  };
-  return roles[index] ?? `Supporting detail (sentence ${index + 1})`;
 }
