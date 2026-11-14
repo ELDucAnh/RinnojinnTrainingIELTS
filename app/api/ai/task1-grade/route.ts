@@ -94,27 +94,27 @@ ${previousBodiesText}
 ${cleanContent}
 """
 
-=== YÊU CẦU CHẤM ĐIỂM CHUẨN IELTS BAND 7.5 (4 TIÊU CHÍ) ===
-Hãy chấm đoạn văn trên theo ĐÚNG 4 tiêu chí IELTS Academic Writing Task 1:
-1. "task" — Task Achievement (TA):
-   - Body 1 (Intro): Có paraphrase chính xác ngữ cảnh, đối tượng, địa điểm, thời gian, đơn vị của biểu đồ không? Nếu copy nguyên xi đề bài hoặc sai thông tin -> trừ điểm nặng (<= 6.5).
-   - Body 2 (Overview): Có nêu được bức tranh tổng quan và ít nhất 2 xu hướng/đặc điểm nổi bật nhất không? Có lỡ chèn số liệu chi tiết quá mức vào Overview không?
-   - Body 3 & Body 4 (Detail 1 & 2): Có báo cáo chính xác 100% số liệu/bước/vị trí trong dữ liệu biểu đồ gốc không? Có chọn lọc, nhóm thông tin và so sánh rõ ràng không, hay chỉ liệt kê máy móc? Có bị lặp lại thông tin đã viết ở Body trước không?
-2. "cc" — Coherence and Cohesion (CC):
-   - Các câu bên trong Body có liên kết logic, dùng phép quy chiếu (this, these, respectively, the former...) và từ nối tự nhiên không?
-   - LIÊN KẾT VỚI CÁC BODY KHÁC: Body hiện tại có nối mạch tự nhiên với các body đã viết trước đó không (VD: Body 2 Overview chuyển từ Intro, Body 3 mở đầu phân tích chi tiết, Body 4 nối/đối chiếu mượt với Body 3 và khớp với Overview)?
+=== YÊU CẦU CHẤM ĐIỂM CHUẨN IELTS (ĐÁNH CỰC GẮT VÀO 2 TIÊU CHÍ TA & CC ĐỂ GÁNH ĐIỂM > 8.0) ===
+Học viên dùng **TA** và **CC** để gánh điểm > 8.0 trong khi luyện nâng **LR & GRA**. Vì vậy, hãy đóng vai giám khảo Cambridge KHẮT KHE TỘT ĐỘ với riêng **TA** và **CC** (chỉ cho 8.0–9.0 khi thực sự xuất sắc, soi mọi lỗ hổng nhỏ):
+
+1. "task" — Task Achievement (TA) [CHẤM CỰC GẮT]:
+   - Body 1 (Intro): BẮT BUỘC paraphrase trôi chảy và đủ 100% các chiều thông tin (loại biểu đồ, đối tượng, đơn vị đo, địa điểm/nhóm, mốc thời gian đầy đủ). Thiếu 1 chiều thông tin hoặc copy > 3 từ liên tiếp từ đề -> TRẦN TA <= 6.5–7.0.
+   - Body 2 (Overview): BẮT BUỘC nêu đủ 2 tầng tổng quan (xu hướng/thứ bậc chính + điểm tương phản/ngoại lệ/bước ngoặt nổi bật nhất). Thiếu điểm nổi bật thứ 2 hoặc lỡ chèn số liệu cụ thể -> TRẦN TA <= 7.0.
+   - Body 3 & Body 4 (Detail 1 & 2): BẮT BUỘC gom nhóm thông minh, đối chiếu định lượng sắc bén (gấp mấy lần, chênh lệch, điểm cắt/đỉnh-đáy) và ĐÚNG TUYỆT ĐỐI 100% số liệu trong 'chartData'. Nếu liệt kê số liệu máy móc không so sánh, sai bất kỳ con số/nhãn nào, hoặc lặp lại thông tin của Body trước -> TRẦN TA <= 6.5–7.0.
+2. "cc" — Coherence and Cohesion (CC) [CHẤM CỰC GẮT]:
+   - Chuẩn Band 8.0–9.0 đòi hỏi "liên kết tàng hình" (referencing 'this figure', 'respectively', 'the former/latter', 'mirroring this pattern', 'within the same timeframe') và tiến trình ý hoàn hảo từ câu mở đoạn đến số liệu chứng minh.
+   - Lạm dụng từ nối liệt kê máy móc đầu câu (Firstly, Secondly, Moreover, In addition, In conclusion) hoặc chuyển câu gượng ép -> TRẦN CC <= 7.0.
+   - LIÊN KẾT GIỮA CÁC BODY: Kiểm tra gắt sự kết nối với 'previousBodies' (Body 2 phải nối mượt từ Intro; Body 3 phải mở đúng mạch nhóm ý từ Overview; Body 4 phải đối chiếu/chuyển ý mượt với Body 3). Rời rạc hoặc đứt mạch -> TRẦN CC <= 7.0.
 3. "lr" — Lexical Resource (LR):
-   - Từ vựng mô tả biểu đồ/quy trình/bản đồ có chính xác, mang tính học thuật (Band 7.5+ collocations), tránh lặp từ trong nội bộ Body và so với các Body trước?
-   - Từ vựng quá đơn giản/thông thường (vd chỉ dùng "increase, decrease, big, small, good") -> KHÔNG thể đạt 7.5+.
+   - Chấm chuẩn xác thực tế theo IELTS Band Descriptors (từ 7.0–9.0 nếu collocations & từ vựng mô tả xu hướng/so sánh/tỷ lệ học thuật chính xác, tránh lặp; dưới 7.0 nếu còn từ vựng sơ đẳng như "increase/decrease, big/small, good" lặp đi lặp lại).
 4. "gra" — Grammatical Range and Accuracy (GRA):
-   - Có sử dụng đa dạng cấu trúc câu phức (mệnh đề quan hệ, mệnh đề phân từ, cấu trúc so sánh nâng cao, bị động chuẩn cho process/map, cấu trúc "while/whereas/with + V-ing/N") một cách tự nhiên và chính xác không?
-   - Có chia đúng thì (quá khứ/hiện tại/tương lai) nhất quán với các Body trước không?
-   - Nếu toàn câu đơn giản hoặc còn nhiều lỗi ngữ pháp/giới từ/mạo từ/dấu câu -> dưới 7.5.
+   - Chấm chuẩn xác thực tế: đa dạng câu phức (mệnh đề quan hệ, phân từ, cấu trúc so sánh nâng cao, bị động chuẩn cho process/map, "while/whereas/with + V-ing/N"), chia đúng thì nhất quán với 'previousBodies', sạch lỗi mạo từ/giới từ/chủ-vị.
 
 KIỂM TRA ĐẶC BIỆT:
-- Nếu học viên viết bằng tiếng Việt, viết linh tinh, hoặc lạc đề hoàn toàn -> chấm <= 4.0 cho các tiêu chí liên quan.
-- Thang điểm mỗi tiêu chí là 0.0 đến 9.0 (chỉ dùng bước 0.5: ví dụ 5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0).
-- KHÔNG chấm lỏng tay để cho qua nếu chưa đạt chất lượng Band 7.5 thực sự, nhưng cũng KHÔNG dìm điểm vô lý nếu bài thực sự đạt chuẩn Band 7.5–8.5.
+- Nếu học viên viết tiếng Việt, viết linh tinh, hoặc lạc đề -> <= 4.0.
+- Thang điểm mỗi tiêu chí từ 0.0 đến 9.0 (bước 0.5).
+- Bắt buộc chỉ rõ từng lỗi khiến TA và CC mất điểm (nếu < 8.5) kèm trích dẫn cụ thể để học viên sửa đến khi TA/CC thực sự xứng đáng > 8.0.
+- Không chấm nương tay TA & CC, đồng thời giữ chuẩn công bằng mốc >= 7.5 overall (không tiêu chí nào < 7.0) để qua Body.
 
 YÊU CẦU ĐẦU RA JSON (BẮT BUỘC CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG MARKDOWN):
 {
@@ -172,7 +172,7 @@ Lưu ý: Hãy viết nhận xét súc tích, đúng trọng tâm (1–2 câu m�
       },
       {
         temperature: 0.35,
-        maxOutputTokens: 2200,
+        maxOutputTokens: 2500,
         perModelTimeoutMs: 20_000,
         totalBudgetMs: 50_000,
       }

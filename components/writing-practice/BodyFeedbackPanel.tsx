@@ -23,6 +23,7 @@ interface BodyFeedbackPanelProps {
   isGrading: boolean;
   gradeError: string;
   gradeResult: BodyGradeResult | null;
+  accent?: 'indigo' | 'emerald' | 'orange';
   onFocusEditor: () => void;
   onNextBody: () => void;
   onViewHistory: () => void;
@@ -35,19 +36,29 @@ export function BodyFeedbackPanel({
   isGrading,
   gradeError,
   gradeResult,
+  accent = 'indigo',
   onFocusEditor,
   onNextBody,
   onViewHistory,
 }: BodyFeedbackPanelProps) {
   const [showUpgrade, setShowUpgrade] = useState(false);
 
+  const isOrange = accent === 'orange';
+
   if (isGrading) {
     return (
-      <div className="flex items-center gap-3 p-5 bg-[var(--card)] rounded-2xl border border-indigo-100 shadow-sm animate-fade-in">
-        <Loader2 size={20} className="animate-spin text-indigo-600 flex-shrink-0" />
+      <div
+        className={`flex items-center gap-3 p-5 bg-[var(--card)] rounded-2xl border shadow-sm animate-fade-in ${isOrange ? 'border-orange-200/80' : accent === 'emerald' ? 'border-emerald-100' : 'border-indigo-100'
+          }`}
+      >
+        <Loader2
+          size={20}
+          className={`animate-spin flex-shrink-0 ${isOrange ? 'text-orange-500' : accent === 'emerald' ? 'text-emerald-600' : 'text-indigo-600'
+            }`}
+        />
         <div>
           <p className="font-bold text-gray-800 text-sm">
-            AI đang chấm Body {bodyIndex + 1}/{totalBodies} theo chuẩn IELTS Band 7.5...
+            AI đang chấm Body {bodyIndex + 1}/{totalBodies} (siết chặt {taskType === 'task1' ? 'TA & CC' : 'TR & CC'} chuẩn Band 8.0+)...
           </p>
           <p className="text-xs text-gray-500 mt-0.5">
             Đang đánh giá 4 tiêu chí ({taskType === 'task1' ? 'TA' : 'TR'}, CC, LR, GRA) và sự liên kết với các body trước đó
@@ -90,11 +101,10 @@ export function BodyFeedbackPanel({
     <div className="flex flex-col gap-4 bg-[var(--card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden animate-fade-in">
       {/* Header score banner */}
       <div
-        className={`flex flex-col sm:flex-row sm:items-center gap-4 p-5 text-white bg-gradient-to-r ${
-          passed
+        className={`flex flex-col sm:flex-row sm:items-center gap-4 p-5 text-white bg-gradient-to-r ${passed
             ? 'from-emerald-600 via-emerald-500 to-teal-500'
             : 'from-rose-600 via-red-500 to-amber-500'
-        }`}
+          }`}
       >
         <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex flex-col items-center justify-center flex-shrink-0 border border-white/25">
           <span className="text-2xl font-black leading-none">{gradeResult.overallBand.toFixed(1)}</span>
@@ -137,13 +147,12 @@ export function BodyFeedbackPanel({
               return (
                 <div
                   key={crit.key}
-                  className={`rounded-xl p-3.5 border flex flex-col gap-2 ${
-                    is75Plus
+                  className={`rounded-xl p-3.5 border flex flex-col gap-2 ${is75Plus
                       ? 'bg-emerald-50/50 border-emerald-200'
                       : is70
-                      ? 'bg-amber-50/60 border-amber-200'
-                      : 'bg-red-50/60 border-red-200'
-                  }`}
+                        ? 'bg-amber-50/60 border-amber-200'
+                        : 'bg-red-50/60 border-red-200'
+                    }`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
@@ -151,18 +160,16 @@ export function BodyFeedbackPanel({
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                          is75Plus
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${is75Plus
                             ? 'bg-emerald-100 text-emerald-800'
                             : 'bg-red-100 text-red-700'
-                        }`}
+                          }`}
                       >
                         {is75Plus ? 'Đạt ≥ 7.5' : 'Mất điểm (< 7.5)'}
                       </span>
                       <span
-                        className={`text-sm font-black px-2 py-0.5 rounded-lg text-white ${
-                          is75Plus ? 'bg-emerald-600' : is70 ? 'bg-amber-500' : 'bg-red-500'
-                        }`}
+                        className={`text-sm font-black px-2 py-0.5 rounded-lg text-white ${is75Plus ? 'bg-emerald-600' : is70 ? 'bg-amber-500' : 'bg-red-500'
+                          }`}
                       >
                         {b.toFixed(1)}
                       </span>
@@ -188,10 +195,15 @@ export function BodyFeedbackPanel({
         </div>
 
         {/* Cross-body Coherence */}
-        <div className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200 flex items-start gap-2.5">
-          <Link2 size={16} className="text-indigo-600 flex-shrink-0 mt-0.5" />
-          <div className="text-xs text-indigo-950 leading-relaxed">
-            <p className="font-extrabold text-indigo-800 mb-0.5">
+        <div
+          className={`p-3.5 rounded-xl border flex items-start gap-2.5 ${isOrange
+              ? 'bg-orange-50/70 border-orange-200/80'
+              : 'bg-indigo-50/70 border-indigo-200'
+            }`}
+        >
+          {!isOrange && <Link2 size={16} className="text-indigo-600 flex-shrink-0 mt-0.5" />}
+          <div className={`text-xs leading-relaxed ${isOrange ? 'text-orange-950' : 'text-indigo-950'}`}>
+            <p className={`font-extrabold mb-0.5 ${isOrange ? 'text-orange-800' : 'text-indigo-800'}`}>
               Liên kết với các Body khác trong bài
             </p>
             <p>{gradeResult.crossBodyFeedback}</p>
@@ -245,7 +257,10 @@ export function BodyFeedbackPanel({
                       {tip.studentWord}
                     </span>
                     <span className="text-gray-400">→</span>
-                    <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-800 rounded font-bold">
+                    <span
+                      className={`px-1.5 py-0.5 rounded font-bold ${isOrange ? 'bg-orange-100 text-orange-800' : 'bg-indigo-100 text-indigo-800'
+                        }`}
+                    >
                       {tip.betterAlternative}
                     </span>
                   </div>

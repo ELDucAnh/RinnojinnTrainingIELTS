@@ -17,6 +17,7 @@ interface CompletedEssayDetailsProps {
   fullEssay: string;
   bodies: CompletedBody[];
   overallBand: number;
+  accent?: 'indigo' | 'emerald' | 'orange';
   onSaveToWritingSamples?: () => void;
   savedToWriting?: boolean;
 }
@@ -26,9 +27,11 @@ export function CompletedEssayDetails({
   fullEssay,
   bodies,
   overallBand,
+  accent = 'indigo',
   onSaveToWritingSamples,
   savedToWriting = false,
 }: CompletedEssayDetailsProps) {
+  const isOrange = accent === 'orange';
   const [copied, setCopied] = useState(false);
   const [expandedBodyIdx, setExpandedBodyIdx] = useState<number | null>(null);
 
@@ -73,7 +76,12 @@ export function CompletedEssayDetails({
                 type="button"
                 onClick={onSaveToWritingSamples}
                 disabled={savedToWriting}
-                className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition-colors disabled:opacity-60 bg-white border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition-colors disabled:opacity-60 bg-white ${isOrange
+                    ? 'border-orange-200 text-orange-700 hover:bg-orange-50'
+                    : accent === 'emerald'
+                      ? 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                      : 'border-indigo-200 text-indigo-700 hover:bg-indigo-50'
+                  }`}
               >
                 {savedToWriting ? <Check size={13} /> : <Save size={13} />}
                 {savedToWriting ? 'Đã lưu vào Kho Bài mẫu' : 'Lưu vào Bài mẫu Writing'}
@@ -175,7 +183,12 @@ export function CompletedEssayDetails({
                     </div>
 
                     {b.grade.crossBodyFeedback && (
-                      <div className="text-xs bg-indigo-50/70 border border-indigo-100 rounded-lg p-2.5 text-indigo-900">
+                      <div
+                        className={`text-xs border rounded-lg p-2.5 ${isOrange
+                            ? 'bg-orange-50/70 border-orange-100 text-orange-950'
+                            : 'bg-indigo-50/70 border-indigo-100 text-indigo-900'
+                          }`}
+                      >
                         <span className="font-bold">Liên kết Body: </span>
                         {b.grade.crossBodyFeedback}
                       </div>

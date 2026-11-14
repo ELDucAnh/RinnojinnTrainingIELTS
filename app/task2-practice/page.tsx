@@ -365,7 +365,7 @@ export default function Task2PracticePage() {
           Luyện IELTS Writing Task 2
         </h1>
         <p className="text-gray-600 max-w-2xl z-10 text-[13px] leading-relaxed">
-          Nhập đề bài Task 2 của bạn — AI phân tích đề & gợi ý <b>dàn bài 5 Body bằng tiếng Việt</b>. Viết & dịch tiếng Anh từng Body — AI chấm chuẩn <b>IELTS Band 7.5</b> (TR, CC, LR, GRA) có liên kết giữa các Body. Hoàn tất đủ <b>5/5 Body</b> mới lưu vào bộ nhớ trình duyệt.
+          Nhập đề bài Task 2 của bạn — AI phân tích đề & gợi ý <b>dàn bài 5 Body chuẩn Band 8.0+</b> (tối ưu <b>TR & CC</b> để gánh điểm — bạn tập trung phát triển <b>LR & GRA</b>). Chấm gắt từng Body mốc <b>Band 7.5+</b> trước khi lưu vào trình duyệt.
         </p>
 
         <div className="flex gap-2 bg-white/75 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-gray-200/60 z-10">
@@ -655,6 +655,7 @@ export default function Task2PracticePage() {
                   isGrading={isGrading}
                   gradeError={gradeError}
                   gradeResult={gradeResult}
+                  accent="emerald"
                   onFocusEditor={() => {
                     textareaRef.current?.focus();
                     textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -790,6 +791,7 @@ export default function Task2PracticePage() {
                     fullEssay={selectedSession.fullEssay}
                     bodies={selectedSession.bodies}
                     overallBand={selectedSession.overallBand}
+                    accent="emerald"
                     onSaveToWritingSamples={() => handleSaveSessionToWriting(selectedSession)}
                     savedToWriting={!!savedToWritingIds[selectedSession.id]}
                   />

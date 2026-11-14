@@ -146,25 +146,33 @@ function resolveChartType(reqType?: string, topic?: string): ValidType {
 }
 
 const OUTLINE_INSTRUCTIONS = `
-4-BODY VIETNAMESE OUTLINE ("outline", EXACTLY 4 objects, bodyIndex 0..3) at IELTS Band 7.5+ standard:
-- bodyIndex 0: Introduction (Mở bài — Paraphrase đề bài: loại biểu đồ, đối tượng, địa điểm, thời gian, đơn vị).
-- bodyIndex 1: Overview (Tổng quan — 2–3 xu hướng/điểm nổi bật nhất; KHÔNG chèn số liệu chi tiết).
-- bodyIndex 2: Body 3 — Detail 1 (Nhóm thông tin 1 kèm số liệu/bước/vị trí cụ thể từ dữ liệu).
-- bodyIndex 3: Body 4 — Detail 2 (Nhóm còn lại kèm số liệu đối chiếu & cách nối mạch với Body 3).
+4-BODY VIETNAMESE OUTLINE ("outline", EXACTLY 4 objects, bodyIndex 0..3) engineered to guarantee **TA >= 8.5 and CC >= 8.5** so the learner only focuses on developing Vocabulary (LR) & Grammar (GRA):
+- bodyIndex 0 — Introduction (Mở bài chuẩn xác 100% TA):
+  * Liệt kê đủ mọi chiều thông tin bắt buộc từ biểu đồ để paraphrase KHÔNG sót chi tiết nào: loại biểu đồ, đối tượng đo, đơn vị đo, địa điểm/nhóm, đầy đủ mốc thời gian.
+  * Chỉ rõ cách đổi cấu trúc diễn đạt để tuyệt đối KHÔNG chép lại nguyên cụm từ đề bài.
+- bodyIndex 1 — Overview (Tổng quan "ăn điểm Band 8.5–9.0 TA"):
+  * Tổng hợp đúng 2 tầng nhận định vĩ mô sắc bén: (1) xu hướng/thứ bậc chi phối toàn cục VÀ (2) điểm đối lập nổi bật / bước ngoặt / ngoại lệ đáng chú ý nhất (hoặc cấu trúc giai đoạn đầu-cuối với Process, chuyển biến cốt lõi với Map).
+  * Nhấn mạnh TUYỆT ĐỐI KHÔNG chèn số liệu chi tiết vào Overview.
+- bodyIndex 2 — Body 3: Detail Paragraph 1 (Nhóm phân tích chiến lược 1):
+  * Gom nhóm thông minh theo logic dữ liệu (KHÔNG liệt kê máy móc rời rạc): chỉ rõ tiêu chí gom nhóm (VD: nhóm dẫn đầu / xu hướng tăng / nửa đầu quy trình / khu vực phía Bắc).
+  * Trích CHÍNH XÁC từng con số/tỉ lệ/mốc đối chiếu (gấp bao nhiêu lần, chênh lệch bao nhiêu, đạt đỉnh/đáy ở đâu) + câu mở nối tự nhiên từ Overview.
+- bodyIndex 3 — Body 4: Detail Paragraph 2 (Nhóm đối chiếu & hoàn tất bức tranh dữ liệu):
+  * Xử lý nhóm dữ liệu còn lại theo logic tương phản/bổ sung, chỉ rõ điểm giao cắt, hội tụ, phân kỳ hoặc ngoại lệ đối chiếu NGƯỢC LẠI với Body 3 kèm số liệu chính xác 100%.
+  * Chỉ rõ phép quy chiếu/chuyển ý tự nhiên từ Body 3 (tránh "Secondly/Moreover" máy móc).
 
-RULES (concise & fast):
-- Write ALL fields ("role", "viGuide", "keyPoints", "linkingTip") in crisp VIETNAMESE.
-- DO NOT give sample English sentences! Only ideas, numbers, and Vietnamese cues so the learner translates themselves.
-- "viGuide": 2–3 short bullet steps tailored to THIS chart.
-- "keyPoints": 2–3 concrete numbers/comparisons/keywords from THIS chart.
-- "linkingTip": 1 concise Vietnamese sentence explaining transition/link with adjacent bodies.
+RULES:
+- Write ALL fields ("role", "viGuide", "keyPoints", "linkingTip") in sharp, insightful VIETNAMESE.
+- DO NOT provide pre-written English sentences! Only ideas, exact data figures, comparison angles, and structural cues in Vietnamese.
+- "viGuide": 3 crisp, high-impact analytical steps tailored to THIS exact chart (engineering TA & CC > 8.0).
+- "keyPoints": 3–4 concrete exact numbers/comparisons/structural hooks from THIS chart.
+- "linkingTip": 1 specific Vietnamese cohesion cue explaining the exact logical/referential bridge with adjacent bodies.
 
 "outline" shape (EXACTLY 4 items):
 [
-  { "bodyIndex": 0, "role": "Introduction — Mở bài (Paraphrase đề bài)", "viGuide": ["Bước 1...", "Bước 2..."], "keyPoints": ["Ý 1...", "Ý 2..."], "linkingTip": "1 câu liên kết..." },
-  { "bodyIndex": 1, "role": "Overview — Tổng quan xu hướng chính", "viGuide": ["..."], "keyPoints": ["..."], "linkingTip": "..." },
-  { "bodyIndex": 2, "role": "Body 3 — Thân bài 1 (Chi tiết nhóm 1)", "viGuide": ["..."], "keyPoints": ["..."], "linkingTip": "..." },
-  { "bodyIndex": 3, "role": "Body 4 — Thân bài 2 (Chi tiết nhóm 2 & đối chiếu)", "viGuide": ["..."], "keyPoints": ["..."], "linkingTip": "..." }
+  { "bodyIndex": 0, "role": "Introduction — Mở bài (Paraphrase chuẩn xác đủ chiều dữ liệu)", "viGuide": ["Bước 1...", "Bước 2...", "Bước 3..."], "keyPoints": ["Dữ kiện 1...", "Dữ kiện 2...", "Dữ kiện 3..."], "linkingTip": "1 câu liên kết mạch bài..." },
+  { "bodyIndex": 1, "role": "Overview — Tổng quan chiến lược 2 tầng xu hướng", "viGuide": ["..."], "keyPoints": ["..."], "linkingTip": "..." },
+  { "bodyIndex": 2, "role": "Body 3 — Thân bài 1 (Gom nhóm & đối chiếu số liệu nhóm 1)", "viGuide": ["..."], "keyPoints": ["..."], "linkingTip": "..." },
+  { "bodyIndex": 3, "role": "Body 4 — Thân bài 2 (Nhóm còn lại & đối chiếu chéo với Body 3)", "viGuide": ["..."], "keyPoints": ["..."], "linkingTip": "..." }
 ]
 `;
 
@@ -211,8 +219,8 @@ Return ONLY valid JSON:
         },
         {
           temperature: 0.6,
-          maxOutputTokens: 1800,
-          perModelTimeoutMs: 16_000,
+          maxOutputTokens: 2100,
+          perModelTimeoutMs: 18_000,
           totalBudgetMs: 50_000,
         }
       );
@@ -270,7 +278,7 @@ ${OUTLINE_INSTRUCTIONS}`;
       },
       {
         temperature: chartOnly ? 0.7 : 0.65,
-        maxOutputTokens: chartOnly ? 1400 : 2600,
+        maxOutputTokens: chartOnly ? 1400 : 2800,
         perModelTimeoutMs: chartOnly ? 16_000 : 20_000,
         totalBudgetMs: 50_000,
       }

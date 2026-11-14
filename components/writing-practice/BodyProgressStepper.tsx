@@ -7,7 +7,7 @@ interface BodyProgressStepperProps {
   outline: OutlineBodyItem[];
   completedBodies: CompletedBody[];
   currentBodyIndex: number;
-  accent?: 'indigo' | 'emerald';
+  accent?: 'indigo' | 'emerald' | 'orange';
 }
 
 export function BodyProgressStepper({
@@ -22,11 +22,15 @@ export function BodyProgressStepper({
   const activeStyle =
     accent === 'emerald'
       ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200/70'
+      : accent === 'orange'
+      ? 'bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-200/70'
       : 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200/70';
 
   const progressFill =
     accent === 'emerald'
       ? 'from-emerald-500 to-teal-500'
+      : accent === 'orange'
+      ? 'from-orange-400 to-amber-400'
       : 'from-indigo-500 to-purple-500';
 
   const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;

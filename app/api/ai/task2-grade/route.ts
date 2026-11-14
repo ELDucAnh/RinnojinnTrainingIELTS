@@ -108,27 +108,27 @@ ${previousBodiesText}
 ${cleanContent}
 """
 
-=== YÊU CẦU CHẤM ĐIỂM CHUẨN IELTS BAND 7.5 (4 TIÊU CHÍ) ===
-Hãy chấm đoạn văn trên theo ĐÚNG 4 tiêu chí IELTS Writing Task 2:
-1. "task" — Task Response (TR):
-   - Body 1 (Intro): Có paraphrase đề bài tự nhiên (không copy nguyên văn), giới thiệu đúng vấn đề và có Thesis Statement rõ ràng trả lời trực diện tất cả các vế câu hỏi không?
-   - Body 2, 3, 4 (Thân bài 1, 2, 3): Có Topic Sentence rõ ràng bám sát đề và khớp với Thesis Statement ở Body 1 không? Ý tưởng có được phát triển sâu (giải thích "tại sao/như thế nào" + ví dụ/hệ quả thuyết phục) hay chỉ khẳng định chung chung, chưa tới? Có bị lạc đề hoặc lặp lại ý của Body trước không?
-   - Body 5 (Conclusion): Có tóm tắt chính xác các luận điểm đã nêu ở Body 2–4 và khẳng định lại lập trường ở Body 1 không? Có lỡ đưa ý tưởng hoàn toàn mới vào kết bài không (nếu có -> trừ điểm TR)?
-2. "cc" — Coherence and Cohesion (CC):
-   - Mạch lập luận bên trong Body có rõ ràng (Point -> Explain -> Example/Impact), dùng referencing (this, such, these, thereby...) tự nhiên không lạm dụng máy móc ("Firstly, Secondly, Moreover..." sáo rỗng)?
-   - LIÊN KẾT VỚI CÁC BODY KHÁC: Đoạn hiện tại có kết nối mượt mà, logic và nhất quán quan điểm với các Body trước đó (previousBodies) không?
+=== YÊU CẦU CHẤM ĐIỂM CHUẨN IELTS (ĐÁNH CỰC GẮT VÀO 2 TIÊU CHÍ TR & CC ĐỂ GÁNH ĐIỂM > 8.0) ===
+Học viên dùng **TR** và **CC** để gánh điểm > 8.0 trong khi luyện nâng **LR & GRA**. Vì vậy, hãy đóng vai giám khảo Cambridge KHẮT KHE TỘT ĐỘ với riêng **TR** và **CC** (chỉ cho 8.0–9.0 khi lập luận và mạch kết nối thực sự đạt chuẩn Band 8.0–9.0):
+
+1. "task" — Task Response (TR) [CHẤM CỰC GẮT]:
+   - Body 1 (Intro): BẮT BUỘC paraphrase sắc gọn (không copy cụm từ đề) + Thesis Statement trả lời TRỰC DIỆN tất cả các vế câu hỏi, nêu rõ lập trường/mức độ và lộ trình các thân bài. Nếu mở bài sáo rỗng (*"Nowadays many people think..."*), Thesis chung chung (*"this essay will discuss both views"*), hoặc thiếu 1 vế câu hỏi -> TRẦN TR <= 6.5.
+   - Body 2, 3, 4 (Thân bài 1, 2, 3): BẮT BUỘC hội tụ đủ: Topic Sentence bám sát Thesis Body 1 -> Cơ chế nhân-quả SÂU ("tại sao & bằng cách nào thực sự xảy ra") -> Ví dụ/bối cảnh thực tế thuyết phục -> Chốt luận điểm. Nếu khẳng định chung chung chưa giải thích tới nơi tới chốn, bịa số liệu thống kê ảo ("80% of people..."), trùng ý với 'previousBodies', hoặc Body 4 phản biện nửa vời / tự mâu thuẫn Thesis Body 1 -> TRẦN TR <= 6.5–7.0.
+   - Body 5 (Conclusion): BẮT BUỘC tổng hợp trọn vẹn mạch Body 2–4 và khẳng định lại Thesis. Đưa BẤT KỲ ý mới nào hoặc tóm tắt thiếu Body 4 -> TRẦN TR <= 6.5.
+2. "cc" — Coherence and Cohesion (CC) [CHẤM CỰC GẮT]:
+   - Chuẩn Band 8.0–9.0 đòi hỏi dòng chảy tư duy tự nhiên, liên kết tinh tế qua quy chiếu & chuỗi từ vựng ("such interventions, this dynamic, consequently, granted... nevertheless"), KHÔNG gãy mạch giữa các câu.
+   - Lạm dụng từ nối liệt kê máy móc đầu câu (Firstly, Secondly, Thirdly, Moreover, Furthermore, In conclusion) -> TRẦN CC <= 7.0.
+   - LIÊN KẾT GIỮA CÁC BODY: Topic Sentence ở Body 2–4 phải phản chiếu đúng lộ trình Thesis của Body 1, chuyển tiếp ý mượt giữa 'previousBodies' và đoạn hiện tại, Body 5 phải tổng hợp liền mạch. Đứt mạch hoặc chuyển đoạn gượng -> TRẦN CC <= 7.0.
 3. "lr" — Lexical Resource (LR):
-   - Có dùng từ vựng học thuật chính xác, collocations tự nhiên (less common lexical items) phù hợp chủ đề không? Có lặp từ nhiều trong Body hoặc lặp lại cách diễn đạt từ các Body trước không?
-   - Từ vựng đơn giản, dịch word-by-word từ tiếng Việt hoặc sai collocation -> dưới 7.5.
+   - Chấm chuẩn xác theo IELTS Band Descriptors: collocations học thuật tự nhiên, ít từ phổ thông lặp lại, không dịch word-by-word từ tiếng Việt hay sai sắc thái từ.
 4. "gra" — Grammatical Range and Accuracy (GRA):
-   - Có sử dụng linh hoạt nhiều cấu trúc câu phức (mệnh đề quan hệ, câu điều kiện, đảo ngữ, mệnh đề phân từ, câu nhượng bộ although/despite, danh động từ/cụm danh từ học thuật) và phần lớn câu không có lỗi?
-   - Còn lỗi chia thì, mạo từ, giới từ, thiếu chủ ngữ/động từ, câu run-on/comma splice hoặc toàn câu đơn giản -> dưới 7.5.
+   - Chấm chuẩn xác: kết hợp linh hoạt câu phức (mệnh đề quan hệ, câu điều kiện, đảo ngữ, phân từ, nhượng bộ, cụm danh từ học thuật) với độ chính xác ngữ pháp, dấu câu, mạo từ, giới từ cao.
 
 KIỂM TRA ĐẶC BIỆT:
-- Nếu học viên viết bằng tiếng Việt, viết quá sơ sài, hoặc lạc đề -> chấm <= 4.0.
-- Thang điểm mỗi tiêu chí từ 0.0 đến 9.0 (chỉ dùng bước 0.5).
-- Bắt buộc nêu rõ bằng tiếng Việt: **Body hiện tại đang bị mất điểm ở tiêu chí nào và vì sao**, trích dẫn cụ thể đoạn/câu/từ trong bài làm gây mất điểm.
-- Không chấm dễ dãi cho qua nếu chưa đạt chất lượng Band 7.5, nhưng công tâm cho 7.5–9.0 nếu thực sự xứng đáng.
+- Nếu học viên viết tiếng Việt, sơ sài, hoặc lạc đề -> <= 4.0.
+- Thang điểm mỗi tiêu chí từ 0.0 đến 9.0 (bước 0.5).
+- Bắt buộc chỉ rõ từng điểm trừ khiến TR và CC chưa chạm >= 8.0–8.5 kèm trích dẫn câu/cụm cụ thể trong bài để học viên khắc phục triệt để.
+- Không chấm nương tay TR & CC, đồng thời giữ chuẩn công bằng mốc >= 7.5 overall (không tiêu chí nào < 7.0) để qua Body.
 
 YÊU CẦU ĐẦU RA JSON (BẮT BUỘC CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG MARKDOWN):
 {
@@ -186,7 +186,7 @@ Lưu ý: Hãy viết nhận xét súc tích, đúng trọng tâm (1–2 câu m�
       },
       {
         temperature: 0.35,
-        maxOutputTokens: 2200,
+        maxOutputTokens: 2500,
         perModelTimeoutMs: 20_000,
         totalBudgetMs: 50_000,
       }

@@ -3,21 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Loader2,
-  Sparkles,
   RefreshCw,
   BarChart2,
-  TrendingUp,
-  PieChart,
-  Table2,
-  Workflow,
-  Map,
   AlertCircle,
-  History,
   Trash2,
-  Search,
   X,
-  SlidersHorizontal,
-  ChevronDown,
   Send,
 } from 'lucide-react';
 import { LoadingScreen } from '@/components/LoadingScreen';
@@ -45,52 +35,33 @@ const TOTAL_BODIES = 4;
 const LS_KEY_V3 = 'task1_sessions_v3';
 const LS_KEY_LEGACY = 'task1_sessions_v2';
 
-const TYPE_META: Record<string, { label: string; color: string }> = {
-  bar: { label: 'Bar Chart', color: '#6366f1' },
-  line: { label: 'Line Graph', color: '#3b82f6' },
-  pie: { label: 'Pie Chart', color: '#ec4899' },
-  table: { label: 'Table', color: '#10b981' },
-  process: { label: 'Process Diagram', color: '#f59e0b' },
-  map: { label: 'Map', color: '#ef4444' },
+const TYPE_META: Record<string, { label: string; short: string }> = {
+  bar: { label: 'Bar Chart', short: 'Bar' },
+  line: { label: 'Line Graph', short: 'Line' },
+  pie: { label: 'Pie Chart', short: 'Pie' },
+  table: { label: 'Table', short: 'Table' },
+  process: { label: 'Process Diagram', short: 'Process' },
+  map: { label: 'Map', short: 'Map' },
 };
 
 const CHART_TYPE_OPTIONS = [
-  { id: 'random', label: 'Ngẫu nhiên', icon: '🎲' },
-  { id: 'bar', label: 'Bar Chart', icon: '📊' },
-  { id: 'line', label: 'Line Graph', icon: '📈' },
-  { id: 'pie', label: 'Pie Chart', icon: '🥧' },
-  { id: 'table', label: 'Table', icon: '📋' },
-  { id: 'process', label: 'Process', icon: '🔄' },
-  { id: 'map', label: 'Map', icon: '🗺️' },
+  { id: 'random', label: 'Ngẫu nhiên' },
+  { id: 'bar', label: 'Bar Chart' },
+  { id: 'line', label: 'Line Graph' },
+  { id: 'pie', label: 'Pie Chart' },
+  { id: 'table', label: 'Table' },
+  { id: 'process', label: 'Process' },
+  { id: 'map', label: 'Map' },
 ];
 
 const SUGGESTED_PROMPTS = [
-  { label: '🥧 Pie: Cơ cấu năng lượng', type: 'pie', topic: 'Tỉ lệ sử dụng các nguồn năng lượng tái tạo và hóa thạch năm 2022' },
-  { label: '🔄 Quy trình: Sản xuất cà phê', type: 'process', topic: 'Quy trình thu hoạch, sơ chế và rang xay cà phê xuất khẩu' },
-  { label: '🗺️ Map: Đô thị hóa thị trấn ven biển', type: 'map', topic: 'Sự thay đổi cơ sở hạ tầng của thị trấn ven biển sau 20 năm phát triển' },
-  { label: '📊 Bar: Chi tiêu giáo dục & y tế', type: 'bar', topic: 'So sánh mức chi tiêu cho y tế và giáo dục ở các nước phát triển' },
-  { label: '📋 Table: Tỉ lệ việc làm theo ngành', type: 'table', topic: 'Bảng số liệu tỉ lệ lao động trong các nhóm ngành kinh tế' },
-  { label: '📈 Line: Lượng phát thải CO2 qua các năm', type: 'line', topic: 'Xu hướng lượng phát thải khí CO2 từ 1990 đến 2020 của các khu vực' },
+  { label: 'Pie: Cơ cấu năng lượng', type: 'pie', topic: 'Tỉ lệ sử dụng các nguồn năng lượng tái tạo và hóa thạch năm 2022' },
+  { label: 'Process: Sản xuất cà phê', type: 'process', topic: 'Quy trình thu hoạch, sơ chế và rang xay cà phê xuất khẩu' },
+  { label: 'Map: Đô thị hóa ven biển', type: 'map', topic: 'Sự thay đổi cơ sở hạ tầng của thị trấn ven biển sau 20 năm phát triển' },
+  { label: 'Bar: Chi tiêu y tế & giáo dục', type: 'bar', topic: 'So sánh mức chi tiêu cho y tế và giáo dục ở các nước phát triển' },
+  { label: 'Table: Tỉ lệ việc làm', type: 'table', topic: 'Bảng số liệu tỉ lệ lao động trong các nhóm ngành kinh tế' },
+  { label: 'Line: Phát thải CO2 qua các năm', type: 'line', topic: 'Xu hướng lượng phát thải khí CO2 từ 1990 đến 2020 của các khu vực' },
 ];
-
-function TypeIcon({ type, size = 15 }: { type: string; size?: number }) {
-  switch (type) {
-    case 'bar':
-      return <BarChart2 size={size} />;
-    case 'line':
-      return <TrendingUp size={size} />;
-    case 'pie':
-      return <PieChart size={size} />;
-    case 'table':
-      return <Table2 size={size} />;
-    case 'process':
-      return <Workflow size={size} />;
-    case 'map':
-      return <Map size={size} />;
-    default:
-      return <BarChart2 size={size} />;
-  }
-}
 
 function loadCompletedSessions(): Task1CompletedSession[] {
   try {
@@ -441,7 +412,6 @@ export default function Task1PracticePage() {
   if (!mounted) return <LoadingScreen />;
 
   const currentMeta = chartData ? TYPE_META[chartData.type] : null;
-  const currentColor = currentMeta?.color ?? '#6366f1';
   const currentOutline = outline[currentBodyIndex];
   const currentWordCount = countWords(inputText);
   const isCurrentBodyLocked = isGrading || !!gradeResult?.passed;
@@ -449,46 +419,52 @@ export default function Task1PracticePage() {
 
   return (
     <div className="flex flex-col gap-5 max-w-5xl mx-auto w-full animate-fade-in pb-16">
-      {/* ── Hero ── */}
-      <div className="relative flex flex-col items-center text-center gap-3 bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 px-6 sm:px-8 pt-7 pb-6 rounded-3xl shadow-lg overflow-hidden border border-indigo-100/60">
+      {/* ── Hero (Soft Warm Orange, minimalist luxury matching Task 2) ── */}
+      <div className="relative flex flex-col items-center text-center gap-3 bg-gradient-to-br from-orange-50 via-amber-50/70 to-orange-50/30 px-6 sm:px-8 pt-7 pb-6 rounded-3xl shadow-lg overflow-hidden border border-orange-200/70">
         <div
           className="absolute inset-0 rounded-3xl pointer-events-none"
           style={{
-            boxShadow: '0 0 0 1.5px rgba(99,102,241,0.22), 0 0 50px 6px rgba(99,102,241,0.09)',
+            boxShadow: '0 0 0 1.5px rgba(249,115,22,0.16), 0 0 50px 6px rgba(251,146,60,0.09)',
           }}
         />
-        <div className="w-12 h-12 bg-white rounded-2xl shadow-md flex items-center justify-center text-indigo-600 z-10 ring-1 ring-indigo-100">
-          <BarChart2 size={24} />
+        <div className="w-12 h-12 bg-white rounded-2xl shadow-md flex items-center justify-center text-orange-500 z-10 ring-1 ring-orange-100">
+          <BarChart2 size={22} />
         </div>
         <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight z-10">
           Luyện IELTS Writing Task 1
         </h1>
         <p className="text-gray-600 max-w-2xl z-10 text-[13px] leading-relaxed">
-          AI tạo đề & gợi ý <b>dàn bài 4 Body bằng tiếng Việt</b>. Bạn tự viết và dịch sang tiếng Anh từng Body — AI chấm chuẩn <b>IELTS Band 7.5</b> (4 tiêu chí TA, CC, LR, GRA) có liên kết giữa các Body. Hoàn thành đủ <b>4/4 Body</b> mới lưu vào bộ nhớ trình duyệt.
+          AI tạo đề & gợi ý <b>dàn bài 4 Body chuẩn Band 8.0+</b> bằng tiếng Việt (tối ưu sẵn <b>TA & CC</b> để gánh điểm — bạn tập trung phát triển <b>LR & GRA</b>). Chấm gắt từng Body mốc <b>Band 7.5+</b> trước khi lưu vào bộ nhớ trình duyệt.
         </p>
 
-        <div className="flex gap-2 bg-white/75 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-gray-200/60 z-10">
+        <div className="flex gap-2 bg-white/80 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-orange-200/60 z-10">
           <button
             type="button"
             onClick={() => setTab('practice')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'practice'
-              ? 'bg-indigo-600 text-white shadow-md'
-              : 'text-gray-500 hover:bg-gray-100'
+            className={`px-5 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'practice'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'text-gray-500 hover:bg-orange-50/70 hover:text-gray-800'
               }`}
           >
-            <BarChart2 size={14} /> Luyện tập
+            Luyện tập
           </button>
           <button
             type="button"
             onClick={() => setTab('history')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'history'
-              ? 'bg-indigo-600 text-white shadow-md'
-              : 'text-gray-500 hover:bg-gray-100'
+            className={`flex items-center gap-1.5 px-5 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'history'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'text-gray-500 hover:bg-orange-50/70 hover:text-gray-800'
               }`}
           >
-            <History size={14} /> Bài đã hoàn tất
+            Bài đã hoàn tất
             {sessions.length > 0 && (
-              <span className="ml-1 bg-indigo-100 text-indigo-700 text-xs font-black px-1.5 rounded-full">
+              <span
+                className={`ml-0.5 text-xs font-black px-1.5 rounded-full ${
+                  tab === 'history'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-orange-100 text-orange-700'
+                }`}
+              >
                 {sessions.length}
               </span>
             )}
@@ -501,20 +477,18 @@ export default function Task1PracticePage() {
         <>
           {/* Customizer & Generator Panel */}
           {!chartData || showCustomizer ? (
-            <div className="bg-[var(--card)] rounded-3xl p-5 md:p-6 shadow-sm border border-indigo-100/80 flex flex-col gap-4 transition-all">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 text-white flex items-center justify-center shadow-sm">
-                    <SlidersHorizontal size={16} />
+            <div className="bg-[var(--card)] rounded-3xl p-5 md:p-6 shadow-sm border border-orange-200/70 flex flex-col gap-4 transition-all">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-orange-600">
+                    Thiết lập đề bài Task 1
                   </span>
-                  <div>
-                    <h2 className="text-base font-extrabold text-gray-800">
-                      Chọn hoặc gõ dạng bài Task 1 để AI tạo đề
-                    </h2>
-                    <p className="text-xs text-gray-400">
-                      AI sẽ sinh biểu đồ kèm dàn bài 4 Body bằng tiếng Việt phù hợp với số liệu
-                    </p>
-                  </div>
+                  <h2 className="text-base font-extrabold text-gray-900 mt-0.5">
+                    Chọn dạng biểu đồ & chủ đề mong muốn
+                  </h2>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    AI sinh dữ liệu biểu đồ kèm dàn ý 4 Body chuẩn Band 8.0+ (TA & CC) bằng tiếng Việt
+                  </p>
                 </div>
                 {chartData && (
                   <button
@@ -535,19 +509,18 @@ export default function Task1PracticePage() {
                       key={opt.id}
                       type="button"
                       onClick={() => setSelectedType(opt.id)}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${isSelected
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md shadow-indigo-200 scale-[1.02]'
-                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-white hover:border-indigo-300 hover:text-indigo-600'
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${isSelected
+                        ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-200/70'
+                        : 'bg-gray-50/80 text-gray-600 border-gray-200 hover:bg-orange-50/50 hover:border-orange-200 hover:text-orange-700'
                         }`}
                     >
-                      <span className="text-sm">{opt.icon}</span>
-                      <span>{opt.label}</span>
+                      {opt.label}
                     </button>
                   );
                 })}
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row gap-2.5">
                 <div className="relative flex-1">
                   <input
                     type="text"
@@ -559,11 +532,8 @@ export default function Task1PracticePage() {
                       }
                     }}
                     placeholder="Gõ dạng bài hoặc chủ đề chi tiết (VD: Pie chart năng lượng, Map quy hoạch, Quy trình làm bánh mì...)"
-                    className="w-full px-4 py-2.5 pl-10 pr-9 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-800 placeholder-gray-400"
+                    className="w-full px-4 py-2.5 pr-9 text-xs sm:text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400/20 focus:border-orange-400 transition-all text-gray-800 placeholder-gray-400"
                   />
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-                    <Search size={15} />
-                  </span>
                   {customTopic && (
                     <button
                       type="button"
@@ -580,9 +550,9 @@ export default function Task1PracticePage() {
                   type="button"
                   onClick={() => generateChart()}
                   disabled={isGenerating}
-                  className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:opacity-95 text-white font-bold rounded-xl shadow-md transition-all hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100 text-xs sm:text-sm flex-shrink-0"
+                  className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl shadow-md shadow-orange-200/60 transition-all hover:scale-[1.01] disabled:opacity-60 disabled:hover:scale-100 text-xs sm:text-sm flex-shrink-0"
                 >
-                  {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                  {isGenerating && <Loader2 size={15} className="animate-spin" />}
                   {isGenerating
                     ? genStep === 'outline'
                       ? 'Bước 2/2: Đang lập dàn ý...'
@@ -594,8 +564,8 @@ export default function Task1PracticePage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[11px] font-bold text-gray-400 flex items-center gap-1">
-                  💡 Gợi ý nhanh:
+                <span className="text-[11px] font-bold text-gray-400 mr-1">
+                  Gợi ý nhanh:
                 </span>
                 {SUGGESTED_PROMPTS.map((s, idx) => (
                   <button
@@ -605,7 +575,7 @@ export default function Task1PracticePage() {
                       setSelectedType(s.type);
                       setCustomTopic(s.topic);
                     }}
-                    className="text-[11px] font-medium px-2.5 py-1 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-colors border border-indigo-100"
+                    className="text-[11px] font-medium px-2.5 py-1 bg-orange-50/70 hover:bg-orange-100/80 text-orange-800 rounded-lg transition-colors border border-orange-200/70"
                   >
                     {s.label}
                   </button>
@@ -614,13 +584,8 @@ export default function Task1PracticePage() {
             </div>
           ) : (
             <div className="bg-[var(--card)] rounded-2xl px-5 py-3 shadow-sm border border-[var(--border)] flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-gray-400">Đang luyện:</span>
-                <span
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm"
-                  style={{ background: currentColor }}
-                >
-                  <TypeIcon type={chartData.type} size={12} />
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold text-white bg-orange-500 shadow-sm flex-shrink-0">
                   {currentMeta?.label}
                 </span>
                 {customTopic && (
@@ -641,26 +606,24 @@ export default function Task1PracticePage() {
                     disabled={isRegenOutline}
                     className="flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-xl transition-colors disabled:opacity-50"
                   >
-                    {isRegenOutline ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                    {isRegenOutline && <Loader2 size={13} className="animate-spin" />}
                     Đổi dàn ý tiếng Việt
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setShowCustomizer(true)}
-                  className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3.5 py-1.5 rounded-xl transition-colors"
+                  className="text-xs font-bold text-orange-700 hover:text-orange-800 bg-orange-50 hover:bg-orange-100 px-3.5 py-1.5 rounded-xl transition-colors"
                 >
-                  <SlidersHorizontal size={13} />
                   Đổi dạng bài
-                  <ChevronDown size={13} />
                 </button>
                 <button
                   type="button"
                   onClick={() => generateChart()}
                   disabled={isGenerating}
-                  className="flex items-center gap-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-3.5 py-1.5 rounded-xl shadow-sm transition-all disabled:opacity-60"
+                  className="flex items-center gap-1.5 text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 px-3.5 py-1.5 rounded-xl shadow-sm transition-all disabled:opacity-60"
                 >
-                  {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                  {isGenerating && <Loader2 size={13} className="animate-spin" />}
                   Đề mới
                 </button>
               </div>
@@ -694,28 +657,19 @@ export default function Task1PracticePage() {
             <div className="flex flex-col gap-5 max-w-4xl mx-auto w-full">
               {/* Chart Card */}
               <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
-                <div
-                  className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100"
-                  style={{ background: currentColor + '12' }}
-                >
-                  <span style={{ color: currentColor }}>
-                    <TypeIcon type={chartData.type} size={14} />
-                  </span>
-                  <span className="font-bold text-sm" style={{ color: currentColor }}>
+                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-orange-100 bg-orange-50/70">
+                  <span className="font-bold text-sm text-orange-900 truncate">
                     {currentMeta?.label} — {chartData.title}
                   </span>
-                  <span
-                    className="ml-auto text-xs font-bold px-2.5 py-0.5 rounded-full text-white"
-                    style={{ background: currentColor }}
-                  >
-                    IELTS Task 1
+                  <span className="ml-auto text-xs font-bold px-2.5 py-0.5 rounded-full text-white bg-orange-500 flex-shrink-0">
+                    IELTS Task 1 · 4 Body
                   </span>
                 </div>
 
                 <div className="px-5 pt-4 pb-4">
-                  <div className="bg-blue-50/70 border border-blue-100 rounded-xl p-4 mb-4">
-                    <p className="text-sm text-gray-800 leading-relaxed">
-                      <span className="font-bold text-blue-800">Đề bài: </span>
+                  <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-4 mb-4">
+                    <p className="text-sm text-gray-800 leading-relaxed font-medium">
+                      <span className="font-bold text-orange-800">Đề bài: </span>
                       {chartData.context}
                     </p>
                   </div>
@@ -733,10 +687,10 @@ export default function Task1PracticePage() {
               </div>
 
               {outline.length < TOTAL_BODIES && isRegenOutline && (
-                <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-indigo-100 p-6 flex items-center justify-center gap-3 text-indigo-700">
+                <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-orange-200/80 p-6 flex items-center justify-center gap-3 text-orange-700">
                   <Loader2 size={20} className="animate-spin flex-shrink-0" />
                   <p className="text-sm font-semibold">
-                    Bước 2/2: Đã tạo xong biểu đồ! AI đang lập dàn ý 4 Body bằng tiếng Việt...
+                    Bước 2/2: Đã tạo xong biểu đồ! AI đang thiết kế dàn ý 4 Body chuẩn Band 8.0+...
                   </p>
                 </div>
               )}
@@ -748,7 +702,7 @@ export default function Task1PracticePage() {
                     outline={outline}
                     completedBodies={completedBodies}
                     currentBodyIndex={currentBodyIndex}
-                    accent="indigo"
+                    accent="orange"
                   />
 
                   {/* Previous passed bodies */}
@@ -761,22 +715,22 @@ export default function Task1PracticePage() {
                       fullOutline={outline}
                       currentBodyIndex={currentBodyIndex}
                       totalBodies={TOTAL_BODIES}
-                      accent="indigo"
+                      accent="orange"
                     />
                   )}
 
                   {/* Writing Editor */}
                   <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-[var(--border)] p-4 sm:p-5 flex flex-col gap-3">
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <span className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">
+                      <div className="flex items-center gap-2.5">
+                        <span className="w-7 h-7 rounded-full bg-orange-500 text-white flex items-center justify-center text-xs font-black">
                           {currentBodyIndex + 1}
                         </span>
                         <div>
                           <p className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
                             Viết tiếng Anh cho Body {currentBodyIndex + 1}/{TOTAL_BODIES}
                           </p>
-                          <p className="text-xs font-bold text-indigo-700">{currentOutline?.role}</p>
+                          <p className="text-xs font-bold text-orange-700">{currentOutline?.role}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-gray-500 font-semibold">
@@ -793,7 +747,7 @@ export default function Task1PracticePage() {
                       ref={textareaRef}
                       rows={6}
                       disabled={isCurrentBodyLocked}
-                      placeholder={`Dựa vào dàn ý tiếng Việt phía trên, hãy tự viết và dịch ${currentOutline?.label || 'Body này'} sang tiếng Anh chuẩn học thuật IELTS Band 7.5+...`}
+                      placeholder={`Dựa vào dàn ý tiếng Việt phía trên, hãy tự viết và dịch ${currentOutline?.label || 'Body này'} sang tiếng Anh chuẩn học thuật Band 8.0+...`}
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       onKeyDown={(e) => {
@@ -801,7 +755,7 @@ export default function Task1PracticePage() {
                           gradeCurrentBody();
                         }
                       }}
-                      className="w-full resize-y text-sm p-3.5 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 outline-none transition-all bg-gray-50/50 focus:bg-white placeholder:text-gray-400 text-gray-800 leading-relaxed disabled:opacity-75 disabled:bg-gray-100/70"
+                      className="w-full resize-y text-sm p-3.5 rounded-xl border border-gray-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 outline-none transition-all bg-gray-50/50 focus:bg-white placeholder:text-gray-400 text-gray-800 leading-relaxed disabled:opacity-75 disabled:bg-gray-100/70"
                     />
 
                     {!gradeResult?.passed && (
@@ -813,13 +767,13 @@ export default function Task1PracticePage() {
                         <button
                           type="button"
                           onClick={gradeCurrentBody}
-                          disabled={!inputText.trim() || isGrading}
-                          className="ml-auto px-5 py-2.5 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-md transition-all disabled:opacity-50 text-sm"
+                          disabled={!inputText.trim() || isGrading || isRegenOutline}
+                          className="ml-auto px-5 py-2.5 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl shadow-md shadow-orange-200/60 transition-all disabled:opacity-50 text-sm"
                         >
                           {isGrading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                           {gradeResult && !gradeResult.passed
                             ? `Gửi AI chấm lại Body ${currentBodyIndex + 1}`
-                            : `Chấm Body ${currentBodyIndex + 1} (Chuẩn Band 7.5)`}
+                            : `Chấm Body ${currentBodyIndex + 1} (Siết TA & CC)`}
                         </button>
                       </div>
                     )}
@@ -834,6 +788,7 @@ export default function Task1PracticePage() {
                       isGrading={isGrading}
                       gradeError={gradeError}
                       gradeResult={gradeResult}
+                      accent="orange"
                       onFocusEditor={() => {
                         textareaRef.current?.focus();
                         textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -847,28 +802,30 @@ export default function Task1PracticePage() {
             </div>
           )}
 
-          {/* Idle instructions */}
+          {/* Idle instructions (minimalist editorial numbers, no emojis) */}
           {!chartData && !isGenerating && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
                 {
-                  icon: '🗺️',
-                  title: 'AI tạo đề + Dàn ý tiếng Việt',
-                  desc: 'Chọn dạng biểu đồ (Bar, Line, Pie, Table, Process, Map) để AI sinh đề chuẩn kèm dàn ý 4 Body bằng tiếng Việt.',
+                  num: '01',
+                  title: 'Dàn ý Band 8.0+ (TA & CC)',
+                  desc: 'Chọn dạng biểu đồ để AI tạo số liệu kèm dàn ý tiếng Việt gom nhóm & đối chiếu sắc bén, giúp tối ưu sẵn điểm TA và CC.',
                 },
                 {
-                  icon: '🎯',
-                  title: 'Chấm từng Body chuẩn Band 7.5',
-                  desc: 'Tự viết & dịch sang tiếng Anh từng Body. AI chấm đủ 4 tiêu chí (TA, CC, LR, GRA), chỉ rõ tiêu chí mất điểm và sự liên kết giữa các Body.',
+                  num: '02',
+                  title: 'Tập trung nâng LR & GRA',
+                  desc: 'Dựa vào mạch ý sẵn có để viết & dịch sang tiếng Anh. AI đánh cực gắt vào TA, CC, đồng thời góp ý từ vựng và câu phức chuẩn Band 7.5+.',
                 },
                 {
-                  icon: '💾',
+                  num: '03',
                   title: 'Hoàn tất 4/4 Body mới lưu',
-                  desc: 'Vượt qua đủ 4 Body ở mốc Band 7.5+ thì bài viết hoàn chỉnh mới được tự động lưu vào bộ nhớ trình duyệt.',
+                  desc: 'Vượt qua đủ 4 Body ở mốc Band 7.5+ thì bài hoàn chỉnh mới được tự động lưu vào bộ nhớ trình duyệt.',
                 },
-              ].map((c, i) => (
-                <div key={i} className="bg-[var(--card)] rounded-2xl p-5 shadow-sm border border-[var(--border)]">
-                  <div className="text-3xl mb-2.5">{c.icon}</div>
+              ].map((c) => (
+                <div key={c.num} className="bg-[var(--card)] rounded-2xl p-5 shadow-sm border border-orange-100/90">
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-orange-50 text-orange-600 border border-orange-200/70 text-xs font-black mb-3">
+                    {c.num}
+                  </span>
                   <h3 className="font-bold text-gray-800 mb-1.5 text-[15px]">{c.title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{c.desc}</p>
                 </div>
@@ -889,7 +846,6 @@ export default function Task1PracticePage() {
               </div>
               {sessions.length === 0 ? (
                 <div className="p-8 text-center">
-                  <History size={28} className="text-gray-300 mx-auto mb-2" />
                   <p className="text-sm text-gray-400">
                     Chưa có bài Task 1 nào hoàn thành đủ 4 Body.
                   </p>
@@ -906,15 +862,12 @@ export default function Task1PracticePage() {
                           setSelectedSession(sess);
                           setSelectedLegacy(null);
                         }}
-                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'
+                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${isSelected ? 'bg-orange-50/90' : 'hover:bg-gray-50'
                           }`}
                       >
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-white flex-shrink-0"
-                          style={{ background: meta?.color ?? '#6366f1' }}
-                        >
-                          <TypeIcon type={sess.chartData.type} size={14} />
-                        </div>
+                        <span className="px-2 py-1 rounded-md bg-orange-100/80 text-orange-800 text-[10px] font-black uppercase flex-shrink-0">
+                          {meta?.short || sess.chartData.type}
+                        </span>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-gray-800 truncate">
                             {sess.chartData.title || meta?.label}
@@ -1004,7 +957,7 @@ export default function Task1PracticePage() {
                   <div className="space-y-2">
                     {selectedLegacy.sentences.map((s, idx) => (
                       <div key={idx} className="p-3 rounded-xl border border-gray-200 bg-white text-sm">
-                        <span className="text-xs font-bold text-indigo-600 mr-2">
+                        <span className="text-xs font-bold text-orange-600 mr-2">
                           Câu {idx + 1} ({s.score}/100):
                         </span>
                         <span className="text-gray-800">{s.corrected}</span>
@@ -1014,24 +967,18 @@ export default function Task1PracticePage() {
                 </div>
               ) : !selectedSession ? (
                 <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-center p-8">
-                  <History size={32} className="text-gray-200 mb-3" />
                   <p className="text-gray-400 font-medium">
                     Chọn một bài Task 1 đã hoàn thành để xem lại
                   </p>
                 </div>
               ) : (
                 <div className="flex flex-col">
-                  <div
-                    className="px-5 py-4 border-b border-gray-100"
-                    style={{
-                      background:
-                        (TYPE_META[selectedSession.chartData.type]?.color ?? '#6366f1') + '0F',
-                    }}
-                  >
+                  <div className="px-5 py-4 border-b border-orange-100 bg-orange-50/60">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span style={{ color: TYPE_META[selectedSession.chartData.type]?.color }}>
-                        <TypeIcon type={selectedSession.chartData.type} size={15} />
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-orange-700">
+                        {TYPE_META[selectedSession.chartData.type]?.label || selectedSession.chartData.type}
                       </span>
+                      <span className="text-gray-300">·</span>
                       <h2 className="font-bold text-gray-800">{selectedSession.chartData.title}</h2>
                       <span className="ml-auto text-sm font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
                         Band {selectedSession.overallBand.toFixed(1)}
@@ -1043,8 +990,8 @@ export default function Task1PracticePage() {
                   </div>
 
                   <div className="p-5 flex flex-col gap-5 max-h-[700px] overflow-y-auto">
-                    <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-3.5 text-sm text-gray-800">
-                      <span className="font-bold text-blue-800">Đề bài: </span>
+                    <div className="bg-orange-50/50 border border-orange-100 rounded-xl p-3.5 text-sm text-gray-800">
+                      <span className="font-bold text-orange-800">Đề bài: </span>
                       {selectedSession.chartData.context}
                     </div>
 
@@ -1057,6 +1004,7 @@ export default function Task1PracticePage() {
                       fullEssay={selectedSession.fullEssay}
                       bodies={selectedSession.bodies}
                       overallBand={selectedSession.overallBand}
+                      accent="orange"
                       onSaveToWritingSamples={() => handleSaveSessionToWriting(selectedSession)}
                       savedToWriting={!!savedToWritingIds[selectedSession.id]}
                     />
@@ -1067,9 +1015,9 @@ export default function Task1PracticePage() {
                         setTab('practice');
                         generateChart(selectedSession.chartData.type, '', true);
                       }}
-                      className="w-full py-3 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl transition-all text-sm"
+                      className="w-full py-3 flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl transition-all text-sm shadow-sm"
                     >
-                      <RefreshCw size={14} /> Luyện đề mới
+                      Luyện đề mới
                     </button>
                   </div>
                 </div>

@@ -9,7 +9,7 @@ interface BodyOutlineCardProps {
   fullOutline: OutlineBodyItem[];
   currentBodyIndex: number;
   totalBodies: number;
-  accent?: 'indigo' | 'emerald';
+  accent?: 'indigo' | 'emerald' | 'orange';
 }
 
 export function BodyOutlineCard({
@@ -24,12 +24,37 @@ export function BodyOutlineCard({
   const badgeBg =
     accent === 'emerald'
       ? 'bg-emerald-600 text-white'
-      : 'bg-indigo-600 text-white';
+      : accent === 'orange'
+        ? 'bg-orange-500 text-white'
+        : 'bg-indigo-600 text-white';
 
   const cardAccent =
     accent === 'emerald'
       ? 'border-emerald-200 bg-gradient-to-br from-emerald-50/80 via-teal-50/50 to-white'
-      : 'border-indigo-200 bg-gradient-to-br from-indigo-50/80 via-purple-50/40 to-white';
+      : accent === 'orange'
+        ? 'border-orange-200/80 bg-gradient-to-br from-orange-50/75 via-amber-50/35 to-white'
+        : 'border-indigo-200 bg-gradient-to-br from-indigo-50/80 via-purple-50/40 to-white';
+
+  const stepNumStyle =
+    accent === 'emerald'
+      ? 'bg-emerald-50 text-emerald-700'
+      : accent === 'orange'
+        ? 'bg-orange-50 text-orange-700 border border-orange-100'
+        : 'bg-indigo-50 text-indigo-700';
+
+  const linkBoxStyle =
+    accent === 'orange'
+      ? 'bg-amber-50/60 border-amber-200/70 text-amber-950'
+      : 'bg-blue-50/70 border-blue-100 text-blue-900';
+
+  const activeOverviewRowStyle =
+    accent === 'emerald'
+      ? 'bg-emerald-50/70 border-emerald-200'
+      : accent === 'orange'
+        ? 'bg-orange-50/80 border-orange-200'
+        : 'bg-indigo-50/70 border-indigo-200';
+
+  const showMinimalIcons = accent === 'orange';
 
   return (
     <div className={`rounded-2xl border p-4 sm:p-5 shadow-sm flex flex-col gap-3.5 ${cardAccent}`}>
@@ -53,22 +78,22 @@ export function BodyOutlineCard({
           onClick={() => setShowFullPlan((v) => !v)}
           className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-colors"
         >
-          <ListChecks size={13} />
+          {!showMinimalIcons && <ListChecks size={13} />}
           {showFullPlan ? 'Ẩn dàn ý cả bài' : `Xem dàn ý ${totalBodies} body`}
           {showFullPlan ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
         </button>
       </div>
 
       {/* Hướng dẫn triển khai bằng tiếng Việt */}
-      <div className="bg-white/90 rounded-xl border border-gray-200/80 p-3.5 flex flex-col gap-2">
+      <div className="bg-white/95 rounded-xl border border-gray-200/80 p-3.5 sm:p-4 flex flex-col gap-2.5">
         <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700">
-          <Lightbulb size={14} className="text-amber-500 flex-shrink-0" />
-          <span>Ý chính cần triển khai cho Body {currentBodyIndex + 1}:</span>
+          {!showMinimalIcons && <Lightbulb size={14} className="text-amber-500 flex-shrink-0" />}
+          <span>Ý chính chuẩn Band 8.5+ cho Body {currentBodyIndex + 1}:</span>
         </div>
         <ul className="space-y-1.5">
           {currentOutline.viGuide.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-sm text-gray-800 leading-relaxed">
-              <span className="w-5 h-5 rounded-full bg-indigo-50 text-indigo-700 font-bold text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5">
+            <li key={idx} className="flex items-start gap-2.5 text-sm text-gray-800 leading-relaxed">
+              <span className={`w-5 h-5 rounded-full font-bold text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5 ${stepNumStyle}`}>
                 {idx + 1}
               </span>
               <span>{item}</span>
@@ -84,7 +109,7 @@ export function BodyOutlineCard({
           {currentOutline.keyPoints.map((kp, i) => (
             <span
               key={i}
-              className="text-xs font-medium bg-white border border-gray-200 text-gray-700 px-2.5 py-1 rounded-lg shadow-xs"
+              className="text-xs font-medium bg-white border border-gray-200/90 text-gray-700 px-2.5 py-1 rounded-lg shadow-xs"
             >
               {kp}
             </span>
@@ -93,10 +118,10 @@ export function BodyOutlineCard({
       )}
 
       {/* Gợi ý liên kết */}
-      <div className="flex items-start gap-2 bg-blue-50/70 border border-blue-100 rounded-xl px-3.5 py-2.5 text-xs text-blue-900">
-        <Link2 size={14} className="text-blue-600 flex-shrink-0 mt-0.5" />
+      <div className={`flex items-start gap-2 border rounded-xl px-3.5 py-2.5 text-xs ${linkBoxStyle}`}>
+        {!showMinimalIcons && <Link2 size={14} className="text-blue-600 flex-shrink-0 mt-0.5" />}
         <div>
-          <span className="font-bold">Liên kết mạch bài: </span>
+          <span className="font-bold">Liên kết mạch bài (CC): </span>
           <span>{currentOutline.linkingTip}</span>
         </div>
       </div>
@@ -111,11 +136,10 @@ export function BodyOutlineCard({
             {fullOutline.map((o) => (
               <div
                 key={o.bodyIndex}
-                className={`p-2.5 rounded-lg border text-xs ${
-                  o.bodyIndex === currentBodyIndex
-                    ? 'bg-indigo-50/70 border-indigo-200'
+                className={`p-2.5 rounded-lg border text-xs ${o.bodyIndex === currentBodyIndex
+                    ? activeOverviewRowStyle
                     : 'bg-gray-50/70 border-gray-100'
-                }`}
+                  }`}
               >
                 <p className="font-bold text-gray-800 mb-1">
                   Body {o.bodyIndex + 1}: {o.role}
