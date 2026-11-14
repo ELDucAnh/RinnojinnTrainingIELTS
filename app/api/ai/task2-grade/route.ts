@@ -1,4 +1,4 @@
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { formatGeminiError, generateJsonWithFallback } from '@/lib/gemini-helper';
@@ -169,17 +169,28 @@ YÊU CẦU ĐẦU RA JSON (BẮT BUỘC CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG
       "reason": "Giải thích sắc thái và lý do thay thế bằng tiếng Việt"
     }
   ],
-  "generalFeedback": "Tổng kết 2–4 câu bằng tiếng Việt: Body này đã đạt chuẩn Band 7.5 chưa và cần tập trung sửa gì để vượt mốc 7.5.",
+  "generalFeedback": "Tổng kết 2–3 câu bằng tiếng Việt: Body này đã đạt chuẩn Band 7.5 chưa và cần tập trung sửa gì để vượt mốc 7.5.",
   "modelUpgrade": "Phiên bản nâng cấp Band 8.0+ hoàn chỉnh cho Body này (để học viên tham khảo sau khi đạt)."
 }
+Lưu ý: Hãy viết nhận xét súc tích, đúng trọng tâm (1–2 câu mỗi mục) để phản hồi nhanh.
 `;
 
-    const { data } = await generateJsonWithFallback(aiPrompt, `task2-grade:body-${bodyIndex + 1}`, (parsed) => {
-      if (!parsed || !parsed.criteria) {
-        throw new Error('AI trả về thiếu trường criteria');
+    const { data } = await generateJsonWithFallback(
+      aiPrompt,
+      `task2-grade:body-${bodyIndex + 1}`,
+      (parsed) => {
+        if (!parsed || !parsed.criteria) {
+          throw new Error('AI trả về thiếu trường criteria');
+        }
+        return normalizeGradeResult(parsed);
+      },
+      {
+        temperature: 0.35,
+        maxOutputTokens: 2200,
+        perModelTimeoutMs: 20_000,
+        totalBudgetMs: 50_000,
       }
-      return normalizeGradeResult(parsed);
-    });
+    );
 
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {

@@ -18,6 +18,7 @@ import {
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { useStore } from '@/lib/store';
 import { appConfirm } from '@/lib/dialog';
+import { postWritingAi } from '@/lib/writing-ai-client';
 import {
   countWords,
   normalizeOutline,
@@ -109,12 +110,16 @@ export default function Task2PracticePage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
   const sessionSavedRef = useRef(false);
+  const genAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     setMounted(true);
     const loaded = loadCompletedSessions();
     setSessions(loaded);
     if (loaded.length > 0) setSelectedSession(loaded[0]);
+    return () => {
+      genAbortRef.current?.abort();
+    };
   }, []);
 
   const resetPracticeState = () => {
@@ -149,6 +154,10 @@ export default function Task2PracticePage() {
         if (!ok) return;
       }
 
+      genAbortRef.current?.abort();
+      const controller = new AbortController();
+      genAbortRef.current = controller;
+
       setIsGeneratingOutline(true);
       setGenError('');
       if (!regenerateExisting) {
@@ -158,16 +167,19 @@ export default function Task2PracticePage() {
       }
 
       try {
-        const res = await fetch('/api/ai/task2-outline', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const data = await postWritingAi<{
+          essayType?: string;
+          promptAnalysis?: string;
+          outline: OutlineBodyItem[];
+        }>(
+          '/api/ai/task2-outline',
+          {
             prompt: targetPrompt,
             stanceHint: stanceHint.trim(),
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Lỗi server khi tạo dàn ý.');
+          },
+          { signal: controller.signal }
+        );
+        if (controller.signal.aborted) return;
 
         if (regenerateExisting) {
           resetPracticeState();
@@ -178,9 +190,12 @@ export default function Task2PracticePage() {
         setOutline(normalizeOutline(data.outline, 'task2'));
         setShowPromptPanel(false);
       } catch (e: any) {
+        if (controller.signal.aborted || e?.name === 'AbortError') return;
         setGenError(e.message || 'Không thể phân tích đề bài. Vui lòng thử lại.');
       } finally {
-        setIsGeneratingOutline(false);
+        if (genAbortRef.current === controller) {
+          setIsGeneratingOutline(false);
+        }
       }
     },
     [activePrompt, promptInput, stanceHint, completedBodies.length, inputText]
@@ -217,24 +232,14 @@ export default function Task2PracticePage() {
           content: b.content,
         }));
 
-      const res = await fetch('/api/ai/task2-grade', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: activePrompt,
-          essayType,
-          outline,
-          previousBodies: previousBodiesPayload,
-          bodyIndex: currentBodyIndex,
-          content: trimmed,
-        }),
+      const result = await postWritingAi<BodyGradeResult>('/api/ai/task2-grade', {
+        prompt: activePrompt,
+        essayType,
+        outline,
+        previousBodies: previousBodiesPayload,
+        bodyIndex: currentBodyIndex,
+        content: trimmed,
       });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        throw new Error(data.error || 'Không thể chấm Body này. Vui lòng thử lại.');
-      }
-
-      const result = data as BodyGradeResult;
       setGradeResult(result);
       setLastGradedText(trimmed);
 
@@ -368,8 +373,8 @@ export default function Task2PracticePage() {
             type="button"
             onClick={() => setTab('practice')}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'practice'
-                ? 'bg-emerald-600 text-white shadow-md'
-                : 'text-gray-500 hover:bg-gray-100'
+              ? 'bg-emerald-600 text-white shadow-md'
+              : 'text-gray-500 hover:bg-gray-100'
               }`}
           >
             <PenTool size={14} /> Luyện tập
@@ -378,8 +383,8 @@ export default function Task2PracticePage() {
             type="button"
             onClick={() => setTab('history')}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'history'
-                ? 'bg-emerald-600 text-white shadow-md'
-                : 'text-gray-500 hover:bg-gray-100'
+              ? 'bg-emerald-600 text-white shadow-md'
+              : 'text-gray-500 hover:bg-gray-100'
               }`}
           >
             <History size={14} /> Bài đã hoàn tất
@@ -514,9 +519,20 @@ export default function Task2PracticePage() {
           )}
 
           {genError && (
-            <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
-              <AlertCircle size={16} className="flex-shrink-0" />
-              <p className="text-sm font-medium">{genError}</p>
+            <div className="flex items-center justify-between gap-3 flex-wrap p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+              <div className="flex items-center gap-3 min-w-0">
+                <AlertCircle size={16} className="flex-shrink-0" />
+                <p className="text-sm font-medium">{genError}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => generateOutline(true, !!activePrompt)}
+                disabled={isGeneratingOutline}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-red-200 hover:bg-red-100 text-xs font-bold text-red-700 transition-colors disabled:opacity-50 flex-shrink-0"
+              >
+                <RefreshCw size={12} />
+                Thử lại
+              </button>
             </div>
           )}
 

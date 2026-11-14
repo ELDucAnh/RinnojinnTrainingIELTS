@@ -23,6 +23,7 @@ import {
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { useStore } from '@/lib/store';
 import { appConfirm } from '@/lib/dialog';
+import { postWritingAi } from '@/lib/writing-ai-client';
 import {
   countWords,
   normalizeOutline,
@@ -126,6 +127,7 @@ export default function Task1PracticePage() {
   const [chartData, setChartData] = useState<ChartData | null>(null);
   const [outline, setOutline] = useState<OutlineBodyItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [genStep, setGenStep] = useState<'chart' | 'outline' | null>(null);
   const [isRegenOutline, setIsRegenOutline] = useState(false);
   const [genError, setGenError] = useState('');
   const [selectedType, setSelectedType] = useState<string>('random');
@@ -152,6 +154,7 @@ export default function Task1PracticePage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
   const sessionSavedRef = useRef(false);
+  const genAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -159,6 +162,9 @@ export default function Task1PracticePage() {
     setSessions(loaded);
     setLegacySessions(loadLegacySessions());
     if (loaded.length > 0) setSelectedSession(loaded[0]);
+    return () => {
+      genAbortRef.current?.abort();
+    };
   }, []);
 
   const resetPracticeState = () => {
@@ -187,7 +193,13 @@ export default function Task1PracticePage() {
         if (!ok) return;
       }
 
+      genAbortRef.current?.abort();
+      const controller = new AbortController();
+      genAbortRef.current = controller;
+
       setIsGenerating(true);
+      setGenStep('chart');
+      setIsRegenOutline(false);
       setGenError('');
       setChartData(null);
       setOutline([]);
@@ -197,24 +209,44 @@ export default function Task1PracticePage() {
         const typeToSend = overrideType ?? selectedType;
         const topicToSend = overrideTopic !== undefined ? overrideTopic : customTopic;
 
-        const res = await fetch('/api/ai/task1-generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        // Bước 1: Sinh riêng dữ liệu biểu đồ để tải cực nhanh & hiển thị đề ngay
+        const chartPayload = await postWritingAi<ChartData>(
+          '/api/ai/task1-generate',
+          {
             chartType: typeToSend,
             customTopic: topicToSend,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Lỗi server khi tạo đề.');
+            mode: 'chart-only',
+          },
+          { signal: controller.signal }
+        );
+        if (controller.signal.aborted) return;
 
-        setChartData(data);
-        setOutline(normalizeOutline(data.outline, 'task1'));
+        setChartData(chartPayload);
         setShowCustomizer(false);
+        setGenStep('outline');
+        setIsRegenOutline(true);
+
+        // Bước 2: Sinh dàn ý tiếng Việt 4 Body dựa trên biểu đồ vừa tạo
+        const outlinePayload = await postWritingAi<{ outline: OutlineBodyItem[] }>(
+          '/api/ai/task1-generate',
+          {
+            mode: 'outline-only',
+            chartData: chartPayload,
+          },
+          { signal: controller.signal }
+        );
+        if (controller.signal.aborted) return;
+
+        setOutline(normalizeOutline(outlinePayload.outline, 'task1'));
       } catch (e: any) {
+        if (controller.signal.aborted || e?.name === 'AbortError') return;
         setGenError(e.message || 'Không thể tạo đề bài. Vui lòng thử lại.');
       } finally {
-        setIsGenerating(false);
+        if (genAbortRef.current === controller) {
+          setIsGenerating(false);
+          setIsRegenOutline(false);
+          setGenStep(null);
+        }
       }
     },
     [selectedType, customTopic, chartData, completedBodies.length, inputText]
@@ -222,28 +254,37 @@ export default function Task1PracticePage() {
 
   const regenerateOutlineOnly = async () => {
     if (!chartData || completedBodies.length > 0 || gradeResult?.passed) return;
+    genAbortRef.current?.abort();
+    const controller = new AbortController();
+    genAbortRef.current = controller;
+
     setIsRegenOutline(true);
+    setGenStep('outline');
     setGenError('');
     try {
-      const res = await fetch('/api/ai/task1-generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const data = await postWritingAi<{ outline: OutlineBodyItem[] }>(
+        '/api/ai/task1-generate',
+        {
           mode: 'outline-only',
           chartData,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Không thể tạo lại dàn ý.');
+        },
+        { signal: controller.signal }
+      );
+      if (controller.signal.aborted) return;
+
       setOutline(normalizeOutline(data.outline, 'task1'));
       setGradeResult(null);
       setGradeError('');
       setAttemptCount(0);
       setLastGradedText('');
     } catch (e: any) {
+      if (controller.signal.aborted || e?.name === 'AbortError') return;
       setGenError(e.message || 'Không thể tạo lại dàn ý.');
     } finally {
-      setIsRegenOutline(false);
+      if (genAbortRef.current === controller) {
+        setIsRegenOutline(false);
+        setGenStep(null);
+      }
     }
   };
 
@@ -278,23 +319,13 @@ export default function Task1PracticePage() {
           content: b.content,
         }));
 
-      const res = await fetch('/api/ai/task1-grade', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chartData,
-          outline,
-          previousBodies: previousBodiesPayload,
-          bodyIndex: currentBodyIndex,
-          content: trimmed,
-        }),
+      const result = await postWritingAi<BodyGradeResult>('/api/ai/task1-grade', {
+        chartData,
+        outline,
+        previousBodies: previousBodiesPayload,
+        bodyIndex: currentBodyIndex,
+        content: trimmed,
       });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        throw new Error(data.error || 'Không thể chấm Body này. Vui lòng thử lại.');
-      }
-
-      const result = data as BodyGradeResult;
       setGradeResult(result);
       setLastGradedText(trimmed);
 
@@ -440,22 +471,20 @@ export default function Task1PracticePage() {
           <button
             type="button"
             onClick={() => setTab('practice')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${
-              tab === 'practice'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-gray-500 hover:bg-gray-100'
-            }`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'practice'
+              ? 'bg-indigo-600 text-white shadow-md'
+              : 'text-gray-500 hover:bg-gray-100'
+              }`}
           >
             <BarChart2 size={14} /> Luyện tập
           </button>
           <button
             type="button"
             onClick={() => setTab('history')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${
-              tab === 'history'
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'text-gray-500 hover:bg-gray-100'
-            }`}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'history'
+              ? 'bg-indigo-600 text-white shadow-md'
+              : 'text-gray-500 hover:bg-gray-100'
+              }`}
           >
             <History size={14} /> Bài đã hoàn tất
             {sessions.length > 0 && (
@@ -506,11 +535,10 @@ export default function Task1PracticePage() {
                       key={opt.id}
                       type="button"
                       onClick={() => setSelectedType(opt.id)}
-                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${
-                        isSelected
-                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md shadow-indigo-200 scale-[1.02]'
-                          : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-white hover:border-indigo-300 hover:text-indigo-600'
-                      }`}
+                      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all border ${isSelected
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white border-transparent shadow-md shadow-indigo-200 scale-[1.02]'
+                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-white hover:border-indigo-300 hover:text-indigo-600'
+                        }`}
                     >
                       <span className="text-sm">{opt.icon}</span>
                       <span>{opt.label}</span>
@@ -555,7 +583,13 @@ export default function Task1PracticePage() {
                   className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:opacity-95 text-white font-bold rounded-xl shadow-md transition-all hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100 text-xs sm:text-sm flex-shrink-0"
                 >
                   {isGenerating ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                  {isGenerating ? 'AI đang tạo đề & dàn ý...' : chartData ? 'Tạo đề mới' : 'Tạo đề & Dàn ý AI'}
+                  {isGenerating
+                    ? genStep === 'outline'
+                      ? 'Bước 2/2: Đang lập dàn ý...'
+                      : 'Bước 1/2: Đang tạo biểu đồ...'
+                    : chartData
+                      ? 'Tạo đề mới'
+                      : 'Tạo đề & Dàn ý AI'}
                 </button>
               </div>
 
@@ -600,7 +634,7 @@ export default function Task1PracticePage() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                {completedBodies.length === 0 && !gradeResult?.passed && (
+                {completedBodies.length === 0 && !gradeResult?.passed && outline.length === TOTAL_BODIES && (
                   <button
                     type="button"
                     onClick={regenerateOutlineOnly}
@@ -634,14 +668,29 @@ export default function Task1PracticePage() {
           )}
 
           {genError && (
-            <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
-              <AlertCircle size={16} className="flex-shrink-0" />
-              <p className="text-sm font-medium">{genError}</p>
+            <div className="flex items-center justify-between gap-3 flex-wrap p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+              <div className="flex items-center gap-3 min-w-0">
+                <AlertCircle size={16} className="flex-shrink-0" />
+                <p className="text-sm font-medium">{genError}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  chartData && outline.length < TOTAL_BODIES
+                    ? regenerateOutlineOnly()
+                    : generateChart(undefined, undefined, true)
+                }
+                disabled={isGenerating || isRegenOutline}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-red-200 hover:bg-red-100 text-xs font-bold text-red-700 transition-colors disabled:opacity-50 flex-shrink-0"
+              >
+                <RefreshCw size={12} />
+                {chartData && outline.length < TOTAL_BODIES ? 'Thử tạo lại dàn ý' : 'Thử lại'}
+              </button>
             </div>
           )}
 
           {/* Main Practice Workspace */}
-          {chartData && outline.length === TOTAL_BODIES && (
+          {chartData && (
             <div className="flex flex-col gap-5 max-w-4xl mx-auto w-full">
               {/* Chart Card */}
               <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
@@ -683,105 +732,118 @@ export default function Task1PracticePage() {
                 </div>
               </div>
 
-              {/* Stepper */}
-              <BodyProgressStepper
-                outline={outline}
-                completedBodies={completedBodies}
-                currentBodyIndex={currentBodyIndex}
-                accent="indigo"
-              />
-
-              {/* Previous passed bodies */}
-              <PreviousBodiesPanel completedBodies={previousBodiesForContext} />
-
-              {/* Current Body Vietnamese Outline */}
-              {currentOutline && (
-                <BodyOutlineCard
-                  currentOutline={currentOutline}
-                  fullOutline={outline}
-                  currentBodyIndex={currentBodyIndex}
-                  totalBodies={TOTAL_BODIES}
-                  accent="indigo"
-                />
+              {outline.length < TOTAL_BODIES && isRegenOutline && (
+                <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-indigo-100 p-6 flex items-center justify-center gap-3 text-indigo-700">
+                  <Loader2 size={20} className="animate-spin flex-shrink-0" />
+                  <p className="text-sm font-semibold">
+                    Bước 2/2: Đã tạo xong biểu đồ! AI đang lập dàn ý 4 Body bằng tiếng Việt...
+                  </p>
+                </div>
               )}
 
-              {/* Writing Editor */}
-              <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-[var(--border)] p-4 sm:p-5 flex flex-col gap-3">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">
-                      {currentBodyIndex + 1}
-                    </span>
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
-                        Viết tiếng Anh cho Body {currentBodyIndex + 1}/{TOTAL_BODIES}
-                      </p>
-                      <p className="text-xs font-bold text-indigo-700">{currentOutline?.role}</p>
+              {outline.length === TOTAL_BODIES && (
+                <>
+                  {/* Stepper */}
+                  <BodyProgressStepper
+                    outline={outline}
+                    completedBodies={completedBodies}
+                    currentBodyIndex={currentBodyIndex}
+                    accent="indigo"
+                  />
+
+                  {/* Previous passed bodies */}
+                  <PreviousBodiesPanel completedBodies={previousBodiesForContext} />
+
+                  {/* Current Body Vietnamese Outline */}
+                  {currentOutline && (
+                    <BodyOutlineCard
+                      currentOutline={currentOutline}
+                      fullOutline={outline}
+                      currentBodyIndex={currentBodyIndex}
+                      totalBodies={TOTAL_BODIES}
+                      accent="indigo"
+                    />
+                  )}
+
+                  {/* Writing Editor */}
+                  <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-[var(--border)] p-4 sm:p-5 flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-black">
+                          {currentBodyIndex + 1}
+                        </span>
+                        <div>
+                          <p className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
+                            Viết tiếng Anh cho Body {currentBodyIndex + 1}/{TOTAL_BODIES}
+                          </p>
+                          <p className="text-xs font-bold text-indigo-700">{currentOutline?.role}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 font-semibold">
+                        <span>{currentWordCount} từ</span>
+                        {attemptCount > 0 && (
+                          <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                            Lần chấm: {attemptCount}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-500 font-semibold">
-                    <span>{currentWordCount} từ</span>
-                    {attemptCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
-                        Lần chấm: {attemptCount}
-                      </span>
+
+                    <textarea
+                      ref={textareaRef}
+                      rows={6}
+                      disabled={isCurrentBodyLocked}
+                      placeholder={`Dựa vào dàn ý tiếng Việt phía trên, hãy tự viết và dịch ${currentOutline?.label || 'Body này'} sang tiếng Anh chuẩn học thuật IELTS Band 7.5+...`}
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isCurrentBodyLocked && inputText.trim()) {
+                          gradeCurrentBody();
+                        }
+                      }}
+                      className="w-full resize-y text-sm p-3.5 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 outline-none transition-all bg-gray-50/50 focus:bg-white placeholder:text-gray-400 text-gray-800 leading-relaxed disabled:opacity-75 disabled:bg-gray-100/70"
+                    />
+
+                    {!gradeResult?.passed && (
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <p className="text-xs text-gray-400">
+                          Nhấn <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-[11px]">Ctrl</kbd> +{' '}
+                          <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-[11px]">Enter</kbd> để gửi chấm nhanh
+                        </p>
+                        <button
+                          type="button"
+                          onClick={gradeCurrentBody}
+                          disabled={!inputText.trim() || isGrading}
+                          className="ml-auto px-5 py-2.5 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-md transition-all disabled:opacity-50 text-sm"
+                        >
+                          {isGrading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                          {gradeResult && !gradeResult.passed
+                            ? `Gửi AI chấm lại Body ${currentBodyIndex + 1}`
+                            : `Chấm Body ${currentBodyIndex + 1} (Chuẩn Band 7.5)`}
+                        </button>
+                      </div>
                     )}
                   </div>
-                </div>
 
-                <textarea
-                  ref={textareaRef}
-                  rows={6}
-                  disabled={isCurrentBodyLocked}
-                  placeholder={`Dựa vào dàn ý tiếng Việt phía trên, hãy tự viết và dịch ${currentOutline?.label || 'Body này'} sang tiếng Anh chuẩn học thuật IELTS Band 7.5+...`}
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isCurrentBodyLocked && inputText.trim()) {
-                      gradeCurrentBody();
-                    }
-                  }}
-                  className="w-full resize-y text-sm p-3.5 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/15 outline-none transition-all bg-gray-50/50 focus:bg-white placeholder:text-gray-400 text-gray-800 leading-relaxed disabled:opacity-75 disabled:bg-gray-100/70"
-                />
-
-                {!gradeResult?.passed && (
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <p className="text-xs text-gray-400">
-                      Nhấn <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-[11px]">Ctrl</kbd> +{' '}
-                      <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-[11px]">Enter</kbd> để gửi chấm nhanh
-                    </p>
-                    <button
-                      type="button"
-                      onClick={gradeCurrentBody}
-                      disabled={!inputText.trim() || isGrading}
-                      className="ml-auto px-5 py-2.5 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-md transition-all disabled:opacity-50 text-sm"
-                    >
-                      {isGrading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-                      {gradeResult && !gradeResult.passed
-                        ? `Gửi AI chấm lại Body ${currentBodyIndex + 1}`
-                        : `Chấm Body ${currentBodyIndex + 1} (Chuẩn Band 7.5)`}
-                    </button>
+                  {/* Feedback Panel */}
+                  <div ref={feedbackRef}>
+                    <BodyFeedbackPanel
+                      taskType="task1"
+                      bodyIndex={currentBodyIndex}
+                      totalBodies={TOTAL_BODIES}
+                      isGrading={isGrading}
+                      gradeError={gradeError}
+                      gradeResult={gradeResult}
+                      onFocusEditor={() => {
+                        textareaRef.current?.focus();
+                        textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }}
+                      onNextBody={handleNextBody}
+                      onViewHistory={() => setTab('history')}
+                    />
                   </div>
-                )}
-              </div>
-
-              {/* Feedback Panel */}
-              <div ref={feedbackRef}>
-                <BodyFeedbackPanel
-                  taskType="task1"
-                  bodyIndex={currentBodyIndex}
-                  totalBodies={TOTAL_BODIES}
-                  isGrading={isGrading}
-                  gradeError={gradeError}
-                  gradeResult={gradeResult}
-                  onFocusEditor={() => {
-                    textareaRef.current?.focus();
-                    textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }}
-                  onNextBody={handleNextBody}
-                  onViewHistory={() => setTab('history')}
-                />
-              </div>
+                </>
+              )}
             </div>
           )}
 
@@ -844,9 +906,8 @@ export default function Task1PracticePage() {
                           setSelectedSession(sess);
                           setSelectedLegacy(null);
                         }}
-                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
-                          isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'
-                        }`}
+                        className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${isSelected ? 'bg-indigo-50' : 'hover:bg-gray-50'
+                          }`}
                       >
                         <div
                           className="w-8 h-8 rounded-lg flex items-center justify-center text-white flex-shrink-0"
@@ -896,9 +957,8 @@ export default function Task1PracticePage() {
                           setSelectedLegacy(ls);
                           setSelectedSession(null);
                         }}
-                        className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer text-xs ${
-                          selectedLegacy?.id === ls.id ? 'bg-amber-50' : 'hover:bg-gray-50'
-                        }`}
+                        className={`flex items-center gap-2 px-4 py-2.5 cursor-pointer text-xs ${selectedLegacy?.id === ls.id ? 'bg-amber-50' : 'hover:bg-gray-50'
+                          }`}
                       >
                         <span className="truncate flex-1 font-medium text-gray-700">
                           {ls.chartData.title || ls.chartData.type}
