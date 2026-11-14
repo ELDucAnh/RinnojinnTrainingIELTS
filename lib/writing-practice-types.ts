@@ -55,6 +55,7 @@ export interface CriterionFeedback {
   passed75: boolean;
   reason: string;
   evidence: string[];
+  fixes?: string[];
 }
 
 export interface BodyGrammarError {
@@ -297,6 +298,11 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
           : `${defaultLabel} chưa đạt chuẩn 7.5, cần bổ sung độ chính xác và tính học thuật.`,
       evidence: Array.isArray(c?.evidence)
         ? c.evidence.map((e: any) => String(e).trim()).filter(Boolean)
+        : [],
+      fixes: Array.isArray(c?.fixes)
+        ? c.fixes.map((f: any) => String(f).trim()).filter(Boolean)
+        : typeof c?.fix === 'string' && c.fix.trim()
+        ? [c.fix.trim()]
         : [],
     };
   };

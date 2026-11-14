@@ -114,6 +114,11 @@ KIỂM TRA ĐẶC BIỆT:
 - Nếu học viên viết tiếng Việt, viết linh tinh, hoặc lạc đề -> <= 4.0.
 - Thang điểm mỗi tiêu chí từ 0.0 đến 9.0 (bước 0.5).
 - Bắt buộc chỉ rõ từng lỗi khiến TA và CC mất điểm (nếu < 8.5) kèm trích dẫn cụ thể để học viên sửa đến khi TA/CC thực sự xứng đáng > 8.0.
+- QUAN TRỌNG NHẤT: Với TẤT CẢ 4 tiêu chí, KHÔNG CHỈ nhận xét lỗi mà BẮT BUỘC phải đưa "fixes" (1–3 gợi ý sửa CỤ THỂ, thực dụng để học viên sửa ngay trên bài viết của mình):
+  + Ở "task" (TA): chỉ rõ cần thêm/sửa ý nào VÀO ĐÚNG VỊ TRÍ NÀO (VD: "Chèn sau câu đầu tiên...", "Thay câu thứ 2 bằng...") kèm câu/mẫu diễn đạt gợi ý cụ thể có số liệu chính xác từ biểu đồ.
+  + Ở "cc": chỉ rõ cần thay từ nối nào ở câu nào thành cụm chuyển/quy chiếu tinh tế nào (VD: "Đổi 'Moreover' ở câu 3 thành 'Mirroring this pattern, ...'").
+  + Ở "lr": chỉ rõ từ/cụm nào trong bài cần đổi sang từ/collocation Band 7.5–8.5 nào (VD: "'rose rapidly' -> 'experienced a steep upward trajectory'").
+  + Ở "gra": chỉ rõ lỗi ngữ pháp/câu đơn cần sửa hoặc gộp thế nào kèm câu viết lại chuẩn Band 7.5–8.5.
 - Không chấm nương tay TA & CC, đồng thời giữ chuẩn công bằng mốc >= 7.5 overall (không tiêu chí nào < 7.0) để qua Body.
 
 YÊU CẦU ĐẦU RA JSON (BẮT BUỘC CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG MARKDOWN):
@@ -122,22 +127,26 @@ YÊU CẦU ĐẦU RA JSON (BẮT BUỘC CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG
     "task": {
       "band": 7.0,
       "reason": "Giải thích chi tiết bằng tiếng Việt: đạt điểm ở đâu và BỊ MẤT ĐIỂM ở đâu, vì sao (đặc biệt nêu rõ thiếu ý, sai số liệu, hoặc lặp ý với body trước nếu có).",
-      "evidence": ["Trích dẫn chính xác cụm/câu gây mất điểm hoặc thiếu sót cụ thể"]
+      "evidence": ["Trích dẫn chính xác cụm/câu gây mất điểm hoặc thiếu sót cụ thể"],
+      "fixes": ["Chỉ rõ cần thêm/sửa câu nào vào vị trí nào (kèm câu tiếng Anh gợi ý chứa đúng số liệu nếu thiếu ý)"]
     },
     "cc": {
       "band": 7.5,
       "reason": "Giải thích chi tiết bằng tiếng Việt về mạch lạc nội bộ và liên kết với các body trước; nếu < 7.5 hoặc < 9.0 phải nêu rõ mất điểm ở chỗ nào và vì sao.",
-      "evidence": ["Trích dẫn cụ thể nếu có"]
+      "evidence": ["Trích dẫn cụ thể nếu có"],
+      "fixes": ["Chỉ rõ thay cụm nối/chuyển câu ở vị trí nào bằng phép quy chiếu hoặc từ nối tinh tế nào"]
     },
     "lr": {
       "band": 6.5,
       "reason": "Giải thích chi tiết bằng tiếng Việt: từ vựng nào còn cơ bản, lặp lại từ các body trước hay dùng sai collocation khiến mất điểm.",
-      "evidence": ["Trích dẫn từ/cụm từ bị trừ điểm"]
+      "evidence": ["Trích dẫn từ/cụm từ bị trừ điểm"],
+      "fixes": ["Liệt kê cụ thể: 'cụm trong bài' -> đổi thành 'cụm Band 7.5–8.5'"]
     },
     "gra": {
       "band": 7.0,
       "reason": "Giải thích chi tiết bằng tiếng Việt: lỗi ngữ pháp hoặc lý do thiếu đa dạng cấu trúc câu phức gây mất điểm.",
-      "evidence": ["Trích dẫn câu/lỗi gây mất điểm"]
+      "evidence": ["Trích dẫn câu/lỗi gây mất điểm"],
+      "fixes": ["Chỉ rõ sửa lỗi/viết lại câu nào sang cấu trúc phức Band 7.5–8.5 cụ thể"]
     }
   },
   "crossBodyFeedback": "Nhận xét chuyên sâu bằng tiếng Việt về sự liên kết giữa Body hiện tại với các Body trước đó (và định hướng cho Body sau nếu còn): từ nối chuyển đoạn, sự nhất quán thì/dữ liệu, tránh trùng lặp ý/từ.",
@@ -172,9 +181,9 @@ Lưu ý: Hãy viết nhận xét súc tích, đúng trọng tâm (1–2 câu m�
       },
       {
         temperature: 0.35,
-        maxOutputTokens: 2500,
-        perModelTimeoutMs: 20_000,
-        totalBudgetMs: 50_000,
+        maxOutputTokens: 3000,
+        perModelTimeoutMs: 22_000,
+        totalBudgetMs: 52_000,
       }
     );
 

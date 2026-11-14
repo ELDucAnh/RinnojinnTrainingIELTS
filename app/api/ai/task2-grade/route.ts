@@ -128,6 +128,11 @@ KIỂM TRA ĐẶC BIỆT:
 - Nếu học viên viết tiếng Việt, sơ sài, hoặc lạc đề -> <= 4.0.
 - Thang điểm mỗi tiêu chí từ 0.0 đến 9.0 (bước 0.5).
 - Bắt buộc chỉ rõ từng điểm trừ khiến TR và CC chưa chạm >= 8.0–8.5 kèm trích dẫn câu/cụm cụ thể trong bài để học viên khắc phục triệt để.
+- QUAN TRỌNG NHẤT: Với TẤT CẢ 4 tiêu chí, KHÔNG CHỈ nhận xét lỗi mà BẮT BUỘC phải đưa "fixes" (1–3 hướng dẫn sửa CỤ THỂ, thực dụng để học viên áp dụng ngay):
+  + Ở "task" (TR): chỉ rõ cần thêm câu gì vào đúng chỗ nào, hoặc thay câu nào bằng câu gì (viết mẫu câu gợi ý rõ lập trường/lộ trình/cơ chế nhân-quả cụ thể cho Body này).
+  + Ở "cc": chỉ rõ cần sửa liên kết ở câu nào, đổi cụm nối máy móc sang cụm quy chiếu/chuyển ý tự nhiên nào.
+  + Ở "lr": chỉ rõ từng từ/cụm còn đơn giản hoặc sai collocation cần đổi sang cụm Band 7.5–8.5 nào (kèm cặp "'cũ' -> 'mới'").
+  + Ở "gra": chỉ rõ sửa mạo từ/thì/cấu trúc nào ở đúng câu đó, kèm mẫu viết lại câu phức (nhượng bộ/đảo ngữ/phân từ/quan hệ) cho bài.
 - Không chấm nương tay TR & CC, đồng thời giữ chuẩn công bằng mốc >= 7.5 overall (không tiêu chí nào < 7.0) để qua Body.
 
 YÊU CẦU ĐẦU RA JSON (BẮT BUỘC CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG MARKDOWN):
@@ -136,22 +141,26 @@ YÊU CẦU ĐẦU RA JSON (BẮT BUỘC CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG
     "task": {
       "band": 7.0,
       "reason": "Nhận xét chi tiết bằng tiếng Việt: điểm mạnh và lý do bị mất điểm ở tiêu chí TR (có khớp đề bài, bám thesis Body 1, đủ sâu hoặc có lặp ý body trước không).",
-      "evidence": ["Trích dẫn cụ thể từ bài hoặc thiếu sót rõ ràng"]
+      "evidence": ["Trích dẫn cụ thể từ bài hoặc thiếu sót rõ ràng"],
+      "fixes": ["Chỉ rõ thêm/thay câu nào vào vị trí nào kèm câu tiếng Anh gợi ý cụ thể"]
     },
     "cc": {
       "band": 7.5,
       "reason": "Nhận xét chi tiết bằng tiếng Việt về mạch lạc nội bộ và liên kết với các body trước; nêu rõ chỗ mất điểm nếu < 7.5 hoặc chưa hoàn hảo.",
-      "evidence": ["Trích dẫn cụ thể nếu có"]
+      "evidence": ["Trích dẫn cụ thể nếu có"],
+      "fixes": ["Chỉ rõ cách sửa liên kết hoặc thay thế từ nối máy móc ở câu cụ thể"]
     },
     "lr": {
       "band": 6.5,
       "reason": "Nhận xét chi tiết bằng tiếng Việt về vốn từ vựng, collocation, lặp từ với các body trước và lý do mất điểm.",
-      "evidence": ["Trích dẫn từ/cụm từ chưa đạt chuẩn 7.5"]
+      "evidence": ["Trích dẫn từ/cụm từ chưa đạt chuẩn 7.5"],
+      "fixes": ["Gợi ý cụ thể: 'từ/cụm cũ' -> đổi sang 'từ/cụm Band 7.5–8.5'"]
     },
     "gra": {
       "band": 7.0,
       "reason": "Nhận xét chi tiết bằng tiếng Việt về cấu trúc câu và lỗi ngữ pháp khiến mất điểm.",
-      "evidence": ["Trích dẫn câu/cấu trúc gây mất điểm"]
+      "evidence": ["Trích dẫn câu/cấu trúc gây mất điểm"],
+      "fixes": ["Chỉ rõ lỗi cần sửa và viết mẫu 1 câu phức/cấu trúc nâng Band thay thế ngay cho câu đó"]
     }
   },
   "crossBodyFeedback": "Nhận xét chuyên sâu bằng tiếng Việt về sự liên kết của Body này với các Body trước đó (VD: khớp với Thesis Statement ở Body 1 chưa, nối tiếp logic từ Body trước ổn chưa, có bị lặp luận điểm/từ vựng không).",
@@ -186,9 +195,9 @@ Lưu ý: Hãy viết nhận xét súc tích, đúng trọng tâm (1–2 câu m�
       },
       {
         temperature: 0.35,
-        maxOutputTokens: 2500,
-        perModelTimeoutMs: 20_000,
-        totalBudgetMs: 50_000,
+        maxOutputTokens: 3000,
+        perModelTimeoutMs: 22_000,
+        totalBudgetMs: 52_000,
       }
     );
 

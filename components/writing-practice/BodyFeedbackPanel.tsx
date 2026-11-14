@@ -188,6 +188,51 @@ export function BodyFeedbackPanel({
                       ))}
                     </ul>
                   )}
+
+                  {crit.data.fixes && crit.data.fixes.length > 0 && (
+                    <div
+                      className={`mt-auto rounded-lg p-2.5 border ${
+                        is75Plus
+                          ? 'bg-emerald-50/70 border-emerald-200/70'
+                          : isOrange
+                            ? 'bg-white/90 border-orange-200/80'
+                            : 'bg-white/90 border-gray-200/80'
+                      }`}
+                    >
+                      <p
+                        className={`text-[10px] font-extrabold uppercase tracking-wider mb-1 ${
+                          is75Plus
+                            ? 'text-emerald-700'
+                            : isOrange
+                              ? 'text-orange-700'
+                              : 'text-gray-700'
+                        }`}
+                      >
+                        {is75Plus ? 'Gợi ý nâng điểm thêm' : 'Cách sửa cụ thể'}
+                      </p>
+                      <ul className="space-y-1.5">
+                        {crit.data.fixes.map((fix, idx) => (
+                          <li
+                            key={idx}
+                            className="text-[11.5px] text-gray-800 leading-relaxed flex items-start gap-1.5"
+                          >
+                            <span
+                              className={`font-bold flex-shrink-0 ${
+                                is75Plus
+                                  ? 'text-emerald-600'
+                                  : isOrange
+                                    ? 'text-orange-500'
+                                    : 'text-amber-600'
+                              }`}
+                            >
+                              →
+                            </span>
+                            <span>{fix}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               );
             })}
