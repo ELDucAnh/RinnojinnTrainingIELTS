@@ -47,8 +47,8 @@ STRICT RULES (deeply structured, Idea-by-Idea mapping — NEVER generic rote tok
   For EVERY Body (0..4), break the Body down into **2–4 concrete, sequential ideas** ("ideaGuides", matching "viGuide"):
   * Body 1 (Intro) & Body 5 (Conclusion): 2–3 ideas each; Body 2, 3, 4 (Thân bài): 3–4 ideas each (Topic Claim -> Deep Mechanism -> Concrete Illustration -> Thesis Anchor).
   * For EACH individual idea inside "ideaGuides":
-    - "vocabPhrases": list **3–4 natural B1–B2 native written collocations** tailored specifically to expressing THAT idea (total ~9–14 useful collocations per Body, NEVER only 1–2 token phrases!). Prioritize natural written collocations over rare C1–C2 words unless B1–B2 lacks an accurate substitute: `[{ "phrase": "...", "meaning": "..." }]`.
-    - "grammarPatterns": list **1–2 practical Band 7.0 grammar structures** fitted specifically for connecting/expressing THAT idea (e.g. "While/Although S + V, S + V", ", which + leads to / means that...", "Instead of + V-ing, S + should...", conditional), with a crisp Vietnamese "usage" note explaining HOW THAT idea uses that grammar pattern: `[{ "structure": "...", "usage": "..." }]`.
+    - "vocabPhrases": list **3–4 natural B1–B2 native written collocations** tailored specifically to expressing THAT idea (total ~9–14 useful collocations per Body, NEVER only 1–2 token phrases!). Prioritize natural written collocations over rare C1–C2 words unless B1–B2 lacks an accurate substitute: [{ "phrase": "...", "meaning": "..." }].
+    - "grammarPatterns": list **1–2 practical Band 7.0 grammar structures** fitted specifically for connecting/expressing THAT idea (e.g. "While/Although S + V, S + V", ", which + leads to / means that...", "Instead of + V-ing, S + should...", conditional), with a crisp Vietnamese "usage" note explaining HOW THAT idea uses that grammar pattern: [{ "structure": "...", "usage": "..." }].
 - "viGuide": concise array mirroring the sequential "ideaGuides" steps.
 - "linkingTip": 1 specific semantic cohesion cue explaining how this body hooks naturally into adjacent bodies (referencing Thesis/preceding concept instead of mechanical "Firstly/Moreover").
 
