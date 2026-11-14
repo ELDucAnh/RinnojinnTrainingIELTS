@@ -235,8 +235,8 @@ export function LandingPage() {
               {
                 icon: <BookOpen size={28} />,
                 color: 'from-pink-500 to-rose-600',
-                title: 'Bài mẫu Writing & Speaking',
-                desc: 'Kho bài mẫu band cao kèm từ vựng đã highlight. Tạo học phần từ bài mẫu chỉ một nút nhấn.',
+                title: 'Luyện IELTS Writing AI',
+                desc: 'Luyện Task 1 & Task 2 từng Body theo dàn ý Band 8.0+, chấm chữa 4 tiêu chí 8/8/7/7 và viết lại toàn bài hoàn chỉnh.',
                 delay: 'scroll-reveal-delay-1',
               },
               {

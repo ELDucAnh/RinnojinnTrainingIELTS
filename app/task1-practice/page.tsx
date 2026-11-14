@@ -11,7 +11,6 @@ import {
   Send,
 } from 'lucide-react';
 import { LoadingScreen } from '@/components/LoadingScreen';
-import { useStore } from '@/lib/store';
 import { appConfirm } from '@/lib/dialog';
 import { postWritingAi } from '@/lib/writing-ai-client';
 import {
@@ -20,6 +19,7 @@ import {
   type BodyGradeResult,
   type ChartData,
   type CompletedBody,
+  type FullEssayGradeResult,
   type LegacyTask1Session,
   type OutlineBodyItem,
   type Task1CompletedSession,
@@ -30,6 +30,7 @@ import { PreviousBodiesPanel } from '@/components/writing-practice/PreviousBodie
 import { BodyOutlineCard } from '@/components/writing-practice/BodyOutlineCard';
 import { BodyFeedbackPanel } from '@/components/writing-practice/BodyFeedbackPanel';
 import { CompletedEssayDetails } from '@/components/writing-practice/CompletedEssayDetails';
+import { FullEssayPracticeView } from '@/components/writing-practice/FullEssayPracticeView';
 
 const TOTAL_BODIES = 4;
 const LS_KEY_V3 = 'task1_sessions_v3';
@@ -90,9 +91,9 @@ function loadLegacySessions(): LegacyTask1Session[] {
 }
 
 export default function Task1PracticePage() {
-  const { createWritingSample } = useStore();
   const [mounted, setMounted] = useState(false);
-  const [tab, setTab] = useState<'practice' | 'history'>('practice');
+  const [tab, setTab] = useState<'practice' | 'full-essay' | 'history'>('practice');
+  const [fullEssaySourceId, setFullEssaySourceId] = useState<string | null>(null);
 
   // Chart & outline generation
   const [chartData, setChartData] = useState<ChartData | null>(null);
@@ -120,7 +121,6 @@ export default function Task1PracticePage() {
   const [legacySessions, setLegacySessions] = useState<LegacyTask1Session[]>([]);
   const [selectedSession, setSelectedSession] = useState<Task1CompletedSession | null>(null);
   const [selectedLegacy, setSelectedLegacy] = useState<LegacyTask1Session | null>(null);
-  const [savedToWritingIds, setSavedToWritingIds] = useState<Record<string, boolean>>({});
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
@@ -397,19 +397,35 @@ export default function Task1PracticePage() {
     if (selectedLegacy?.id === id) setSelectedLegacy(null);
   };
 
-  const handleSaveSessionToWriting = (sess: Task1CompletedSession) => {
-    createWritingSample({
-      task: 'task1',
-      title: `[Luyện Task 1 · Band ${sess.overallBand.toFixed(1)}] ${sess.chartData.title || sess.chartData.type}`,
-      topic: sess.chartData.context,
-      content: sess.fullEssay,
-      band: sess.overallBand,
-      tags: ['from_practice', 'task1_4bodies'],
-    });
-    setSavedToWritingIds((prev) => ({ ...prev, [sess.id]: true }));
+  const handleSaveFullEssay = (
+    sourceSession: Task1CompletedSession,
+    essay: string,
+    grade: FullEssayGradeResult
+  ) => {
+    const newSession: Task1CompletedSession = {
+      id: `task1-full-${Date.now()}`,
+      sourceType: 'full-essay',
+      sourceSessionId: sourceSession.id,
+      chartData: sourceSession.chartData,
+      outline: sourceSession.outline,
+      bodies: [],
+      fullEssayGrade: grade,
+      fullEssay: essay,
+      overallBand: grade.overallBand,
+      savedAt: Date.now(),
+    };
+    const updated = [newSession, ...sessions];
+    setSessions(updated);
+    saveCompletedSessions(updated);
+    setSelectedSession(newSession);
+    setSelectedLegacy(null);
   };
 
   if (!mounted) return <LoadingScreen />;
+
+  const eligibleFullEssaySessions = sessions.filter(
+    (s) => s.sourceType !== 'full-essay' && s.bodies.length > 0
+  );
 
   const currentMeta = chartData ? TYPE_META[chartData.type] : null;
   const currentOutline = outline[currentBodyIndex];
@@ -437,11 +453,11 @@ export default function Task1PracticePage() {
           AI tạo đề &amp; gợi ý <b>dàn bài 4 Body chuẩn Band 8.0+</b> bằng tiếng Việt (tối ưu <b>TA &amp; CC ≥ 8.0</b> để gánh điểm — <b>LR &amp; GRA chỉ cần 7.0</b> với collocation B1–B2 tự nhiên). Đạt mốc <b>Overall ≥ 7.5</b> cả 4 Body để lưu bài hoàn chỉnh.
         </p>
 
-        <div className="flex gap-2 bg-white/80 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-orange-200/60 z-10">
+        <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 bg-white/80 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-orange-200/60 z-10">
           <button
             type="button"
             onClick={() => setTab('practice')}
-            className={`px-5 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'practice'
+            className={`px-4 sm:px-5 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'practice'
               ? 'bg-orange-500 text-white shadow-sm'
               : 'text-gray-500 hover:bg-orange-50/70 hover:text-gray-800'
               }`}
@@ -450,8 +466,28 @@ export default function Task1PracticePage() {
           </button>
           <button
             type="button"
+            onClick={() => setTab('full-essay')}
+            className={`flex items-center gap-1.5 px-4 sm:px-5 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'full-essay'
+              ? 'bg-orange-500 text-white shadow-sm'
+              : 'text-gray-500 hover:bg-orange-50/70 hover:text-gray-800'
+              }`}
+          >
+            Viết bài hoàn chỉnh
+            {eligibleFullEssaySessions.length > 0 && (
+              <span
+                className={`ml-0.5 text-xs font-black px-1.5 rounded-full ${tab === 'full-essay'
+                    ? 'bg-white/25 text-white'
+                    : 'bg-orange-100 text-orange-700'
+                  }`}
+              >
+                {eligibleFullEssaySessions.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
             onClick={() => setTab('history')}
-            className={`flex items-center gap-1.5 px-5 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'history'
+            className={`flex items-center gap-1.5 px-4 sm:px-5 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'history'
               ? 'bg-orange-500 text-white shadow-sm'
               : 'text-gray-500 hover:bg-orange-50/70 hover:text-gray-800'
               }`}
@@ -834,6 +870,19 @@ export default function Task1PracticePage() {
         </>
       )}
 
+      {/* ── FULL ESSAY TAB ── */}
+      {tab === 'full-essay' && (
+        <FullEssayPracticeView
+          taskType="task1"
+          completedSessions={sessions}
+          selectedSourceId={fullEssaySourceId}
+          onSelectSourceId={setFullEssaySourceId}
+          onSavePassedEssay={handleSaveFullEssay}
+          onViewHistory={() => setTab('history')}
+          onBackToPractice={() => setTab('practice')}
+        />
+      )}
+
       {/* ── HISTORY TAB ── */}
       {tab === 'history' && (
         <div className="flex flex-col gap-6">
@@ -872,7 +921,8 @@ export default function Task1PracticePage() {
                             {sess.chartData.title || meta?.label}
                           </p>
                           <p className="text-[10px] text-gray-400">
-                            4 Body · {new Date(sess.savedAt).toLocaleDateString('vi-VN')}
+                            {sess.sourceType === 'full-essay' ? 'Tự viết toàn bài' : '4 Body'} ·{' '}
+                            {new Date(sess.savedAt).toLocaleDateString('vi-VN')}
                           </p>
                         </div>
                         <div className="text-xs font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
@@ -1004,8 +1054,15 @@ export default function Task1PracticePage() {
                       bodies={selectedSession.bodies}
                       overallBand={selectedSession.overallBand}
                       accent="orange"
-                      onSaveToWritingSamples={() => handleSaveSessionToWriting(selectedSession)}
-                      savedToWriting={!!savedToWritingIds[selectedSession.id]}
+                      fullEssayGrade={selectedSession.fullEssayGrade}
+                      onPracticeFullEssay={
+                        selectedSession.sourceType !== 'full-essay' && selectedSession.bodies.length > 0
+                          ? () => {
+                              setFullEssaySourceId(selectedSession.id);
+                              setTab('full-essay');
+                            }
+                          : undefined
+                      }
                     />
 
                     <button

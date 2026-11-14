@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Volume2, Loader2, ArrowRight, Check, X, Type, Sparkles, AlertCircle, TrendingUp, MessageSquare, RotateCcw, BookOpen, Save } from 'lucide-react';
+import { Volume2, Loader2, ArrowRight, Check, X, Type, Sparkles, AlertCircle, TrendingUp, MessageSquare, RotateCcw, BookOpen } from 'lucide-react';
 import type { Card } from '@/lib/types';
 import { ProgressBar } from './ProgressBar';
-import { useStore } from '@/lib/store';
 
 type ConversationItem =
   | { type: 'repeat_sentence'; speaker: string; text: string }
@@ -36,7 +35,6 @@ interface ConversationPracticeProps {
 const PASS_THRESHOLD = 70; // minimum score to move on
 
 export function ConversationPractice({ cards, onComplete }: ConversationPracticeProps) {
-  const { createWritingSample } = useStore();
   const [loading, setLoading] = useState(true);
   const [conversation, setConversation] = useState<ConversationItem[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -48,7 +46,6 @@ export function ConversationPractice({ cards, onComplete }: ConversationPractice
   const [analysis, setAnalysis] = useState<TranslationAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [attemptCount, setAttemptCount] = useState(0);   // retry counter
-  const [savedToWriting, setSavedToWriting] = useState(false); // per-sentence save state
 
   // Shared
   const [correctCount, setCorrectCount] = useState(0);
@@ -173,7 +170,6 @@ export function ConversationPractice({ cards, onComplete }: ConversationPractice
     setIsTranslationCorrect(false);
     setAnalysis(null);
     setAttemptCount(0);
-    setSavedToWriting(false);
 
     if (currentIdx + 1 < conversation.length) {
       setCurrentIdx(i => i + 1);
@@ -181,24 +177,6 @@ export function ConversationPractice({ cards, onComplete }: ConversationPractice
       onComplete(correctCount + (wasCorrect ? 1 : 0), conversation.length);
     }
   };
-
-  // Save this sentence to Writing Samples
-  const handleSaveToWriting = useCallback(() => {
-    const item = conversation[currentIdx];
-    if (item.type !== 'translate_typing') return;
-    const savedSentence = analysis?.correctedSentence || translationInput;
-    const topic = item.task2Prompt || 'IELTS Writing Task 2 Practice';
-    const argument = item.argument || '';
-
-    createWritingSample({
-      task: 'task2',
-      title: `[Luyện viết] ${topic.slice(0, 60)}${topic.length > 60 ? '...' : ''}`,
-      topic,
-      content: `[${argument}]\n\nCâu của bạn:\n${translationInput}\n\nCâu đã sửa:\n${savedSentence}`,
-      tags: ['from_practice', 'task2_sentence'],
-    });
-    setSavedToWriting(true);
-  }, [conversation, currentIdx, analysis, translationInput, createWritingSample]);
 
   const speak = (text: string) => {
     const url = `/api/tts?text=${encodeURIComponent(text)}&v=2`;
@@ -454,20 +432,6 @@ export function ConversationPractice({ cards, onComplete }: ConversationPractice
             {/* After analysis is done */}
             {analysis && !isAnalyzing && (
               <>
-                {/* Save to Writing — always available after analysis */}
-                <button
-                  onClick={handleSaveToWriting}
-                  disabled={savedToWriting}
-                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold border transition-all disabled:opacity-60"
-                  style={{
-                    background: savedToWriting ? 'var(--success-light)' : 'transparent',
-                    color: savedToWriting ? 'var(--success)' : 'var(--text-muted)',
-                    borderColor: savedToWriting ? 'var(--success)' : 'var(--border)',
-                  }}
-                >
-                  {savedToWriting ? <><Check size={15} /> Đã lưu vào Bài mẫu Writing</> : <><Save size={15} /> Lưu câu này vào Bài mẫu Writing</>}
-                </button>
-
                 {/* Score < 70: must retry */}
                 {!isTranslationCorrect && (
                   <button

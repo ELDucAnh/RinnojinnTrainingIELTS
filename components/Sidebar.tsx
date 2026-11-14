@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import {
   Home, Library, Folder, Plus, ChevronLeft, ChevronRight,
-  Settings, X, Clock, PenLine, PenTool, Mic, Sparkles, BookMarked, Headphones, BarChart2
+  Settings, X, Clock, PenTool, BookMarked, Headphones, BarChart2
 } from 'lucide-react';
 
 interface NavItemProps {
@@ -122,15 +122,8 @@ export function Sidebar({ mobileOpen, onMobileClose, showCreateFolderModal }: Si
             collapsed={collapsed}
           />
           <NavItem
-            href="/writing"
-            icon={<PenLine size={18} />}
-            label="Bài mẫu Writing"
-            active={!!pathname?.startsWith('/writing')}
-            collapsed={collapsed}
-          />
-          <NavItem
             href="/task1-practice"
-            icon={<BarChart2 size={18} className="text-indigo-500" />}
+            icon={<BarChart2 size={18} className="text-orange-500" />}
             label="Luyện Task 1"
             active={!!pathname?.startsWith('/task1-practice')}
             collapsed={collapsed}
@@ -143,27 +136,6 @@ export function Sidebar({ mobileOpen, onMobileClose, showCreateFolderModal }: Si
             active={!!pathname?.startsWith('/task2-practice')}
             collapsed={collapsed}
             onClick={onMobileClose}
-          />
-          <NavItem
-            href="/speaking"
-            icon={<Mic size={18} />}
-            label="Chủ đề Speaking"
-            active={!!pathname?.startsWith('/speaking')}
-            collapsed={collapsed}
-          />
-          <NavItem
-            href="/ai-generator"
-            icon={<Sparkles size={18} className="text-purple-500" />}
-            label="AI Tạo Học Phần"
-            active={!!pathname?.startsWith('/ai-generator')}
-            collapsed={collapsed}
-          />
-          <NavItem
-            href="/ai-training"
-            icon={<Sparkles size={18} className="text-purple-500" />}
-            label="Phòng thi AI"
-            active={pathname === '/ai-training'}
-            collapsed={collapsed}
           />
 
           <NavItem

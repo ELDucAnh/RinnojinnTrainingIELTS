@@ -14,9 +14,9 @@ import {
   SlidersHorizontal,
   ChevronDown,
   BookOpenCheck,
+  FileEdit,
 } from 'lucide-react';
 import { LoadingScreen } from '@/components/LoadingScreen';
-import { useStore } from '@/lib/store';
 import { appConfirm } from '@/lib/dialog';
 import { postWritingAi } from '@/lib/writing-ai-client';
 import {
@@ -24,6 +24,7 @@ import {
   normalizeOutline,
   type BodyGradeResult,
   type CompletedBody,
+  type FullEssayGradeResult,
   type OutlineBodyItem,
   type Task2CompletedSession,
 } from '@/lib/writing-practice-types';
@@ -32,6 +33,7 @@ import { PreviousBodiesPanel } from '@/components/writing-practice/PreviousBodie
 import { BodyOutlineCard } from '@/components/writing-practice/BodyOutlineCard';
 import { BodyFeedbackPanel } from '@/components/writing-practice/BodyFeedbackPanel';
 import { CompletedEssayDetails } from '@/components/writing-practice/CompletedEssayDetails';
+import { FullEssayPracticeView } from '@/components/writing-practice/FullEssayPracticeView';
 
 const TOTAL_BODIES = 5;
 const LS_KEY = 'task2_sessions_v1';
@@ -77,9 +79,9 @@ function saveCompletedSessions(list: Task2CompletedSession[]) {
 }
 
 export default function Task2PracticePage() {
-  const { createWritingSample } = useStore();
   const [mounted, setMounted] = useState(false);
-  const [tab, setTab] = useState<'practice' | 'history'>('practice');
+  const [tab, setTab] = useState<'practice' | 'full-essay' | 'history'>('practice');
+  const [fullEssaySourceId, setFullEssaySourceId] = useState<string | null>(null);
 
   // Prompt & outline setup
   const [promptInput, setPromptInput] = useState('');
@@ -105,7 +107,6 @@ export default function Task2PracticePage() {
   // History (only completed 5-body essays stored in localStorage)
   const [sessions, setSessions] = useState<Task2CompletedSession[]>([]);
   const [selectedSession, setSelectedSession] = useState<Task2CompletedSession | null>(null);
-  const [savedToWritingIds, setSavedToWritingIds] = useState<Record<string, boolean>>({});
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
@@ -329,19 +330,36 @@ export default function Task2PracticePage() {
     }
   };
 
-  const handleSaveSessionToWriting = (sess: Task2CompletedSession) => {
-    createWritingSample({
-      task: 'task2',
-      title: `[Luyện Task 2 · Band ${sess.overallBand.toFixed(1)}] ${sess.prompt.slice(0, 65)}${sess.prompt.length > 65 ? '...' : ''}`,
-      topic: sess.prompt,
-      content: sess.fullEssay,
-      band: sess.overallBand,
-      tags: ['from_practice', 'task2_5bodies'],
-    });
-    setSavedToWritingIds((prev) => ({ ...prev, [sess.id]: true }));
+  const handleSaveFullEssay = (
+    sourceSession: Task2CompletedSession,
+    essay: string,
+    grade: FullEssayGradeResult
+  ) => {
+    const newSession: Task2CompletedSession = {
+      id: `task2-full-${Date.now()}`,
+      sourceType: 'full-essay',
+      sourceSessionId: sourceSession.id,
+      prompt: sourceSession.prompt,
+      essayType: sourceSession.essayType,
+      promptAnalysis: sourceSession.promptAnalysis,
+      outline: sourceSession.outline,
+      bodies: [],
+      fullEssayGrade: grade,
+      fullEssay: essay,
+      overallBand: grade.overallBand,
+      savedAt: Date.now(),
+    };
+    const updated = [newSession, ...sessions];
+    setSessions(updated);
+    saveCompletedSessions(updated);
+    setSelectedSession(newSession);
   };
 
   if (!mounted) return <LoadingScreen />;
+
+  const eligibleFullEssaySessions = sessions.filter(
+    (s) => s.sourceType !== 'full-essay' && s.bodies.length > 0
+  );
 
   const currentOutline = outline[currentBodyIndex];
   const currentWordCount = countWords(inputText);
@@ -368,7 +386,7 @@ export default function Task2PracticePage() {
           Nhập đề bài Task 2 của bạn — AI phân tích đề &amp; gợi ý <b>dàn bài 5 Body chuẩn Band 8.0+</b> (tối ưu <b>TR &amp; CC ≥ 8.0</b> để gánh điểm — <b>LR &amp; GRA chỉ cần 7.0</b> với collocation B1–B2 tự nhiên). Hoàn tất 5 Body mốc <b>Overall ≥ 7.5</b> để lưu bài.
         </p>
 
-        <div className="flex gap-2 bg-white/75 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-gray-200/60 z-10">
+        <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 bg-white/75 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-gray-200/60 z-10">
           <button
             type="button"
             onClick={() => setTab('practice')}
@@ -381,6 +399,26 @@ export default function Task2PracticePage() {
           </button>
           <button
             type="button"
+            onClick={() => setTab('full-essay')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'full-essay'
+              ? 'bg-emerald-600 text-white shadow-md'
+              : 'text-gray-500 hover:bg-gray-100'
+              }`}
+          >
+            <FileEdit size={14} /> Viết bài hoàn chỉnh
+            {eligibleFullEssaySessions.length > 0 && (
+              <span
+                className={`ml-0.5 text-xs font-black px-1.5 rounded-full ${tab === 'full-essay'
+                  ? 'bg-white/25 text-white'
+                  : 'bg-emerald-100 text-emerald-700'
+                  }`}
+              >
+                {eligibleFullEssaySessions.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
             onClick={() => setTab('history')}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-sm transition-all ${tab === 'history'
               ? 'bg-emerald-600 text-white shadow-md'
@@ -389,7 +427,12 @@ export default function Task2PracticePage() {
           >
             <History size={14} /> Bài đã hoàn tất
             {sessions.length > 0 && (
-              <span className="ml-1 bg-emerald-100 text-emerald-700 text-xs font-black px-1.5 rounded-full">
+              <span
+                className={`ml-0.5 text-xs font-black px-1.5 rounded-full ${tab === 'history'
+                  ? 'bg-white/25 text-white'
+                  : 'bg-emerald-100 text-emerald-700'
+                  }`}
+              >
                 {sessions.length}
               </span>
             )}
@@ -698,6 +741,19 @@ export default function Task2PracticePage() {
         </>
       )}
 
+      {/* ── FULL ESSAY TAB ── */}
+      {tab === 'full-essay' && (
+        <FullEssayPracticeView
+          taskType="task2"
+          completedSessions={sessions}
+          selectedSourceId={fullEssaySourceId}
+          onSelectSourceId={setFullEssaySourceId}
+          onSavePassedEssay={handleSaveFullEssay}
+          onViewHistory={() => setTab('history')}
+          onBackToPractice={() => setTab('practice')}
+        />
+      )}
+
       {/* ── HISTORY TAB ── */}
       {tab === 'history' && (
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5">
@@ -730,7 +786,8 @@ export default function Task2PracticePage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-gray-800 truncate">{sess.prompt}</p>
                         <p className="text-[10px] text-gray-400">
-                          {sess.essayType} · {new Date(sess.savedAt).toLocaleDateString('vi-VN')}
+                          {sess.sourceType === 'full-essay' ? 'Tự viết toàn bài' : sess.essayType} ·{' '}
+                          {new Date(sess.savedAt).toLocaleDateString('vi-VN')}
                         </p>
                       </div>
                       <div className="text-xs font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
@@ -792,8 +849,15 @@ export default function Task2PracticePage() {
                     bodies={selectedSession.bodies}
                     overallBand={selectedSession.overallBand}
                     accent="emerald"
-                    onSaveToWritingSamples={() => handleSaveSessionToWriting(selectedSession)}
-                    savedToWriting={!!savedToWritingIds[selectedSession.id]}
+                    fullEssayGrade={selectedSession.fullEssayGrade}
+                    onPracticeFullEssay={
+                      selectedSession.sourceType !== 'full-essay' && selectedSession.bodies.length > 0
+                        ? () => {
+                          setFullEssaySourceId(selectedSession.id);
+                          setTab('full-essay');
+                        }
+                        : undefined
+                    }
                   />
 
                   <button

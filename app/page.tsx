@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import {
   Plus, BookOpen, Folder, TrendingUp, Target,
-  CreditCard, Layers, Brain, PenLine,
+  CreditCard, Layers, Brain, PenLine, PenTool, BarChart2,
   Shuffle, Droplets, ChevronRight, Zap, Clock,
 } from 'lucide-react';
 import { useStore } from '@/lib/store';
@@ -12,7 +12,7 @@ import { LoadingScreen } from '@/components/LoadingScreen';
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false);
-  const { decks, cardsByDeck, progress, folders, sessions, settings, isHydrated, writingSamples, speakingSubmissions, studyHoursGoals, studyHoursLogs } = useStore();
+  const { decks, cardsByDeck, progress, folders, sessions, settings, isHydrated, studyHoursGoals, studyHoursLogs } = useStore();
   const { data: session, status } = useSession();
 
   useEffect(() => { setMounted(true); }, []);
@@ -52,23 +52,6 @@ export default function HomePage() {
   })();
 
   const dailyGoalPct = Math.min(100, Math.round((todayStudied / (settings.dailyGoal || 20)) * 100));
-
-  // ── Analytics Data Prep ───────────────────────────────────────────
-  const aiWritings = Object.values(writingSamples || {}).filter(s => s.tags?.includes('ai_graded') && s.band && !isNaN(Number(s.band))).sort((a,b)=>a.createdAt-b.createdAt);
-  const avgWriting = aiWritings.length > 0 ? (aiWritings.reduce((acc, curr) => acc + Number(curr.band), 0) / aiWritings.length).toFixed(1) : 'N/A';
-  
-  const aiSpeakings = Object.values(speakingSubmissions || {}).filter(s => s.band && !isNaN(Number(s.band))).sort((a,b)=>a.createdAt-b.createdAt);
-  const avgSpeaking = aiSpeakings.length > 0 ? (aiSpeakings.reduce((acc, curr) => acc + Number(curr.band), 0) / aiSpeakings.length).toFixed(1) : 'N/A';
-
-  const getPointsByIndex = (arr: any[], width: number, height: number) => {
-    if (arr.length === 0) return '';
-    if (arr.length === 1) return `0,${height - ((Number(arr[0].band) - 4) / 5) * height} ${width},${height - ((Number(arr[0].band) - 4) / 5) * height}`;
-    return arr.map((item, i) => {
-      const x = (i / (arr.length - 1)) * width;
-      const y = height - ((Math.min(9, Math.max(4, Number(item.band))) - 4) / 5) * height;
-      return `${x},${y}`;
-    }).join(' ');
-  };
 
   // Last 7 days vocab progress
   const today = new Date();
@@ -235,47 +218,35 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* IELTS Band & Goals */}
+        {/* IELTS Writing & Goals */}
         <div className="flex flex-col gap-4 col-span-1">
-          <Link href="/ai-training" className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl p-5 text-white shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-20 transform translate-x-4 -translate-y-4 group-hover:scale-110 transition-transform">
-              <Zap size={64} />
+          <div className="bg-gradient-to-br from-orange-500 via-amber-500 to-emerald-600 rounded-2xl p-5 text-white shadow-sm flex flex-col justify-between gap-4 relative overflow-hidden">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/80 mb-1">
+                Luyện Writing theo Body
+              </p>
+              <h2 className="text-base font-extrabold text-white">IELTS Task 1 &amp; Task 2</h2>
+              <p className="text-xs text-white/85 mt-1 leading-relaxed">
+                Dàn ý Band 8.0+ tiếng Việt, chấm 4 tiêu chí 8/8/7/7 và tự viết lại toàn bài hoàn chỉnh.
+              </p>
             </div>
-            <h2 className="text-sm font-bold text-white/90 mb-4">IELTS AI Band Score</h2>
-            <div className="flex justify-between items-end">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-blue-200">Writing Avg</p>
-                <div className="text-3xl font-black">{avgWriting}</div>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-pink-200 text-right">Speaking Avg</p>
-                <div className="text-3xl font-black text-right">{avgSpeaking}</div>
-              </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Link
+                href="/task1-practice"
+                className="flex items-center justify-between gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-bold transition-colors"
+              >
+                <span className="flex items-center gap-1.5"><BarChart2 size={14} /> Task 1</span>
+                <ChevronRight size={12} />
+              </Link>
+              <Link
+                href="/task2-practice"
+                className="flex items-center justify-between gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-bold transition-colors"
+              >
+                <span className="flex items-center gap-1.5"><PenTool size={14} /> Task 2</span>
+                <ChevronRight size={12} />
+              </Link>
             </div>
-
-            {/* Line Chart */}
-            <div className="relative h-16 mt-3 w-full bg-black/10 rounded-xl overflow-hidden">
-              <svg width="100%" height="100%" viewBox="0 0 100 40" preserveAspectRatio="none">
-                 {/* Lưới ngang (Band 9, 6.5, 4) */}
-                 <line x1="0" y1="0" x2="100" y2="0" stroke="rgba(255,255,255,0.2)" strokeWidth="0.5" />
-                 <line x1="0" y1="20" x2="100" y2="20" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" strokeDasharray="2" />
-                 <line x1="0" y1="40" x2="100" y2="40" stroke="rgba(255,255,255,0.2)" strokeWidth="0.5" />
-                 
-                 {/* Line Writing (Blue) */}
-                 {aiWritings.length > 0 && (
-                   <polyline points={getPointsByIndex(aiWritings, 100, 40)} fill="none" stroke="#93c5fd" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-                 )}
-                 {/* Line Speaking (Pink) */}
-                 {aiSpeakings.length > 0 && (
-                   <polyline points={getPointsByIndex(aiSpeakings, 100, 40)} fill="none" stroke="#f9a8d4" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-                 )}
-              </svg>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-white/20 text-[11px] font-semibold flex items-center justify-between">
-              Vào phòng luyện AI <ChevronRight size={12} />
-            </div>
-          </Link>
+          </div>
 
           <div className="bg-[var(--card)] rounded-2xl p-4 shadow-sm border border-[var(--border)] flex-1 flex flex-col justify-center">
             <div className="flex items-center justify-between mb-2">
