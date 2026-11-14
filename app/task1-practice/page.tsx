@@ -434,7 +434,7 @@ export default function Task1PracticePage() {
           Luyện IELTS Writing Task 1
         </h1>
         <p className="text-gray-600 max-w-2xl z-10 text-[13px] leading-relaxed">
-          AI tạo đề & gợi ý <b>dàn bài 4 Body chuẩn Band 8.0+</b> bằng tiếng Việt (tối ưu sẵn <b>TA & CC</b> để gánh điểm — bạn tập trung phát triển <b>LR & GRA</b>). Chấm gắt từng Body mốc <b>Band 7.5+</b> trước khi lưu vào bộ nhớ trình duyệt.
+          AI tạo đề &amp; gợi ý <b>dàn bài 4 Body chuẩn Band 8.0+</b> bằng tiếng Việt (tối ưu <b>TA &amp; CC ≥ 8.0</b> để gánh điểm — <b>LR &amp; GRA chỉ cần 7.0</b> với collocation B1–B2 tự nhiên). Đạt mốc <b>Overall ≥ 7.5</b> cả 4 Body để lưu bài hoàn chỉnh.
         </p>
 
         <div className="flex gap-2 bg-white/80 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-orange-200/60 z-10">
@@ -459,11 +459,10 @@ export default function Task1PracticePage() {
             Bài đã hoàn tất
             {sessions.length > 0 && (
               <span
-                className={`ml-0.5 text-xs font-black px-1.5 rounded-full ${
-                  tab === 'history'
+                className={`ml-0.5 text-xs font-black px-1.5 rounded-full ${tab === 'history'
                     ? 'bg-white/25 text-white'
                     : 'bg-orange-100 text-orange-700'
-                }`}
+                  }`}
               >
                 {sessions.length}
               </span>
@@ -747,7 +746,7 @@ export default function Task1PracticePage() {
                       ref={textareaRef}
                       rows={6}
                       disabled={isCurrentBodyLocked}
-                      placeholder={`Dựa vào dàn ý tiếng Việt phía trên, hãy tự viết và dịch ${currentOutline?.label || 'Body này'} sang tiếng Anh chuẩn học thuật Band 8.0+...`}
+                      placeholder={`Dựa vào dàn ý tiếng Việt phía trên, hãy tự viết và dịch ${currentOutline?.label || 'Body này'} sang tiếng Anh tự nhiên chuẩn mục tiêu (TA/CC 8.0 • LR/GRA 7.0)...`}
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       onKeyDown={(e) => {
@@ -813,13 +812,13 @@ export default function Task1PracticePage() {
                 },
                 {
                   num: '02',
-                  title: 'Tập trung nâng LR & GRA',
-                  desc: 'Dựa vào mạch ý sẵn có để viết & dịch sang tiếng Anh. AI đánh cực gắt vào TA, CC, đồng thời góp ý từ vựng và câu phức chuẩn Band 7.5+.',
+                  title: 'Tập trung collocation B1–B2 (7.0)',
+                  desc: 'Dựa vào mạch ý sẵn có để viết & dịch sang tiếng Anh. AI siết gắt TA ≥ 8.0 và CC ≥ 8.0, còn LR & GRA chỉ chấm chuẩn Band 7.0 tự nhiên kèm gợi ý sửa cụ thể.',
                 },
                 {
                   num: '03',
                   title: 'Hoàn tất 4/4 Body mới lưu',
-                  desc: 'Vượt qua đủ 4 Body ở mốc Band 7.5+ thì bài hoàn chỉnh mới được tự động lưu vào bộ nhớ trình duyệt.',
+                  desc: 'Vượt qua đủ 4 Body (TA/CC ≥ 8.0, LR/GRA ≥ 7.0 — Overall ≥ 7.5) thì bài hoàn chỉnh mới được lưu vào bộ nhớ trình duyệt.',
                 },
               ].map((c) => (
                 <div key={c.num} className="bg-[var(--card)] rounded-2xl p-5 shadow-sm border border-orange-100/90">

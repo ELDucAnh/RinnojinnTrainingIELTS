@@ -43,7 +43,7 @@ export function BodyProgressStepper({
             Tiến độ hoàn thành ({completedCount}/{totalCount} Body)
           </p>
           <p className="text-xs text-[var(--text-muted)] mt-0.5">
-            Mỗi Body cần đạt chuẩn <span className="font-bold text-emerald-600">Band ≥ 7.5</span> mới mở khóa Body tiếp theo
+            Mỗi Body cần đạt <span className="font-bold text-emerald-600">TA/TR &amp; CC ≥ 8.0 • LR &amp; GRA ≥ 7.0</span> (Overall ≥ 7.5) mới mở khóa Body tiếp theo
           </p>
         </div>
         <span className="text-xs font-black px-2.5 py-1 rounded-full bg-gray-100 text-gray-700">

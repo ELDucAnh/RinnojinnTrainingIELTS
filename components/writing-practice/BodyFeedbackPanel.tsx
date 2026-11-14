@@ -14,7 +14,11 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { BAND_PASS_THRESHOLD, type BodyGradeResult } from '@/lib/writing-practice-types';
+import {
+  MIN_LR_GRA_BAND,
+  MIN_TASK_CC_BAND,
+  type BodyGradeResult,
+} from '@/lib/writing-practice-types';
 
 interface BodyFeedbackPanelProps {
   taskType: 'task1' | 'task2';
@@ -86,24 +90,27 @@ export function BodyFeedbackPanel({
   const passed = gradeResult.passed;
   const taskLabel = taskType === 'task1' ? 'Task Achievement (TA)' : 'Task Response (TR)';
 
+  const taskShort = taskType === 'task1' ? 'TA' : 'TR';
+  const targetLabel = `${taskShort} 8.0 • CC 8.0 • LR 7.0 • GRA 7.0`;
+
   const criteriaList = [
-    { key: 'task', short: taskType === 'task1' ? 'TA' : 'TR', title: taskLabel, data: gradeResult.criteria.task },
-    { key: 'cc', short: 'CC', title: 'Coherence & Cohesion', data: gradeResult.criteria.cc },
-    { key: 'lr', short: 'LR', title: 'Lexical Resource', data: gradeResult.criteria.lr },
-    { key: 'gra', short: 'GRA', title: 'Grammatical Range & Accuracy', data: gradeResult.criteria.gra },
+    { key: 'task', short: taskShort, title: taskLabel, target: MIN_TASK_CC_BAND, data: gradeResult.criteria.task },
+    { key: 'cc', short: 'CC', title: 'Coherence & Cohesion', target: MIN_TASK_CC_BAND, data: gradeResult.criteria.cc },
+    { key: 'lr', short: 'LR', title: 'Lexical Resource', target: MIN_LR_GRA_BAND, data: gradeResult.criteria.lr },
+    { key: 'gra', short: 'GRA', title: 'Grammatical Range & Accuracy', target: MIN_LR_GRA_BAND, data: gradeResult.criteria.gra },
   ];
 
   const lostCriteriaNames = criteriaList
-    .filter((c) => c.data.band < BAND_PASS_THRESHOLD)
-    .map((c) => `${c.short} (${c.data.band.toFixed(1)})`);
+    .filter((c) => c.data.band < c.target)
+    .map((c) => `${c.short} (${c.data.band.toFixed(1)}/${c.target.toFixed(1)})`);
 
   return (
     <div className="flex flex-col gap-4 bg-[var(--card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden animate-fade-in">
       {/* Header score banner */}
       <div
         className={`flex flex-col sm:flex-row sm:items-center gap-4 p-5 text-white bg-gradient-to-r ${passed
-            ? 'from-emerald-600 via-emerald-500 to-teal-500'
-            : 'from-rose-600 via-red-500 to-amber-500'
+          ? 'from-emerald-600 via-emerald-500 to-teal-500'
+          : 'from-rose-600 via-red-500 to-amber-500'
           }`}
       >
         <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex flex-col items-center justify-center flex-shrink-0 border border-white/25">
@@ -116,9 +123,9 @@ export function BodyFeedbackPanel({
             <span className="font-extrabold text-base">
               {passed
                 ? isLastBody
-                  ? '🎉 Xuất sắc! Hoàn thành toàn bộ bài viết chuẩn Band 7.5!'
-                  : '🎉 Đạt chuẩn Band 7.5! Mở khóa Body tiếp theo'
-                : `⚠️ Chưa đạt chuẩn Band 7.5 (Cần ≥ 7.5 & không tiêu chí nào < 7.0)`}
+                  ? 'Xuất sắc! Hoàn thành toàn bộ bài viết đạt chuẩn Overall ≥ 7.5!'
+                  : 'Đạt mục tiêu! Mở khóa Body tiếp theo'
+                : `Chưa đạt mục tiêu (${targetLabel})`}
             </span>
           </div>
           <p className="text-xs sm:text-sm text-white/95 leading-relaxed mt-1">
@@ -126,7 +133,7 @@ export function BodyFeedbackPanel({
           </p>
           {!passed && lostCriteriaNames.length > 0 && (
             <p className="text-xs font-bold mt-1.5 bg-black/15 inline-block px-2.5 py-1 rounded-lg">
-              Tiêu chí mất điểm chưa đạt 7.5: {lostCriteriaNames.join(', ')}
+              Chưa đạt mục tiêu: {lostCriteriaNames.join(', ')}
             </p>
           )}
         </div>
@@ -136,22 +143,22 @@ export function BodyFeedbackPanel({
         {/* 4 Criteria Breakdown */}
         <div>
           <h4 className="text-xs font-extrabold uppercase tracking-wider text-gray-500 mb-2.5">
-            Chi tiết chấm điểm 4 tiêu chí (Chuẩn qua: ≥ 7.5)
+            Chi tiết chấm điểm 4 tiêu chí ({targetLabel})
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {criteriaList.map((crit) => {
               const b = crit.data.band;
-              const is75Plus = b >= BAND_PASS_THRESHOLD;
-              const is70 = b >= 7.0 && b < BAND_PASS_THRESHOLD;
+              const isMet = b >= crit.target;
+              const isNear = b >= crit.target - 0.5 && b < crit.target;
 
               return (
                 <div
                   key={crit.key}
-                  className={`rounded-xl p-3.5 border flex flex-col gap-2 ${is75Plus
-                      ? 'bg-emerald-50/50 border-emerald-200'
-                      : is70
-                        ? 'bg-amber-50/60 border-amber-200'
-                        : 'bg-red-50/60 border-red-200'
+                  className={`rounded-xl p-3.5 border flex flex-col gap-2 ${isMet
+                    ? 'bg-emerald-50/50 border-emerald-200'
+                    : isNear
+                      ? 'bg-amber-50/60 border-amber-200'
+                      : 'bg-red-50/60 border-red-200'
                     }`}
                 >
                   <div className="flex items-center justify-between gap-2">
@@ -160,15 +167,15 @@ export function BodyFeedbackPanel({
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${is75Plus
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-red-100 text-red-700'
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isMet
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-red-100 text-red-700'
                           }`}
                       >
-                        {is75Plus ? 'Đạt ≥ 7.5' : 'Mất điểm (< 7.5)'}
+                        {isMet ? `Đạt ≥ ${crit.target.toFixed(1)}` : `Chưa đạt (< ${crit.target.toFixed(1)})`}
                       </span>
                       <span
-                        className={`text-sm font-black px-2 py-0.5 rounded-lg text-white ${is75Plus ? 'bg-emerald-600' : is70 ? 'bg-amber-500' : 'bg-red-500'
+                        className={`text-sm font-black px-2 py-0.5 rounded-lg text-white ${isMet ? 'bg-emerald-600' : isNear ? 'bg-amber-500' : 'bg-red-500'
                           }`}
                       >
                         {b.toFixed(1)}
@@ -191,24 +198,22 @@ export function BodyFeedbackPanel({
 
                   {crit.data.fixes && crit.data.fixes.length > 0 && (
                     <div
-                      className={`mt-auto rounded-lg p-2.5 border ${
-                        is75Plus
+                      className={`mt-auto rounded-lg p-2.5 border ${isMet
                           ? 'bg-emerald-50/70 border-emerald-200/70'
                           : isOrange
                             ? 'bg-white/90 border-orange-200/80'
                             : 'bg-white/90 border-gray-200/80'
-                      }`}
+                        }`}
                     >
                       <p
-                        className={`text-[10px] font-extrabold uppercase tracking-wider mb-1 ${
-                          is75Plus
+                        className={`text-[10px] font-extrabold uppercase tracking-wider mb-1 ${isMet
                             ? 'text-emerald-700'
                             : isOrange
                               ? 'text-orange-700'
                               : 'text-gray-700'
-                        }`}
+                          }`}
                       >
-                        {is75Plus ? 'Gợi ý nâng điểm thêm' : 'Cách sửa cụ thể'}
+                        {isMet ? 'Gợi ý nâng điểm thêm' : 'Cách sửa cụ thể'}
                       </p>
                       <ul className="space-y-1.5">
                         {crit.data.fixes.map((fix, idx) => (
@@ -217,13 +222,12 @@ export function BodyFeedbackPanel({
                             className="text-[11.5px] text-gray-800 leading-relaxed flex items-start gap-1.5"
                           >
                             <span
-                              className={`font-bold flex-shrink-0 ${
-                                is75Plus
+                              className={`font-bold flex-shrink-0 ${isMet
                                   ? 'text-emerald-600'
                                   : isOrange
                                     ? 'text-orange-500'
                                     : 'text-amber-600'
-                              }`}
+                                }`}
                             >
                               →
                             </span>
@@ -242,8 +246,8 @@ export function BodyFeedbackPanel({
         {/* Cross-body Coherence */}
         <div
           className={`p-3.5 rounded-xl border flex items-start gap-2.5 ${isOrange
-              ? 'bg-orange-50/70 border-orange-200/80'
-              : 'bg-indigo-50/70 border-indigo-200'
+            ? 'bg-orange-50/70 border-orange-200/80'
+            : 'bg-indigo-50/70 border-indigo-200'
             }`}
         >
           {!isOrange && <Link2 size={16} className="text-indigo-600 flex-shrink-0 mt-0.5" />}
@@ -291,7 +295,7 @@ export function BodyFeedbackPanel({
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp size={14} className="text-blue-600 flex-shrink-0" />
               <span className="text-xs font-extrabold text-blue-700">
-                Gợi ý nâng cấp từ vựng Band 7.5+ ({gradeResult.vocabularyTips.length})
+                Collocation B1–B2 tự nhiên chuẩn Band 7.0 ({gradeResult.vocabularyTips.length})
               </span>
             </div>
             <div className="flex flex-col gap-2">
@@ -361,7 +365,7 @@ export function BodyFeedbackPanel({
               <div className="text-xs sm:text-sm">
                 <p className="font-extrabold">Bài viết hoàn chỉnh đã được lưu vào bộ nhớ trình duyệt!</p>
                 <p className="text-xs text-emerald-700 mt-0.5">
-                  Bạn đã vượt qua toàn bộ {totalBodies} Body đạt chuẩn Band 7.5+.
+                  Bạn đã vượt qua toàn bộ {totalBodies} Body đạt mục tiêu ({targetLabel} — Overall ≥ 7.5).
                 </p>
               </div>
             </div>

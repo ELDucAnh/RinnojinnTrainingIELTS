@@ -365,7 +365,7 @@ export default function Task2PracticePage() {
           Luyện IELTS Writing Task 2
         </h1>
         <p className="text-gray-600 max-w-2xl z-10 text-[13px] leading-relaxed">
-          Nhập đề bài Task 2 của bạn — AI phân tích đề & gợi ý <b>dàn bài 5 Body chuẩn Band 8.0+</b> (tối ưu <b>TR & CC</b> để gánh điểm — bạn tập trung phát triển <b>LR & GRA</b>). Chấm gắt từng Body mốc <b>Band 7.5+</b> trước khi lưu vào trình duyệt.
+          Nhập đề bài Task 2 của bạn — AI phân tích đề &amp; gợi ý <b>dàn bài 5 Body chuẩn Band 8.0+</b> (tối ưu <b>TR &amp; CC ≥ 8.0</b> để gánh điểm — <b>LR &amp; GRA chỉ cần 7.0</b> với collocation B1–B2 tự nhiên). Hoàn tất 5 Body mốc <b>Overall ≥ 7.5</b> để lưu bài.
         </p>
 
         <div className="flex gap-2 bg-white/75 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-gray-200/60 z-10">
@@ -614,7 +614,7 @@ export default function Task2PracticePage() {
                   ref={textareaRef}
                   rows={7}
                   disabled={isCurrentBodyLocked}
-                  placeholder={`Dựa vào dàn ý tiếng Việt của ${currentOutline?.label || 'Body này'}, hãy tự viết và dịch sang tiếng Anh chuẩn học thuật Band 7.5+...`}
+                  placeholder={`Dựa vào dàn ý tiếng Việt của ${currentOutline?.label || 'Body này'}, hãy tự viết và dịch sang tiếng Anh tự nhiên chuẩn mục tiêu (TR/CC 8.0 • LR/GRA 7.0)...`}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={(e) => {
@@ -640,7 +640,7 @@ export default function Task2PracticePage() {
                       {isGrading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                       {gradeResult && !gradeResult.passed
                         ? `Gửi AI chấm lại Body ${currentBodyIndex + 1}`
-                        : `Chấm Body ${currentBodyIndex + 1} (Chuẩn Band 7.5)`}
+                        : `Chấm Body ${currentBodyIndex + 1} (TR/CC 8.0 • LR/GRA 7.0)`}
                     </button>
                   </div>
                 )}
@@ -678,13 +678,13 @@ export default function Task2PracticePage() {
                 },
                 {
                   icon: '⚖️',
-                  title: 'Feedback ngay sau từng Body',
-                  desc: 'Mỗi Body được AI chấm chuẩn Band 7.5 theo 4 tiêu chí (TR, CC, LR, GRA), nêu rõ tiêu chí mất điểm và sự liên kết mạch lạc với các Body trước.',
+                  title: 'Feedback & cách sửa từng tiêu chí',
+                  desc: 'Siết gắt TR ≥ 8.0 & CC ≥ 8.0, chấm LR & GRA chuẩn Band 7.0 (collocation B1–B2 tự nhiên), chỉ rõ vị trí cần thêm câu và cách sửa cụ thể.',
                 },
                 {
                   icon: '💾',
                   title: 'Hoàn tất 5/5 Body mới lưu',
-                  desc: 'Bài viết hoàn chỉnh 5 đoạn chỉ được lưu vào bộ nhớ trình duyệt sau khi bạn vượt qua tất cả 5 Body ở mốc Band 7.5+.',
+                  desc: 'Bài viết hoàn chỉnh 5 đoạn chỉ được lưu vào bộ nhớ trình duyệt sau khi bạn vượt qua tất cả 5 Body (Overall ≥ 7.5).',
                 },
               ].map((c, i) => (
                 <div key={i} className="bg-[var(--card)] rounded-2xl p-5 shadow-sm border border-[var(--border)]">

@@ -87,7 +87,7 @@ Học viên đang luyện viết IELTS Writing Task 2 theo cấu trúc **5 Body*
 - Body 4: Body Paragraph 3 (Thân bài 3 — mở rộng / phản biện / giải pháp)
 - Body 5: Conclusion (Kết bài)
 
-Mục tiêu bắt buộc để qua được Body hiện tại là phải ĐẠT CHUẨN BAND 7.5 (Overall Band của Body >= 7.5 và không có tiêu chí nào dưới 7.0).
+Mục tiêu bắt buộc để qua được Body hiện tại là đạt **Overall >= 7.5** theo đúng chiến lược điểm: **TR >= 8.0, CC >= 8.0, LR >= 7.0, GRA >= 7.0** (KHÔNG yêu cầu LR hay GRA phải đạt 7.5).
 
 === ĐỀ BÀI TASK 2 CỦA NGƯỜI DÙNG ===
 "${task2Prompt.trim()}"
@@ -108,59 +108,60 @@ ${previousBodiesText}
 ${cleanContent}
 """
 
-=== YÊU CẦU CHẤM ĐIỂM CHUẨN IELTS (ĐÁNH CỰC GẮT VÀO 2 TIÊU CHÍ TR & CC ĐỂ GÁNH ĐIỂM > 8.0) ===
-Học viên dùng **TR** và **CC** để gánh điểm > 8.0 trong khi luyện nâng **LR & GRA**. Vì vậy, hãy đóng vai giám khảo Cambridge KHẮT KHE TỘT ĐỘ với riêng **TR** và **CC** (chỉ cho 8.0–9.0 khi lập luận và mạch kết nối thực sự đạt chuẩn Band 8.0–9.0):
+=== YÊU CẦU CHẤM ĐIỂM CHUẨN IELTS (SIẾT GẮT TR >= 8.0 & CC >= 8.0 — MỤC TIÊU LR >= 7.0 & GRA >= 7.0) ===
+Học viên dùng **TR >= 8.0** và **CC >= 8.0** để gánh điểm, còn **LR và GRA chỉ cần đạt chuẩn Band 7.0**. Vì vậy, hãy đóng vai giám khảo Cambridge KHẮT KHE TỘT ĐỘ với riêng **TR** và **CC**, còn **LR & GRA** chấm thực tế đúng chuẩn **Band 7.0** (tự nhiên, đúng collocation B1–B2 bản xứ, KHÔNG ép từ C1–C2 cầu kỳ):
 
-1. "task" — Task Response (TR) [CHẤM CỰC GẮT]:
-   - Body 1 (Intro): BẮT BUỘC paraphrase sắc gọn (không copy cụm từ đề) + Thesis Statement trả lời TRỰC DIỆN tất cả các vế câu hỏi, nêu rõ lập trường/mức độ và lộ trình các thân bài. Nếu mở bài sáo rỗng (*"Nowadays many people think..."*), Thesis chung chung (*"this essay will discuss both views"*), hoặc thiếu 1 vế câu hỏi -> TRẦN TR <= 6.5.
+1. "task" — Task Response (TR) [CHẤM CỰC GẮT — MỤC TIÊU >= 8.0]:
+   - Body 1 (Intro): BẮT BUỘC paraphrase sắc gọn (không copy cụm từ đề) + Thesis Statement trả lời TRỰC DIỆN tất cả các vế câu hỏi, nêu rõ lập trường/mức độ và lộ trình các thân bài. Nếu mở bài sáo rỗng (*"Nowadays many people think..."*), Thesis chung chung (*"this essay will discuss both views"*), hoặc thiếu 1 vế câu hỏi -> TRẦN TR <= 6.5–7.0.
    - Body 2, 3, 4 (Thân bài 1, 2, 3): BẮT BUỘC hội tụ đủ: Topic Sentence bám sát Thesis Body 1 -> Cơ chế nhân-quả SÂU ("tại sao & bằng cách nào thực sự xảy ra") -> Ví dụ/bối cảnh thực tế thuyết phục -> Chốt luận điểm. Nếu khẳng định chung chung chưa giải thích tới nơi tới chốn, bịa số liệu thống kê ảo ("80% of people..."), trùng ý với 'previousBodies', hoặc Body 4 phản biện nửa vời / tự mâu thuẫn Thesis Body 1 -> TRẦN TR <= 6.5–7.0.
-   - Body 5 (Conclusion): BẮT BUỘC tổng hợp trọn vẹn mạch Body 2–4 và khẳng định lại Thesis. Đưa BẤT KỲ ý mới nào hoặc tóm tắt thiếu Body 4 -> TRẦN TR <= 6.5.
-2. "cc" — Coherence and Cohesion (CC) [CHẤM CỰC GẮT]:
-   - Chuẩn Band 8.0–9.0 đòi hỏi dòng chảy tư duy tự nhiên, liên kết tinh tế qua quy chiếu & chuỗi từ vựng ("such interventions, this dynamic, consequently, granted... nevertheless"), KHÔNG gãy mạch giữa các câu.
-   - Lạm dụng từ nối liệt kê máy móc đầu câu (Firstly, Secondly, Thirdly, Moreover, Furthermore, In conclusion) -> TRẦN CC <= 7.0.
-   - LIÊN KẾT GIỮA CÁC BODY: Topic Sentence ở Body 2–4 phải phản chiếu đúng lộ trình Thesis của Body 1, chuyển tiếp ý mượt giữa 'previousBodies' và đoạn hiện tại, Body 5 phải tổng hợp liền mạch. Đứt mạch hoặc chuyển đoạn gượng -> TRẦN CC <= 7.0.
-3. "lr" — Lexical Resource (LR):
-   - Chấm chuẩn xác theo IELTS Band Descriptors: collocations học thuật tự nhiên, ít từ phổ thông lặp lại, không dịch word-by-word từ tiếng Việt hay sai sắc thái từ.
-4. "gra" — Grammatical Range and Accuracy (GRA):
-   - Chấm chuẩn xác: kết hợp linh hoạt câu phức (mệnh đề quan hệ, câu điều kiện, đảo ngữ, phân từ, nhượng bộ, cụm danh từ học thuật) với độ chính xác ngữ pháp, dấu câu, mạo từ, giới từ cao.
+   - Body 5 (Conclusion): BẮT BUỘC tổng hợp trọn vẹn mạch Body 2–4 và khẳng định lại Thesis. Đưa BẤT KỲ ý mới nào hoặc tóm tắt thiếu Body 4 -> TRẦN TR <= 6.5–7.0.
+2. "cc" — Coherence and Cohesion (CC) [CHẤM CỰC GẮT — MỤC TIÊU >= 8.0]:
+   - Chuẩn Band 8.0–9.0 đòi hỏi dòng chảy tư duy tự nhiên, liên kết tinh tế qua quy chiếu & chuỗi từ vựng ("such policies, this shift, as a result, while..."), KHÔNG gãy mạch giữa các câu.
+   - Lạm dụng từ nối liệt kê máy móc đầu câu (Firstly, Secondly, Thirdly, Moreover, Furthermore, In conclusion) -> TRẦN CC <= 7.0–7.5.
+   - LIÊN KẾT GIỮA CÁC BODY: Topic Sentence ở Body 2–4 phải phản chiếu đúng lộ trình Thesis của Body 1, chuyển tiếp ý mượt giữa 'previousBodies' và đoạn hiện tại, Body 5 phải tổng hợp liền mạch. Đứt mạch hoặc chuyển đoạn gượng -> TRẦN CC <= 7.0–7.5.
+3. "lr" — Lexical Resource (LR) [MỤC TIÊU >= 7.0 — B1–B2 COLLOCATION TỰ NHIÊN]:
+   - Học viên CHỈ aim LR **7.0**, ưu tiên **collocation tự nhiên mức B1–B2 mà người bản xứ hay dùng trong văn viết** (VD: "play a crucial role", "have a serious impact on", "raise public awareness", "bridge the gap", "face financial pressure", "in-person attendance").
+   - TUYỆT ĐỐI KHÔNG trừ điểm hay ép xuống dưới 7.0 chỉ vì học viên không dùng từ phức tạp/hiếm gặp C1–C2! Chỉ cần dùng từ B1–B2 chuẩn collocation bản xứ, diễn đạt rõ ràng, không dịch word-by-word từ tiếng Việt và không lặp từ đơn giản thô sơ -> xứng đáng **LR >= 7.0**.
+4. "gra" — Grammatical Range and Accuracy (GRA) [MỤC TIÊU >= 7.0]:
+   - Chấm đúng chuẩn **Band 7.0**: kết hợp tự nhiên câu đơn và câu phức phổ biến (mệnh đề quan hệ which/who/that, although/while/because, câu điều kiện, cụm V-ing/phân từ tự nhiên) với độ chính xác mạo từ, giới từ, chia thì cao. Không đòi hỏi đảo ngữ/C2 hiếm gặp mới cho 7.0.
 
 KIỂM TRA ĐẶC BIỆT:
 - Nếu học viên viết tiếng Việt, sơ sài, hoặc lạc đề -> <= 4.0.
 - Thang điểm mỗi tiêu chí từ 0.0 đến 9.0 (bước 0.5).
-- Bắt buộc chỉ rõ từng điểm trừ khiến TR và CC chưa chạm >= 8.0–8.5 kèm trích dẫn câu/cụm cụ thể trong bài để học viên khắc phục triệt để.
+- Bắt buộc chỉ rõ từng điểm trừ khiến TR và CC chưa chạm >= 8.0 kèm trích dẫn câu/cụm cụ thể trong bài để học viên khắc phục triệt để.
 - QUAN TRỌNG NHẤT: Với TẤT CẢ 4 tiêu chí, KHÔNG CHỈ nhận xét lỗi mà BẮT BUỘC phải đưa "fixes" (1–3 hướng dẫn sửa CỤ THỂ, thực dụng để học viên áp dụng ngay):
-  + Ở "task" (TR): chỉ rõ cần thêm câu gì vào đúng chỗ nào, hoặc thay câu nào bằng câu gì (viết mẫu câu gợi ý rõ lập trường/lộ trình/cơ chế nhân-quả cụ thể cho Body này).
+  + Ở "task" (TR): chỉ rõ cần thêm câu gì vào đúng chỗ nào, hoặc thay câu nào bằng câu gì (viết mẫu câu gợi ý rõ lập trường/lộ trình/cơ chế nhân-quả, dùng từ vựng B1–B2 tự nhiên).
   + Ở "cc": chỉ rõ cần sửa liên kết ở câu nào, đổi cụm nối máy móc sang cụm quy chiếu/chuyển ý tự nhiên nào.
-  + Ở "lr": chỉ rõ từng từ/cụm còn đơn giản hoặc sai collocation cần đổi sang cụm Band 7.5–8.5 nào (kèm cặp "'cũ' -> 'mới'").
-  + Ở "gra": chỉ rõ sửa mạo từ/thì/cấu trúc nào ở đúng câu đó, kèm mẫu viết lại câu phức (nhượng bộ/đảo ngữ/phân từ/quan hệ) cho bài.
-- Không chấm nương tay TR & CC, đồng thời giữ chuẩn công bằng mốc >= 7.5 overall (không tiêu chí nào < 7.0) để qua Body.
+  + Ở "lr": chỉ rõ từng từ/cụm còn thiếu tự nhiên hoặc sai collocation cần đổi sang **collocation B1–B2 bản xứ hay dùng** (kèm cặp "'cũ' -> 'mới'"). CHỈ dùng từ C1–C2 nếu không có cụm B1–B2 tương đương thay thế!
+  + Ở "gra": chỉ rõ sửa mạo từ/thì/cấu trúc nào ở đúng câu đó, kèm mẫu viết lại câu phức rõ ràng chuẩn Band 7.0+ (dùng although/while/which/because tự nhiên, không cầu kỳ quá mức).
+- Không chấm nương tay TR (>= 8.0) và CC (>= 8.0); còn LR & GRA chấm công bằng đúng chuẩn Band 7.0 (>= 7.0 là đạt).
 
 YÊU CẦU ĐẦU RA JSON (BẮT BUỘC CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG MARKDOWN):
 {
   "criteria": {
     "task": {
-      "band": 7.0,
-      "reason": "Nhận xét chi tiết bằng tiếng Việt: điểm mạnh và lý do bị mất điểm ở tiêu chí TR (có khớp đề bài, bám thesis Body 1, đủ sâu hoặc có lặp ý body trước không).",
+      "band": 7.5,
+      "reason": "Nhận xét chi tiết bằng tiếng Việt: điểm mạnh và lý do TR đạt hay chưa đạt mốc 8.0 (có khớp đề bài, bám thesis Body 1, đủ sâu hoặc có lặp ý body trước không).",
       "evidence": ["Trích dẫn cụ thể từ bài hoặc thiếu sót rõ ràng"],
       "fixes": ["Chỉ rõ thêm/thay câu nào vào vị trí nào kèm câu tiếng Anh gợi ý cụ thể"]
     },
     "cc": {
       "band": 7.5,
-      "reason": "Nhận xét chi tiết bằng tiếng Việt về mạch lạc nội bộ và liên kết với các body trước; nêu rõ chỗ mất điểm nếu < 7.5 hoặc chưa hoàn hảo.",
+      "reason": "Nhận xét chi tiết bằng tiếng Việt về mạch lạc nội bộ và liên kết với các body trước; nếu < 8.0 nêu rõ mất điểm ở câu nào.",
       "evidence": ["Trích dẫn cụ thể nếu có"],
       "fixes": ["Chỉ rõ cách sửa liên kết hoặc thay thế từ nối máy móc ở câu cụ thể"]
     },
     "lr": {
-      "band": 6.5,
-      "reason": "Nhận xét chi tiết bằng tiếng Việt về vốn từ vựng, collocation, lặp từ với các body trước và lý do mất điểm.",
-      "evidence": ["Trích dẫn từ/cụm từ chưa đạt chuẩn 7.5"],
-      "fixes": ["Gợi ý cụ thể: 'từ/cụm cũ' -> đổi sang 'từ/cụm Band 7.5–8.5'"]
+      "band": 7.0,
+      "reason": "Nhận xét chi tiết bằng tiếng Việt: collocation B1–B2 đã tự nhiên chuẩn văn viết bản xứ (Band 7.0) chưa hay còn dịch word-by-word/lặp từ.",
+      "evidence": ["Trích dẫn từ/cụm chưa tự nhiên (nếu có)"],
+      "fixes": ["Gợi ý cụ thể: 'từ/cụm cũ' -> đổi sang 'collocation B1–B2 tự nhiên' (chỉ dùng C1–C2 nếu B1–B2 không đủ thay thế)"]
     },
     "gra": {
       "band": 7.0,
-      "reason": "Nhận xét chi tiết bằng tiếng Việt về cấu trúc câu và lỗi ngữ pháp khiến mất điểm.",
-      "evidence": ["Trích dẫn câu/cấu trúc gây mất điểm"],
-      "fixes": ["Chỉ rõ lỗi cần sửa và viết mẫu 1 câu phức/cấu trúc nâng Band thay thế ngay cho câu đó"]
+      "reason": "Nhận xét chi tiết bằng tiếng Việt về lỗi ngữ pháp hoặc chỗ cần thêm câu phức tự nhiên để chắc chắn đạt Band 7.0.",
+      "evidence": ["Trích dẫn câu/cấu trúc gây mất điểm (nếu có)"],
+      "fixes": ["Chỉ rõ lỗi cần sửa và viết mẫu câu phức Band 7.0 rõ ràng, tự nhiên thay thế cho câu đó"]
     }
   },
   "crossBodyFeedback": "Nhận xét chuyên sâu bằng tiếng Việt về sự liên kết của Body này với các Body trước đó (VD: khớp với Thesis Statement ở Body 1 chưa, nối tiếp logic từ Body trước ổn chưa, có bị lặp luận điểm/từ vựng không).",
@@ -173,13 +174,13 @@ YÊU CẦU ĐẦU RA JSON (BẮT BUỘC CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG
   ],
   "vocabularyTips": [
     {
-      "studentWord": "Từ/cụm từ còn cơ bản hoặc lặp",
-      "betterAlternative": "Từ/cụm từ Band 7.5–8.5 tự nhiên, học thuật hơn",
-      "reason": "Giải thích sắc thái và lý do thay thế bằng tiếng Việt"
+      "studentWord": "Từ/cụm từ còn chưa tự nhiên hoặc bị lặp",
+      "betterAlternative": "Collocation B1–B2 tự nhiên mà người bản xứ hay dùng (chỉ dùng C1–C2 khi B1–B2 không đủ thay thế)",
+      "reason": "Giải thích ngắn gọn bằng tiếng Việt vì sao cụm này tự nhiên và chuẩn Band 7.0 hơn"
     }
   ],
-  "generalFeedback": "Tổng kết 2–3 câu bằng tiếng Việt: Body này đã đạt chuẩn Band 7.5 chưa và cần tập trung sửa gì để vượt mốc 7.5.",
-  "modelUpgrade": "Phiên bản nâng cấp Band 8.0+ hoàn chỉnh cho Body này (để học viên tham khảo sau khi đạt)."
+  "generalFeedback": "Tổng kết 2–3 câu bằng tiếng Việt: Body này đã đạt mục tiêu (TR >= 8.0, CC >= 8.0, LR >= 7.0, GRA >= 7.0) chưa và cần tập trung sửa gì nhất.",
+  "modelUpgrade": "Phiên bản tham khảo hoàn chỉnh cho Body này (đạt TR/CC 8.0+ với văn phong B1–B2 tự nhiên, dễ học hỏi, không phô trương từ hiếm)."
 }
 Lưu ý: Hãy viết nhận xét súc tích, đúng trọng tâm (1–2 câu mỗi mục) để phản hồi nhanh.
 `;

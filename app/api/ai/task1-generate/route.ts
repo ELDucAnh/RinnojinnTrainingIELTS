@@ -163,9 +163,9 @@ const OUTLINE_INSTRUCTIONS = `
 RULES:
 - Write "role", "viGuide", and "linkingTip" in sharp, insightful VIETNAMESE. Embed exact chart numbers, units, and labels directly inside "viGuide" steps for Body 3 & 4.
 - DO NOT write full sample English sentences or paragraphs!
-- "viGuide": 3 crisp, high-impact analytical steps tailored to THIS exact chart (engineering TA & CC > 8.0).
-- "vocabSuggestions": 3–4 academic Band 7.0–8.0+ English collocations/verbs/nouns specifically useful for THIS Body, each with concise Vietnamese meaning: [{ "phrase": "...", "meaning": "..." }]. Do NOT write whole sentences.
-- "grammarSuggestions": 2–3 high-scoring Band 7.0–8.0+ grammar structures specifically useful for THIS Body, with brief Vietnamese usage note: [{ "structure": "...", "usage": "..." }].
+- "viGuide": 3 crisp, high-impact analytical steps tailored to THIS exact chart (engineering TA >= 8.0 & CC >= 8.0).
+- "vocabSuggestions": 3–4 natural **B1–B2** English collocations/verbs/nouns that native writers commonly use in Task 1 (targeting **LR Band 7.0**, e.g. "account for", "reach a peak of", "remain relatively stable", "by contrast", "far lower than"). AVOID overly fancy/rare C1–C2 words unless no B1–B2 alternative fits! Each with concise Vietnamese meaning: [{ "phrase": "...", "meaning": "..." }]. Only short phrases, NOT full sentences.
+- "grammarSuggestions": 2–3 clear **Band 7.0** grammar structures useful for THIS Body (e.g. "while / whereas", "before + V-ing", "with + N + V-ing", relative clauses, passive voice), with brief Vietnamese usage note: [{ "structure": "...", "usage": "..." }].
 - "linkingTip": 1 specific Vietnamese cohesion cue explaining the exact logical/referential bridge with adjacent bodies.
 
 "outline" shape (EXACTLY 4 items):

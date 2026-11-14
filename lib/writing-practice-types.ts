@@ -137,6 +137,8 @@ export interface Task2CompletedSession {
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
 
 export const BAND_PASS_THRESHOLD = 7.5;
+export const MIN_TASK_CC_BAND = 8.0;
+export const MIN_LR_GRA_BAND = 7.0;
 export const MIN_CRITERION_BAND = 7.0;
 
 export const TASK1_BODY_TEMPLATES: Array<{ bodyIndex: number; label: string; role: string }> = [
@@ -171,10 +173,16 @@ export function isBodyPassedBand75(bands: { task: number; cc: number; lr: number
   passed: boolean;
 } {
   const overallBand = computeOverallBand([bands.task, bands.cc, bands.lr, bands.gra]);
-  const minBand = Math.min(bands.task, bands.cc, bands.lr, bands.gra);
+  const passed =
+    overallBand >= BAND_PASS_THRESHOLD &&
+    bands.task >= MIN_TASK_CC_BAND &&
+    bands.cc >= MIN_TASK_CC_BAND &&
+    bands.lr >= MIN_LR_GRA_BAND &&
+    bands.gra >= MIN_LR_GRA_BAND;
+
   return {
     overallBand,
-    passed: overallBand >= BAND_PASS_THRESHOLD && minBand >= MIN_CRITERION_BAND,
+    passed,
   };
 }
 
@@ -285,17 +293,17 @@ export function normalizeOutline(
 export function normalizeGradeResult(raw: any): BodyGradeResult {
   const rawCriteria = raw?.criteria || {};
 
-  const normalizeCriterion = (c: any, defaultLabel: string): CriterionFeedback => {
+  const normalizeCriterion = (c: any, defaultLabel: string, targetBand: number): CriterionFeedback => {
     const band = roundToHalfBand(c?.band ?? 0);
     return {
       band,
-      passed75: band >= BAND_PASS_THRESHOLD,
+      passed75: band >= targetBand,
       reason:
         typeof c?.reason === 'string' && c.reason.trim()
           ? c.reason.trim()
-          : band >= BAND_PASS_THRESHOLD
-          ? `${defaultLabel} đạt chuẩn Band 7.5+.`
-          : `${defaultLabel} chưa đạt chuẩn 7.5, cần bổ sung độ chính xác và tính học thuật.`,
+          : band >= targetBand
+          ? `${defaultLabel} đạt mục tiêu Band ${targetBand.toFixed(1)}+.`
+          : `${defaultLabel} chưa đạt mục tiêu Band ${targetBand.toFixed(1)}, cần chỉnh sửa theo gợi ý bên dưới.`,
       evidence: Array.isArray(c?.evidence)
         ? c.evidence.map((e: any) => String(e).trim()).filter(Boolean)
         : [],
@@ -309,11 +317,12 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
 
   const taskCrit = normalizeCriterion(
     rawCriteria.task ?? rawCriteria.ta ?? rawCriteria.tr ?? rawCriteria.TA ?? rawCriteria.TR ?? rawCriteria.TASK,
-    'Tiêu chí nội dung'
+    'Tiêu chí nội dung',
+    MIN_TASK_CC_BAND
   );
-  const ccCrit = normalizeCriterion(rawCriteria.cc ?? rawCriteria.CC, 'Coherence & Cohesion');
-  const lrCrit = normalizeCriterion(rawCriteria.lr ?? rawCriteria.LR, 'Lexical Resource');
-  const graCrit = normalizeCriterion(rawCriteria.gra ?? rawCriteria.GRA, 'Grammatical Range & Accuracy');
+  const ccCrit = normalizeCriterion(rawCriteria.cc ?? rawCriteria.CC, 'Coherence & Cohesion', MIN_TASK_CC_BAND);
+  const lrCrit = normalizeCriterion(rawCriteria.lr ?? rawCriteria.LR, 'Lexical Resource', MIN_LR_GRA_BAND);
+  const graCrit = normalizeCriterion(rawCriteria.gra ?? rawCriteria.GRA, 'Grammatical Range & Accuracy', MIN_LR_GRA_BAND);
 
   const { overallBand, passed } = isBodyPassedBand75({
     task: taskCrit.band,
@@ -367,8 +376,8 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
       typeof raw?.generalFeedback === 'string' && raw.generalFeedback.trim()
         ? raw.generalFeedback.trim()
         : passed
-        ? 'Đoạn văn đã đáp ứng tiêu chuẩn Band 7.5.'
-        : 'Đoạn văn chưa đạt Band 7.5. Vui lòng xem chi tiết các tiêu chí bị mất điểm và chỉnh sửa lại.',
+        ? 'Đoạn văn đã đạt mục tiêu (TA/TR ≥ 8.0, CC ≥ 8.0, LR ≥ 7.0, GRA ≥ 7.0 — Overall ≥ 7.5).'
+        : 'Đoạn văn chưa đạt mục tiêu (TA/TR ≥ 8.0, CC ≥ 8.0, LR ≥ 7.0, GRA ≥ 7.0). Hãy xem cách sửa cụ thể cho từng tiêu chí.',
     modelUpgrade,
   };
 }

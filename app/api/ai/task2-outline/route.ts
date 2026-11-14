@@ -41,11 +41,11 @@ Return ONLY valid JSON with:
    - bodyIndex 4 — "Body 5 — Kết bài (Conclusion — Tổng hợp tam giác lập luận)":
      * Tổng hợp súc tích mạch Body 2–4 + tái khẳng định Thesis sắc gọn + 1 hàm ý định hướng tinh tế (TUYỆT ĐỐI không đưa ý mới).
 
-STRICT RULES (concise yet Band 8.5+ insightful):
+STRICT RULES (concise yet TR 8.0+ & CC 8.0+ insightful):
 - Write "role", "viGuide", and "linkingTip" in VIETNAMESE. Do NOT write full sample English sentences or paragraphs!
 - "viGuide": 3 razor-sharp steps showing exact logical progression (Topic Claim -> Deep Mechanism -> Concrete Illustration -> Thesis Anchor).
-- "vocabSuggestions": 3–4 academic Band 7.0–8.0+ English phrases/collocations specifically tailored to THIS Body's argument, each with concise Vietnamese meaning: [{ "phrase": "...", "meaning": "..." }]. Only short phrases/collocations, NOT full sentences.
-- "grammarSuggestions": 2–3 Band 7.0–8.0+ grammar structures tailored to THIS Body, with brief Vietnamese usage note: [{ "structure": "...", "usage": "..." }].
+- "vocabSuggestions": 3–4 natural **B1–B2 native written collocations** tailored to THIS Body (targeting **LR Band 7.0**, e.g. "play a vital role in", "have a negative impact on", "raise public awareness", "bridge the gap between", "lead to long-term problems"). DO NOT use complex/rare C1–C2 words unless no B1–B2 collocation can express the idea accurately! Prioritize natural written collocations over fancy words: [{ "phrase": "...", "meaning": "..." }].
+- "grammarSuggestions": 2–3 practical **Band 7.0** grammar structures tailored to THIS Body (e.g. "While/Although S + V, S + V", relative clause ", which + V", conditional / "Without + N"), with brief Vietnamese usage note: [{ "structure": "...", "usage": "..." }].
 - "linkingTip": 1 specific semantic cohesion cue explaining how this body hooks naturally into adjacent bodies (referencing Thesis/preceding concept instead of mechanical "Firstly/Moreover").
 
 JSON shape ("outline" MUST contain ALL 5 items bodyIndex 0..4):

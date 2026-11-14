@@ -133,14 +133,14 @@ export function BodyOutlineCard({
       {hasLanguageSuggestions ? (
         <div className="bg-white/95 rounded-xl border border-gray-200/80 p-3.5 sm:p-4 flex flex-col gap-3">
           <p className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
-            Gợi ý chi tiết — Từ vựng Band 7.0+ &amp; Ngữ pháp nên dùng cho Body {currentBodyIndex + 1}
+            Gợi ý chi tiết — Collocation B1–B2 (Band 7.0) &amp; Ngữ pháp cho Body {currentBodyIndex + 1}
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {vocabSuggestions.length > 0 && (
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-bold text-gray-700">
-                  Cụm vocab Band 7.0+ (kèm nghĩa tiếng Việt)
+                  Collocation B1–B2 Band 7.0 (kèm nghĩa tiếng Việt)
                 </span>
                 <div className="flex flex-col gap-1.5">
                   {vocabSuggestions.map((v, i) => (
