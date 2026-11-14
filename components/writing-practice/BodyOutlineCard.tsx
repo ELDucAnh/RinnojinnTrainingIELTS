@@ -70,6 +70,8 @@ export function BodyOutlineCard({
 
   const vocabSuggestions = currentOutline.vocabSuggestions ?? [];
   const grammarSuggestions = currentOutline.grammarSuggestions ?? [];
+  const ideaGuides = currentOutline.ideaGuides ?? [];
+  const hasIdeaGuides = ideaGuides.length > 0;
   const hasLanguageSuggestions = vocabSuggestions.length > 0 || grammarSuggestions.length > 0;
 
   const showMinimalIcons = accent === 'orange';
@@ -102,23 +104,115 @@ export function BodyOutlineCard({
         </button>
       </div>
 
-      {/* Hướng dẫn triển khai bằng tiếng Việt */}
-      <div className="bg-white/95 rounded-xl border border-gray-200/80 p-3.5 sm:p-4 flex flex-col gap-2.5">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700">
-          {!showMinimalIcons && <Lightbulb size={14} className="text-amber-500 flex-shrink-0" />}
-          <span>Ý chính chuẩn Band 8.5+ cho Body {currentBodyIndex + 1}:</span>
-        </div>
-        <ul className="space-y-1.5">
-          {currentOutline.viGuide.map((item, idx) => (
-            <li key={idx} className="flex items-start gap-2.5 text-sm text-gray-800 leading-relaxed">
-              <span className={`w-5 h-5 rounded-full font-bold text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5 ${stepNumStyle}`}>
-                {idx + 1}
+      {/* Dàn ý & Gợi ý Vocab / Ngữ pháp ánh xạ theo từng Idea */}
+      {hasIdeaGuides ? (
+        <div className="bg-white/95 rounded-xl border border-gray-200/80 p-3.5 sm:p-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700">
+              {!showMinimalIcons && <Lightbulb size={14} className="text-amber-500 flex-shrink-0" />}
+              <span>
+                Lộ trình từng Idea + Cụm Vocab B1–B2 &amp; Ngữ pháp tương ứng (Body {currentBodyIndex + 1}):
               </span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+            </div>
+            <span className="text-[11px] font-semibold text-gray-400">
+              {ideaGuides.length} ý · {vocabSuggestions.length} cụm từ · {grammarSuggestions.length} cấu trúc
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {ideaGuides.map((guide, idx) => (
+              <div
+                key={idx}
+                className="rounded-xl border border-gray-200/90 bg-gray-50/45 p-3.5 flex flex-col gap-2.5"
+              >
+                <div className="flex items-start gap-2.5">
+                  <span
+                    className={`w-6 h-6 rounded-full font-black text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5 ${stepNumStyle}`}
+                  >
+                    {idx + 1}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    {guide.ideaLabel && (
+                      <p className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
+                        {guide.ideaLabel}
+                      </p>
+                    )}
+                    <p className="text-sm font-medium text-gray-900 leading-relaxed mt-0.5">
+                      {guide.ideaVi}
+                    </p>
+                  </div>
+                </div>
+
+                {(guide.vocabPhrases.length > 0 || guide.grammarPatterns.length > 0) && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5 pl-0 sm:pl-8">
+                    {guide.vocabPhrases.length > 0 && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] font-extrabold text-gray-600">
+                          Cụm từ B1–B2 nên dùng cho ý này ({guide.vocabPhrases.length}):
+                        </span>
+                        <div className="flex flex-col gap-1">
+                          {guide.vocabPhrases.map((v, vi) => (
+                            <div
+                              key={vi}
+                              className={`text-xs rounded-lg px-2.5 py-1.5 border leading-relaxed ${vocabChipStyle}`}
+                            >
+                              <span className={`font-bold ${vocabPhraseStyle}`}>{v.phrase}</span>
+                              {v.meaning && (
+                                <span className="text-gray-600 font-normal"> — {v.meaning}</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {guide.grammarPatterns.length > 0 && (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[11px] font-extrabold text-gray-600">
+                          Ngữ pháp ghép vào ý này ({guide.grammarPatterns.length}):
+                        </span>
+                        <div className="flex flex-col gap-1">
+                          {guide.grammarPatterns.map((g, gi) => (
+                            <div
+                              key={gi}
+                              className="text-xs rounded-lg px-2.5 py-1.5 bg-white border border-stone-200/90 text-gray-800 leading-relaxed"
+                            >
+                              <p className="font-semibold text-gray-900">{g.structure}</p>
+                              {g.usage && (
+                                <p className="text-[11px] text-gray-600 mt-0.5">{g.usage}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Fallback cho dữ liệu cũ chưa có ideaGuides */}
+          <div className="bg-white/95 rounded-xl border border-gray-200/80 p-3.5 sm:p-4 flex flex-col gap-2.5">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700">
+              {!showMinimalIcons && <Lightbulb size={14} className="text-amber-500 flex-shrink-0" />}
+              <span>Ý chính chuẩn Band 8.5+ cho Body {currentBodyIndex + 1}:</span>
+            </div>
+            <ul className="space-y-1.5">
+              {currentOutline.viGuide.map((item, idx) => (
+                <li key={idx} className="flex items-start gap-2.5 text-sm text-gray-800 leading-relaxed">
+                  <span className={`w-5 h-5 rounded-full font-bold text-[11px] flex items-center justify-center flex-shrink-0 mt-0.5 ${stepNumStyle}`}>
+                    {idx + 1}
+                  </span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      )}
 
       {/* Gợi ý liên kết */}
       <div className={`flex items-start gap-2 border rounded-xl px-3.5 py-2.5 text-xs ${linkBoxStyle}`}>
@@ -129,8 +223,8 @@ export function BodyOutlineCard({
         </div>
       </div>
 
-      {/* Gợi ý chi tiết ở dưới cùng: Cụm Vocab Band 7.0+ (kèm nghĩa tiếng Việt) & Cụm ngữ pháp nên dùng */}
-      {hasLanguageSuggestions ? (
+      {/* Fallback dưới cùng khi outline cũ chỉ có danh sách phẳng không kèm ideaGuides */}
+      {!hasIdeaGuides && (hasLanguageSuggestions ? (
         <div className="bg-white/95 rounded-xl border border-gray-200/80 p-3.5 sm:p-4 flex flex-col gap-3">
           <p className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
             Gợi ý chi tiết — Collocation B1–B2 (Band 7.0) &amp; Ngữ pháp cho Body {currentBodyIndex + 1}
@@ -194,7 +288,7 @@ export function BodyOutlineCard({
             ))}
           </div>
         )
-      )}
+      ))}
 
       {/* Toàn bộ dàn ý tham khảo */}
       {showFullPlan && (

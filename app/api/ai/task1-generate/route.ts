@@ -161,19 +161,41 @@ const OUTLINE_INSTRUCTIONS = `
   * Chỉ rõ phép quy chiếu/chuyển ý tự nhiên từ Body 3 (tránh "Secondly/Moreover" máy móc).
 
 RULES:
-- Write "role", "viGuide", and "linkingTip" in sharp, insightful VIETNAMESE. Embed exact chart numbers, units, and labels directly inside "viGuide" steps for Body 3 & 4.
+- Write "role", "viGuide", "ideaGuides[].ideaLabel", "ideaGuides[].ideaVi", and "linkingTip" in sharp, insightful VIETNAMESE. Embed exact chart numbers, units, and labels directly inside Body 3 & 4 idea guides.
 - DO NOT write full sample English sentences or paragraphs!
-- "viGuide": 3 crisp, high-impact analytical steps tailored to THIS exact chart (engineering TA >= 8.0 & CC >= 8.0).
-- "vocabSuggestions": 3–4 natural **B1–B2** English collocations/verbs/nouns that native writers commonly use in Task 1 (targeting **LR Band 7.0**, e.g. "account for", "reach a peak of", "remain relatively stable", "by contrast", "far lower than"). AVOID overly fancy/rare C1–C2 words unless no B1–B2 alternative fits! Each with concise Vietnamese meaning: [{ "phrase": "...", "meaning": "..." }]. Only short phrases, NOT full sentences.
-- "grammarSuggestions": 2–3 clear **Band 7.0** grammar structures useful for THIS Body (e.g. "while / whereas", "before + V-ing", "with + N + V-ing", relative clauses, passive voice), with brief Vietnamese usage note: [{ "structure": "...", "usage": "..." }].
+- IMPORTANT — IDEA-BY-IDEA MAPPING ("ideaGuides"):
+  For EVERY Body (0..3), break it down into **2–4 specific analytical ideas** ("ideaGuides", ordered sequentially from first sentence to last sentence of that Body, matching "viGuide"):
+  * For EACH individual idea inside "ideaGuides", list ENOUGH natural **B1–B2** collocations (`vocabPhrases`: **3–4 phrases per idea**, so 8–14 phrases per Body total — NEVER only 1–2 token phrases!) specifically tailored for expressing THAT exact idea, each with concise Vietnamese meaning: `[{ "phrase": "...", "meaning": "..." }]`. Avoid fancy/rare C1–C2 words unless no B1–B2 alternative fits!
+  * For EACH individual idea inside "ideaGuides", list **1–2 practical Band 7.0 grammar patterns** (`grammarPatterns`) chosen specifically to wrap THAT exact idea (e.g. "While S1 + V1, S2 + V2", "before + V-ing", "with + N + V-ing", relative clause ", which...", passive voice), with clear Vietnamese "usage" note explaining HOW to map THAT idea into the grammar frame: `[{ "structure": "...", "usage": "..." }]`.
+- Keep "viGuide" as concise string array mirroring the sequence of "ideaGuides".
+- Also keep "vocabSuggestions" / "grammarSuggestions" optional or mirrored consistently; top-level summary is normalized automatically.
 - "linkingTip": 1 specific Vietnamese cohesion cue explaining the exact logical/referential bridge with adjacent bodies.
 
 "outline" shape (EXACTLY 4 items):
 [
-  { "bodyIndex": 0, "role": "Introduction — Mở bài (Paraphrase chuẩn xác đủ chiều dữ liệu)", "viGuide": ["Bước 1...", "Bước 2...", "Bước 3..."], "vocabSuggestions": [{ "phrase": "illustrate the proportion of...", "meaning": "minh họa tỷ lệ của..." }], "grammarSuggestions": [{ "structure": "The [chart] illustrates how [S] + V over a [N]-year period", "usage": "Paraphrase mở bài chuẩn xác đủ chiều thời gian" }], "linkingTip": "1 câu liên kết mạch bài..." },
-  { "bodyIndex": 1, "role": "Overview — Tổng quan chiến lược 2 tầng xu hướng", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." },
-  { "bodyIndex": 2, "role": "Body 3 — Thân bài 1 (Gom nhóm & đối chiếu số liệu nhóm 1)", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." },
-  { "bodyIndex": 3, "role": "Body 4 — Thân bài 2 (Nhóm còn lại & đối chiếu chéo với Body 3)", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." }
+  {
+    "bodyIndex": 0,
+    "role": "Introduction — Mở bài (Paraphrase chuẩn xác đủ chiều dữ liệu)",
+    "viGuide": ["Ý 1: Giới thiệu loại biểu đồ, đối tượng và đơn vị đo...", "Ý 2: Nêu rõ địa điểm và đầy đủ mốc thời gian..."],
+    "ideaGuides": [
+      {
+        "ideaLabel": "Ý 1 — Câu mở paraphrased (đối tượng & đơn vị)",
+        "ideaVi": "Nêu lại đề bài: biểu đồ cho thấy tỷ lệ (%) ... thay vì chép cụm đề.",
+        "vocabPhrases": [
+          { "phrase": "illustrate the proportion of", "meaning": "minh họa tỷ lệ của" },
+          { "phrase": "measured in ...", "meaning": "được đo bằng đơn vị ..." },
+          { "phrase": "compare ... across different categories", "meaning": "so sánh ... giữa các nhóm" }
+        ],
+        "grammarPatterns": [
+          { "structure": "The [chart] illustrates how [S] + changed / varied + over a [N]-year period", "usage": "Paraphrase cấu trúc mệnh đề 'how' cho đúng Ý 1" }
+        ]
+      }
+    ],
+    "linkingTip": "1 câu liên kết mạch bài..."
+  },
+  { "bodyIndex": 1, "role": "Overview — Tổng quan chiến lược 2 tầng xu hướng", "viGuide": ["..."], "ideaGuides": [{ "ideaLabel": "...", "ideaVi": "...", "vocabPhrases": [...], "grammarPatterns": [...] }], "linkingTip": "..." },
+  { "bodyIndex": 2, "role": "Body 3 — Thân bài 1 (Gom nhóm & đối chiếu số liệu nhóm 1)", "viGuide": ["..."], "ideaGuides": [{ "ideaLabel": "...", "ideaVi": "...", "vocabPhrases": [...], "grammarPatterns": [...] }], "linkingTip": "..." },
+  { "bodyIndex": 3, "role": "Body 4 — Thân bài 2 (Nhóm còn lại & đối chiếu chéo với Body 3)", "viGuide": ["..."], "ideaGuides": [{ "ideaLabel": "...", "ideaVi": "...", "vocabPhrases": [...], "grammarPatterns": [...] }], "linkingTip": "..." }
 ]
 `;
 
@@ -219,10 +241,10 @@ Return ONLY valid JSON:
           return normalizeOutline(parsed.outline, 'task1');
         },
         {
-          temperature: 0.6,
-          maxOutputTokens: 2800,
-          perModelTimeoutMs: 20_000,
-          totalBudgetMs: 50_000,
+          temperature: 0.55,
+          maxOutputTokens: 4200,
+          perModelTimeoutMs: 24_000,
+          totalBudgetMs: 54_000,
         }
       );
 
@@ -241,11 +263,10 @@ Return ONLY valid JSON:
   const baseChartPrompt = `You are an IELTS Academic Writing Task 1 question generator.
 Generate realistic IELTS Task 1 data for EXACT type "${targetType}" (${TYPE_NAME_MAP[targetType]}).
 The JSON property "type" MUST BE "${targetType}".
-${
-  cleanTopic
-    ? `User topic requirement: "${cleanTopic}". Tailor chart data, title, context, and numbers to this topic at IELTS Academic standard.`
-    : 'Pick a realistic IELTS topic (energy, education, tourism, transport, population, environment, employment, technology).'
-}
+${cleanTopic
+      ? `User topic requirement: "${cleanTopic}". Tailor chart data, title, context, and numbers to this topic at IELTS Academic standard.`
+      : 'Pick a realistic IELTS topic (energy, education, tourism, transport, population, environment, employment, technology).'
+    }
 Ensure realistic, internally consistent data (e.g. pie segments sum to 100 if %).`;
 
   const prompt = chartOnly
@@ -278,10 +299,10 @@ ${OUTLINE_INSTRUCTIONS}`;
         return parsed;
       },
       {
-        temperature: chartOnly ? 0.7 : 0.65,
-        maxOutputTokens: chartOnly ? 1400 : 3200,
-        perModelTimeoutMs: chartOnly ? 16_000 : 20_000,
-        totalBudgetMs: 50_000,
+        temperature: chartOnly ? 0.7 : 0.6,
+        maxOutputTokens: chartOnly ? 1400 : 4600,
+        perModelTimeoutMs: chartOnly ? 16_000 : 24_000,
+        totalBudgetMs: 54_000,
       }
     );
 

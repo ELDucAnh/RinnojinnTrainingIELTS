@@ -19,6 +19,10 @@ import {
   MIN_TASK_CC_BAND,
   type BodyGradeResult,
 } from '@/lib/writing-practice-types';
+import {
+  CriteriaBreakdownGrid,
+  type CriterionGridItem,
+} from '@/components/writing-practice/CriteriaBreakdownGrid';
 
 interface BodyFeedbackPanelProps {
   taskType: 'task1' | 'task2';
@@ -93,7 +97,7 @@ export function BodyFeedbackPanel({
   const taskShort = taskType === 'task1' ? 'TA' : 'TR';
   const targetLabel = `${taskShort} 8.0 • CC 8.0 • LR 7.0 • GRA 7.0`;
 
-  const criteriaList = [
+  const criteriaList: CriterionGridItem[] = [
     { key: 'task', short: taskShort, title: taskLabel, target: MIN_TASK_CC_BAND, data: gradeResult.criteria.task },
     { key: 'cc', short: 'CC', title: 'Coherence & Cohesion', target: MIN_TASK_CC_BAND, data: gradeResult.criteria.cc },
     { key: 'lr', short: 'LR', title: 'Lexical Resource', target: MIN_LR_GRA_BAND, data: gradeResult.criteria.lr },
@@ -140,108 +144,12 @@ export function BodyFeedbackPanel({
       </div>
 
       <div className="px-4 sm:px-5 pb-5 flex flex-col gap-4">
-        {/* 4 Criteria Breakdown */}
-        <div>
-          <h4 className="text-xs font-extrabold uppercase tracking-wider text-gray-500 mb-2.5">
-            Chi tiết chấm điểm 4 tiêu chí ({targetLabel})
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {criteriaList.map((crit) => {
-              const b = crit.data.band;
-              const isMet = b >= crit.target;
-              const isNear = b >= crit.target - 0.5 && b < crit.target;
-
-              return (
-                <div
-                  key={crit.key}
-                  className={`rounded-xl p-3.5 border flex flex-col gap-2 ${isMet
-                    ? 'bg-emerald-50/50 border-emerald-200'
-                    : isNear
-                      ? 'bg-amber-50/60 border-amber-200'
-                      : 'bg-red-50/60 border-red-200'
-                    }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <span className="text-xs font-black text-gray-900">{crit.title}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isMet
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-red-100 text-red-700'
-                          }`}
-                      >
-                        {isMet ? `Đạt ≥ ${crit.target.toFixed(1)}` : `Chưa đạt (< ${crit.target.toFixed(1)})`}
-                      </span>
-                      <span
-                        className={`text-sm font-black px-2 py-0.5 rounded-lg text-white ${isMet ? 'bg-emerald-600' : isNear ? 'bg-amber-500' : 'bg-red-500'
-                          }`}
-                      >
-                        {b.toFixed(1)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-gray-700 leading-relaxed">{crit.data.reason}</p>
-
-                  {crit.data.evidence.length > 0 && (
-                    <ul className="space-y-1 pt-1 border-t border-black/5">
-                      {crit.data.evidence.map((ev, idx) => (
-                        <li key={idx} className="text-[11px] text-gray-600 flex items-start gap-1.5">
-                          <span className="font-bold text-gray-400">•</span>
-                          <span className="italic">{ev}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  {crit.data.fixes && crit.data.fixes.length > 0 && (
-                    <div
-                      className={`mt-auto rounded-lg p-2.5 border ${isMet
-                          ? 'bg-emerald-50/70 border-emerald-200/70'
-                          : isOrange
-                            ? 'bg-white/90 border-orange-200/80'
-                            : 'bg-white/90 border-gray-200/80'
-                        }`}
-                    >
-                      <p
-                        className={`text-[10px] font-extrabold uppercase tracking-wider mb-1 ${isMet
-                            ? 'text-emerald-700'
-                            : isOrange
-                              ? 'text-orange-700'
-                              : 'text-gray-700'
-                          }`}
-                      >
-                        {isMet ? 'Gợi ý nâng điểm thêm' : 'Cách sửa cụ thể'}
-                      </p>
-                      <ul className="space-y-1.5">
-                        {crit.data.fixes.map((fix, idx) => (
-                          <li
-                            key={idx}
-                            className="text-[11.5px] text-gray-800 leading-relaxed flex items-start gap-1.5"
-                          >
-                            <span
-                              className={`font-bold flex-shrink-0 ${isMet
-                                  ? 'text-emerald-600'
-                                  : isOrange
-                                    ? 'text-orange-500'
-                                    : 'text-amber-600'
-                                }`}
-                            >
-                              →
-                            </span>
-                            <span>{fix}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {/* Unified 4 Criteria Breakdown */}
+        <CriteriaBreakdownGrid
+          criteriaList={criteriaList}
+          targetLabel={targetLabel}
+          accent={accent}
+        />
 
         {/* Cross-body Coherence */}
         <div

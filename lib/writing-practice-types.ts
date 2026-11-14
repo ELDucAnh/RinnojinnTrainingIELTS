@@ -12,12 +12,20 @@ export interface SuggestedGrammarItem {
   usage: string;
 }
 
+export interface IdeaLanguageGuide {
+  ideaLabel: string;
+  ideaVi: string;
+  vocabPhrases: SuggestedVocabItem[];
+  grammarPatterns: SuggestedGrammarItem[];
+}
+
 export interface OutlineBodyItem {
   bodyIndex: number;
   label: string;
   role: string;
   viGuide: string[];
   keyPoints: string[];
+  ideaGuides?: IdeaLanguageGuide[];
   vocabSuggestions?: SuggestedVocabItem[];
   grammarSuggestions?: SuggestedGrammarItem[];
   linkingTip: string;
@@ -50,12 +58,24 @@ export interface ChartData {
   outline?: OutlineBodyItem[];
 }
 
+export type ActionMappingIssueType = 'add' | 'replace' | 'fix_error';
+
+export interface CriterionActionMapping {
+  targetLocation: string;
+  issueType: ActionMappingIssueType;
+  currentText?: string;
+  actionGuide: string;
+  suggestedPhrases?: string[];
+  improvedExample?: string;
+}
+
 export interface CriterionFeedback {
   band: number;
   passed75: boolean;
   reason: string;
   evidence: string[];
   fixes?: string[];
+  mappings?: CriterionActionMapping[];
 }
 
 export interface BodyGrammarError {
@@ -271,6 +291,35 @@ function normalizeGrammarSuggestions(raw: unknown): SuggestedGrammarItem[] {
   return results;
 }
 
+function normalizeIdeaGuides(raw: unknown): IdeaLanguageGuide[] {
+  if (!Array.isArray(raw)) return [];
+  const results: IdeaLanguageGuide[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const ideaLabel = String(
+      (item as any).ideaLabel ?? (item as any).label ?? (item as any).title ?? ''
+    ).trim();
+    const ideaVi = String(
+      (item as any).ideaVi ?? (item as any).idea ?? (item as any).description ?? ''
+    ).trim();
+    const vocabPhrases = normalizeVocabSuggestions(
+      (item as any).vocabPhrases ?? (item as any).vocab ?? (item as any).vocabs
+    );
+    const grammarPatterns = normalizeGrammarSuggestions(
+      (item as any).grammarPatterns ?? (item as any).grammar ?? (item as any).grammars
+    );
+    if (ideaVi || ideaLabel || vocabPhrases.length > 0 || grammarPatterns.length > 0) {
+      results.push({
+        ideaLabel: ideaLabel || `Ý ${results.length + 1}`,
+        ideaVi: ideaVi || ideaLabel,
+        vocabPhrases,
+        grammarPatterns,
+      });
+    }
+  }
+  return results;
+}
+
 export function normalizeOutline(
   rawOutline: unknown,
   task: 'task1' | 'task2'
@@ -289,18 +338,43 @@ export function normalizeOutline(
       arr[idx] ??
       {};
 
-    const viGuide = Array.isArray(found.viGuide)
+    const ideaGuides = normalizeIdeaGuides(found.ideaGuides);
+
+    let viGuide = Array.isArray(found.viGuide)
       ? found.viGuide.map((s: any) => String(s).trim()).filter(Boolean)
       : typeof found.viGuide === 'string' && found.viGuide.trim()
         ? [found.viGuide.trim()]
-        : [`Triển khai nội dung phần ${tpl.role} bằng tiếng Anh mạch lạc, chuẩn học thuật.`];
+        : [];
+
+    if (viGuide.length === 0 && ideaGuides.length > 0) {
+      viGuide = ideaGuides.map((g) => (g.ideaLabel ? `${g.ideaLabel}: ${g.ideaVi}` : g.ideaVi));
+    }
+    if (viGuide.length === 0) {
+      viGuide = [`Triển khai nội dung phần ${tpl.role} bằng tiếng Anh mạch lạc, chuẩn học thuật.`];
+    }
 
     const keyPoints = Array.isArray(found.keyPoints)
       ? found.keyPoints.map((s: any) => String(s).trim()).filter(Boolean)
       : [];
 
-    const vocabSuggestions = normalizeVocabSuggestions(found.vocabSuggestions);
-    const grammarSuggestions = normalizeGrammarSuggestions(found.grammarSuggestions);
+    // Aggregate vocab & grammar across top-level + ideaGuides (deduped)
+    const vocabMap = new Map<string, SuggestedVocabItem>();
+    for (const v of [
+      ...normalizeVocabSuggestions(found.vocabSuggestions),
+      ...ideaGuides.flatMap((g) => g.vocabPhrases),
+    ]) {
+      const k = v.phrase.toLowerCase();
+      if (!vocabMap.has(k)) vocabMap.set(k, v);
+    }
+
+    const grammarMap = new Map<string, SuggestedGrammarItem>();
+    for (const g of [
+      ...normalizeGrammarSuggestions(found.grammarSuggestions),
+      ...ideaGuides.flatMap((ig) => ig.grammarPatterns),
+    ]) {
+      const k = g.structure.toLowerCase();
+      if (!grammarMap.has(k)) grammarMap.set(k, g);
+    }
 
     const linkingTip =
       typeof found.linkingTip === 'string' && found.linkingTip.trim()
@@ -315,11 +389,55 @@ export function normalizeOutline(
       role: typeof found.role === 'string' && found.role.trim() ? found.role.trim() : tpl.role,
       viGuide,
       keyPoints,
-      vocabSuggestions,
-      grammarSuggestions,
+      ideaGuides,
+      vocabSuggestions: Array.from(vocabMap.values()),
+      grammarSuggestions: Array.from(grammarMap.values()),
       linkingTip,
     };
   });
+}
+
+function normalizeActionMappings(raw: unknown): CriterionActionMapping[] {
+  if (!Array.isArray(raw)) return [];
+  const results: CriterionActionMapping[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const rawType = String((item as any).issueType ?? '').toLowerCase().trim();
+    const issueType: ActionMappingIssueType =
+      rawType === 'add' || rawType === 'replace' || rawType === 'fix_error'
+        ? (rawType as ActionMappingIssueType)
+        : rawType.includes('add') || rawType.includes('missing') || rawType.includes('thêm')
+          ? 'add'
+          : rawType.includes('error') || rawType.includes('fix') || rawType.includes('lỗi')
+            ? 'fix_error'
+            : 'replace';
+
+    const targetLocation = String(
+      (item as any).targetLocation ?? (item as any).location ?? (item as any).position ?? ''
+    ).trim();
+    const currentText = String((item as any).currentText ?? (item as any).original ?? '').trim();
+    const actionGuide = String(
+      (item as any).actionGuide ?? (item as any).guide ?? (item as any).reason ?? ''
+    ).trim();
+    const improvedExample = String(
+      (item as any).improvedExample ?? (item as any).replacement ?? (item as any).suggestion ?? ''
+    ).trim();
+    const suggestedPhrases = Array.isArray((item as any).suggestedPhrases)
+      ? (item as any).suggestedPhrases.map((p: any) => String(p).trim()).filter(Boolean)
+      : [];
+
+    if (targetLocation || actionGuide || currentText || improvedExample || suggestedPhrases.length > 0) {
+      results.push({
+        targetLocation: targetLocation || 'Trong bài viết',
+        issueType,
+        currentText: currentText || undefined,
+        actionGuide: actionGuide || 'Điều chỉnh theo gợi ý ánh xạ bên dưới.',
+        suggestedPhrases: suggestedPhrases.length > 0 ? suggestedPhrases : undefined,
+        improvedExample: improvedExample || undefined,
+      });
+    }
+  }
+  return results;
 }
 
 export function normalizeGradeResult(raw: any): BodyGradeResult {
@@ -327,6 +445,7 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
 
   const normalizeCriterion = (c: any, defaultLabel: string, targetBand: number): CriterionFeedback => {
     const band = roundToHalfBand(c?.band ?? 0);
+    const mappings = normalizeActionMappings(c?.mappings);
     return {
       band,
       passed75: band >= targetBand,
@@ -335,7 +454,7 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
           ? c.reason.trim()
           : band >= targetBand
             ? `${defaultLabel} đạt mục tiêu Band ${targetBand.toFixed(1)}+.`
-            : `${defaultLabel} chưa đạt mục tiêu Band ${targetBand.toFixed(1)}, cần chỉnh sửa theo gợi ý bên dưới.`,
+            : `${defaultLabel} chưa đạt mục tiêu Band ${targetBand.toFixed(1)}, cần chỉnh sửa theo ánh xạ bên dưới.`,
       evidence: Array.isArray(c?.evidence)
         ? c.evidence.map((e: any) => String(e).trim()).filter(Boolean)
         : [],
@@ -344,6 +463,7 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
         : typeof c?.fix === 'string' && c.fix.trim()
           ? [c.fix.trim()]
           : [],
+      mappings: mappings.length > 0 ? mappings : undefined,
     };
   };
 
@@ -433,10 +553,8 @@ export function normalizeFullEssayGradeResult(raw: any): FullEssayGradeResult {
     ? raw.repetitionAlerts.map((r: any) => String(r).trim()).filter(Boolean)
     : [];
 
-  const modelUpgrade =
-    typeof raw?.modelUpgrade === 'string' && raw.modelUpgrade.trim()
-      ? raw.modelUpgrade.trim()
-      : base.modelUpgrade;
+  // Chỉ mở khóa modelUpgrade khi đã đạt chuẩn (>= 7.5), tránh học vẹt viết lại đoạn mới trước khi tự sửa
+  const modelUpgrade = base.modelUpgrade;
 
   return {
     overallBand: base.overallBand,

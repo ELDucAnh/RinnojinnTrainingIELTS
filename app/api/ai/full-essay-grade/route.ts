@@ -3,6 +3,10 @@ export const maxDuration = 60;
 import { NextRequest, NextResponse } from 'next/server';
 import { formatGeminiError, generateJsonWithFallback } from '@/lib/gemini-helper';
 import {
+  buildAlignedCriteriaDirectives,
+  buildUnifiedGradeJsonSchema,
+} from '@/lib/writing-grade-prompt';
+import {
   countWords,
   normalizeFullEssayGradeResult,
   type ChartData,
@@ -161,72 +165,33 @@ ${taskSpecificRules}
 - "gra" — Grammatical Range & Accuracy (GRA) [MỤC TIÊU >= 7.0]:
   + Kết hợp tự nhiên câu đơn và câu phức phổ biến (while/whereas, mệnh đề quan hệ, câu điều kiện, bị động, phân từ), chia thì nhất quán xuyên suốt toàn bài và kiểm soát tốt mạo từ/giới từ/chủ-vị. Không đòi hỏi đảo ngữ/C2 hiếm mới cho 7.0.
 
+${buildAlignedCriteriaDirectives({ taskType, isFullEssay: true })}
+
 === YÊU CẦU CHỮA CHI TIẾT TOÀN BÀI ===
-1. Với TẤT CẢ 4 tiêu chí trong "criteria", bắt buộc có "fixes" cụ thể (thêm câu gì vào đoạn nào, đổi "'cụm cũ' -> 'collocation B1–B2 mới'", sửa ngữ pháp câu nào thành câu gì). CHỈ dùng C1–C2 nếu B1–B2 không đủ thay thế.
-2. "paragraphBreakdown": Mổ xẻ TỪNG ĐOẠN thực tế trong bài viết của học viên (tối thiểu các đoạn hiện có trong bài): nêu điểm làm tốt ("strengths"), chỗ yếu/mất điểm ("weaknesses"), và "suggestedEdit" (gợi ý câu sửa/viết lại cụ thể cho đoạn đó theo văn phong B1–B2 tự nhiên + cấu trúc 8.0).
-3. "repetitionAlerts": Liệt kê tất cả từ/cụm từ/cấu trúc hoặc ý bị lặp qua lại giữa các đoạn trong toàn bài (kèm gợi ý đổi sang B1–B2 collocation khác nhau ở mỗi đoạn).
-4. "wholeEssayStructureFeedback": Đánh giá tổng thể mạch liên kết giữa tất cả các đoạn từ mở bài tới kết bài, tỷ lệ phân bổ dung lượng giữa các đoạn và số từ (${wordCount} từ).
-5. "grammarErrors" & "vocabularyTips": Rà soát kỹ TOÀN BỘ bài viết (không bỏ sót lỗi nào đáng kể ở bất kỳ đoạn nào).
-6. "modelUpgrade": Viết lại HOÀN CHỈNH toàn bộ bài essay này thành bản mẫu chuẩn **${taskShort}/CC 8.5 · LR/GRA 7.5+ (Overall 8.0+)** bám sát đúng dữ liệu/lập trường của học viên, dùng collocation B1–B2 tự nhiên mượt mà để học viên đối chiếu học trực tiếp.
+1. Cả 4 tiêu chí trong "criteria" ĐỒNG BỘ HOÀN TOÀN qua "mappings" (gọi rõ từng Đoạn & từng Câu trong bài, VD: "Đoạn 2 — sau Câu 1", khớp với paragraphBreakdown/vocabularyTips/grammarErrors).
+2. "paragraphBreakdown": Mổ xẻ TỪNG ĐOẠN thực tế trong bài học viên: nêu "strengths", "weaknesses", và "suggestedEdit" = HƯỚNG TỰ SỬA / BỔ SUNG CỤ THỂ cho đoạn đó (chỉ rõ thêm ý gì vào sau câu nào, đổi cụm từ/từ nối gì sang cụm B1–B2 nào — KHÔNG viết sẵn cả đoạn mới thay thế!).
+3. "repetitionAlerts": Liệt kê tất cả từ/cụm từ/từ nối bị lặp xuyên suốt các đoạn (kèm gợi ý các collocation B1–B2 thay thế cho từng đoạn).
+4. "wholeEssayStructureFeedback": Đánh giá mạch liên kết tổng thể, phân bổ dung lượng giữa các đoạn và độ dài ${wordCount} từ.
 
 TRẢ VỀ DUY NHẤT JSON HỢP LỆ (KHÔNG MARKDOWN, KHÔNG \`\`\`):
-{
-  "criteria": {
-    "task": {
-      "band": 7.5,
-      "reason": "Đánh giá chi tiết ${taskCritName} trên toàn bài bằng tiếng Việt (nêu rõ đạt ở đâu, mất điểm ở đoạn nào để chạm >= 8.0).",
-      "evidence": ["Trích dẫn cụ thể từ bài hoặc thiếu sót rõ ràng"],
-      "fixes": ["Chỉ rõ cần thêm/sửa câu nào ở đoạn nào kèm câu tiếng Anh gợi ý"]
-    },
-    "cc": {
-      "band": 7.5,
-      "reason": "Đánh giá chi tiết mạch lạc, chia đoạn, phép quy chiếu & dòng chảy toàn bài; nếu < 8.0 chỉ rõ đoạn/câu nào bị khựng.",
-      "evidence": ["Trích dẫn cụ thể nếu có"],
-      "fixes": ["Chỉ rõ sửa liên kết đoạn/câu nào bằng quy chiếu tự nhiên gì"]
-    },
-    "lr": {
-      "band": 7.0,
-      "reason": "Đánh giá chi tiết độ tự nhiên của collocation B1–B2 xuyên suốt toàn bài.",
-      "evidence": ["Trích dẫn cụm từ chưa tự nhiên hoặc bị lặp xuyên suốt các đoạn"],
-      "fixes": ["Gợi ý cụ thể: 'từ/cụm cũ' -> 'collocation B1–B2 bản xứ'"]
-    },
-    "gra": {
-      "band": 7.0,
-      "reason": "Đánh giá chi tiết độ đa dạng cấu trúc & độ chính xác ngữ pháp toàn bài.",
-      "evidence": ["Trích dẫn câu lỗi hoặc câu quá đơn điệu"],
-      "fixes": ["Chỉ rõ cách sửa lỗi & mẫu câu phức Band 7.0+ thay thế"]
-    }
-  },
-  "wholeEssayStructureFeedback": "Nhận xét tổng thể cấu trúc toàn bài, cân đối dung lượng, mạch chuyển giữa các đoạn và độ dài ${wordCount} từ.",
+${buildUnifiedGradeJsonSchema({
+  taskShort: taskShort as 'TA' | 'TR',
+  extraFieldsSchema: `"wholeEssayStructureFeedback": "Nhận xét tổng thể cấu trúc toàn bài, cân đối dung lượng, mạch chuyển giữa các đoạn và độ dài ${wordCount} từ.",
   "paragraphBreakdown": [
     {
       "label": "Đoạn 1 (Mở bài / Intro)",
       "role": "Chức năng đoạn này trong cấu trúc chuẩn",
       "strengths": "Điểm làm tốt của đoạn",
       "weaknesses": "Điểm còn yếu / mất điểm của đoạn",
-      "suggestedEdit": "Hướng sửa cụ thể + câu/đoạn mẫu nâng cấp cho đoạn này"
+      "suggestedEdit": "Hướng dẫn tự sửa & bổ sung cụ thể ngay trên câu cũ của đoạn này + liệt kê cụm B1–B2 nên dùng (KHÔNG dán nguyên đoạn viết mới)."
     }
   ],
   "repetitionAlerts": [
-    "Lặp từ/cụm X ở đoạn 1 & đoạn 3 -> nên đa dạng bằng B1–B2 collocation Y/Z"
-  ],
-  "grammarErrors": [
-    {
-      "original": "Cụm/câu sai",
-      "correction": "Cách sửa chuẩn",
-      "explanation": "Giải thích bằng tiếng Việt"
-    }
-  ],
-  "vocabularyTips": [
-    {
-      "studentWord": "Từ/cụm còn thô hoặc bị lặp",
-      "betterAlternative": "Collocation B1–B2 tự nhiên (chỉ dùng C1–C2 nếu không có cụm B1–B2 tương đương)",
-      "reason": "Giải thích vì sao tự nhiên và đúng chuẩn Band 7.0 hơn"
-    }
-  ],
-  "generalFeedback": "Tổng kết 2–3 câu bằng tiếng Việt về bài essay hoàn chỉnh (${taskShort} >= 8.0, CC >= 8.0, LR >= 7.0, GRA >= 7.0) và việc cần ưu tiên sửa ngay.",
-  "modelUpgrade": "Toàn bộ bài essay nâng cấp hoàn chỉnh chuẩn 8.0+ (ngắt đoạn bằng \\n\\n, giữ văn phong B1–B2 tự nhiên mạch lạc)."
-}
+    "Lặp từ/cụm X ở Đoạn 1 & Đoạn 3 -> Đoạn 1 giữ ..., Đoạn 3 đổi sang B1–B2 collocation ..."
+  ],`,
+  modelUpgradeInstruction:
+    'Toàn bộ bài essay tham khảo chuẩn 8.0+ (ngắt đoạn bằng \\n\\n, giữ văn phong B1–B2 tự nhiên — hệ thống chỉ mở cho học viên đối chiếu SAU KHI ĐẠT CHUẨN).',
+})}
 `.trim();
 
     const { data } = await generateJsonWithFallback(
@@ -240,8 +205,8 @@ TRẢ VỀ DUY NHẤT JSON HỢP LỆ (KHÔNG MARKDOWN, KHÔNG \`\`\`):
       },
       {
         temperature: 0.35,
-        maxOutputTokens: 4500,
-        perModelTimeoutMs: 26_000,
+        maxOutputTokens: 4800,
+        perModelTimeoutMs: 27_000,
         totalBudgetMs: 55_000,
       }
     );

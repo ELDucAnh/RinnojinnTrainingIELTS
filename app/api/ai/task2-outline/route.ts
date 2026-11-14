@@ -41,11 +41,15 @@ Return ONLY valid JSON with:
    - bodyIndex 4 — "Body 5 — Kết bài (Conclusion — Tổng hợp tam giác lập luận)":
      * Tổng hợp súc tích mạch Body 2–4 + tái khẳng định Thesis sắc gọn + 1 hàm ý định hướng tinh tế (TUYỆT ĐỐI không đưa ý mới).
 
-STRICT RULES (concise yet TR 8.0+ & CC 8.0+ insightful):
-- Write "role", "viGuide", and "linkingTip" in VIETNAMESE. Do NOT write full sample English sentences or paragraphs!
-- "viGuide": 3 razor-sharp steps showing exact logical progression (Topic Claim -> Deep Mechanism -> Concrete Illustration -> Thesis Anchor).
-- "vocabSuggestions": 3–4 natural **B1–B2 native written collocations** tailored to THIS Body (targeting **LR Band 7.0**, e.g. "play a vital role in", "have a negative impact on", "raise public awareness", "bridge the gap between", "lead to long-term problems"). DO NOT use complex/rare C1–C2 words unless no B1–B2 collocation can express the idea accurately! Prioritize natural written collocations over fancy words: [{ "phrase": "...", "meaning": "..." }].
-- "grammarSuggestions": 2–3 practical **Band 7.0** grammar structures tailored to THIS Body (e.g. "While/Although S + V, S + V", relative clause ", which + V", conditional / "Without + N"), with brief Vietnamese usage note: [{ "structure": "...", "usage": "..." }].
+STRICT RULES (deeply structured, Idea-by-Idea mapping — NEVER generic rote tokens):
+- Write "role", "viGuide", "ideaGuides[].ideaLabel", "ideaGuides[].ideaVi", and "linkingTip" in VIETNAMESE. Do NOT write full sample English sentences or paragraphs!
+- IMPORTANT — IDEA-BY-IDEA MAPPING ("ideaGuides"):
+  For EVERY Body (0..4), break the Body down into **2–4 concrete, sequential ideas** ("ideaGuides", matching "viGuide"):
+  * Body 1 (Intro) & Body 5 (Conclusion): 2–3 ideas each; Body 2, 3, 4 (Thân bài): 3–4 ideas each (Topic Claim -> Deep Mechanism -> Concrete Illustration -> Thesis Anchor).
+  * For EACH individual idea inside "ideaGuides":
+    - "vocabPhrases": list **3–4 natural B1–B2 native written collocations** tailored specifically to expressing THAT idea (total ~9–14 useful collocations per Body, NEVER only 1–2 token phrases!). Prioritize natural written collocations over rare C1–C2 words unless B1–B2 lacks an accurate substitute: `[{ "phrase": "...", "meaning": "..." }]`.
+    - "grammarPatterns": list **1–2 practical Band 7.0 grammar structures** fitted specifically for connecting/expressing THAT idea (e.g. "While/Although S + V, S + V", ", which + leads to / means that...", "Instead of + V-ing, S + should...", conditional), with a crisp Vietnamese "usage" note explaining HOW THAT idea uses that grammar pattern: `[{ "structure": "...", "usage": "..." }]`.
+- "viGuide": concise array mirroring the sequential "ideaGuides" steps.
 - "linkingTip": 1 specific semantic cohesion cue explaining how this body hooks naturally into adjacent bodies (referencing Thesis/preceding concept instead of mechanical "Firstly/Moreover").
 
 JSON shape ("outline" MUST contain ALL 5 items bodyIndex 0..4):
@@ -53,11 +57,30 @@ JSON shape ("outline" MUST contain ALL 5 items bodyIndex 0..4):
   "essayType": "...",
   "promptAnalysis": "...",
   "outline": [
-    { "bodyIndex": 0, "role": "Body 1 — Mở bài (Introduction & Thesis Roadmap)", "viGuide": ["Bước 1...", "Bước 2...", "Bước 3..."], "vocabSuggestions": [{ "phrase": "spark polarized debate", "meaning": "châm ngòi tranh luận trái chiều" }], "grammarSuggestions": [{ "structure": "While some contend that..., I firmly believe...", "usage": "Khung câu mở bài nhượng bộ + Thesis rõ lập trường" }], "linkingTip": "1 câu liên kết mạch bài..." },
-    { "bodyIndex": 1, "role": "Body 2 — Thân bài 1 (Luận điểm trụ cột 1)", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." },
-    { "bodyIndex": 2, "role": "Body 3 — Thân bài 2 (Luận điểm trụ cột 2)", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." },
-    { "bodyIndex": 3, "role": "Body 4 — Thân bài 3 (Nhượng bộ & Phản biện / Chiều sâu 8.5+)", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." },
-    { "bodyIndex": 4, "role": "Body 5 — Kết bài (Tổng hợp & Khẳng định Thesis)", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." }
+    {
+      "bodyIndex": 0,
+      "role": "Body 1 — Mở bài (Introduction & Thesis Roadmap)",
+      "viGuide": ["Ý 1...", "Ý 2..."],
+      "ideaGuides": [
+        {
+          "ideaLabel": "Ý 1 — Dẫn bối cảnh xung đột của đề",
+          "ideaVi": "Paraphrase ngắn gọn bối cảnh hai luồng quan điểm đang tranh luận...",
+          "vocabPhrases": [
+            { "phrase": "spark heated debate", "meaning": "gây ra tranh luận sôi nổi" },
+            { "phrase": "growing concern over", "meaning": "mối lo ngại ngày càng tăng về" },
+            { "phrase": "play a central role in", "meaning": "đóng vai trò trung tâm trong" }
+          ],
+          "grammarPatterns": [
+            { "structure": "While some contend that + [quan điểm A], others argue that + [quan điểm B]", "usage": "Mở bài nhượng bộ nêu cả 2 vế đề bài trong 1 câu mượt" }
+          ]
+        }
+      ],
+      "linkingTip": "1 câu liên kết mạch bài..."
+    },
+    { "bodyIndex": 1, "role": "Body 2 — Thân bài 1 (Luận điểm trụ cột 1)", "viGuide": ["..."], "ideaGuides": [{ "ideaLabel": "...", "ideaVi": "...", "vocabPhrases": [...], "grammarPatterns": [...] }], "linkingTip": "..." },
+    { "bodyIndex": 2, "role": "Body 3 — Thân bài 2 (Luận điểm trụ cột 2)", "viGuide": ["..."], "ideaGuides": [{ "ideaLabel": "...", "ideaVi": "...", "vocabPhrases": [...], "grammarPatterns": [...] }], "linkingTip": "..." },
+    { "bodyIndex": 3, "role": "Body 4 — Thân bài 3 (Nhượng bộ & Phản biện / Chiều sâu 8.5+)", "viGuide": ["..."], "ideaGuides": [{ "ideaLabel": "...", "ideaVi": "...", "vocabPhrases": [...], "grammarPatterns": [...] }], "linkingTip": "..." },
+    { "bodyIndex": 4, "role": "Body 5 — Kết bài (Tổng hợp & Khẳng định Thesis)", "viGuide": ["..."], "ideaGuides": [{ "ideaLabel": "...", "ideaVi": "...", "vocabPhrases": [...], "grammarPatterns": [...] }], "linkingTip": "..." }
   ]
 }`;
 
@@ -81,10 +104,10 @@ JSON shape ("outline" MUST contain ALL 5 items bodyIndex 0..4):
         };
       },
       {
-        temperature: 0.6,
-        maxOutputTokens: 3200,
-        perModelTimeoutMs: 22_000,
-        totalBudgetMs: 52_000,
+        temperature: 0.55,
+        maxOutputTokens: 4800,
+        perModelTimeoutMs: 25_000,
+        totalBudgetMs: 54_000,
       }
     );
 

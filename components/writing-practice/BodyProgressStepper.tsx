@@ -23,15 +23,15 @@ export function BodyProgressStepper({
     accent === 'emerald'
       ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-200/70'
       : accent === 'orange'
-      ? 'bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-200/70'
-      : 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200/70';
+        ? 'bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-200/70'
+        : 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200/70';
 
   const progressFill =
     accent === 'emerald'
       ? 'from-emerald-500 to-teal-500'
       : accent === 'orange'
-      ? 'from-orange-400 to-amber-400'
-      : 'from-indigo-500 to-purple-500';
+        ? 'from-orange-400 to-amber-400'
+        : 'from-indigo-500 to-purple-500';
 
   const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
@@ -69,13 +69,12 @@ export function BodyProgressStepper({
           return (
             <div
               key={idx}
-              className={`rounded-xl px-3 py-2.5 border transition-all flex flex-col gap-1 ${
-                done
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                  : isCurrent
+              className={`rounded-xl px-3 py-2.5 border transition-all flex flex-col gap-1 ${done
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : isCurrent
                   ? activeStyle
                   : 'bg-gray-50/80 border-gray-200 text-gray-400'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between gap-1">
                 <span className="text-[11px] font-black uppercase tracking-wider">
@@ -92,9 +91,8 @@ export function BodyProgressStepper({
                 )}
               </div>
               <p
-                className={`text-[11px] font-semibold truncate ${
-                  isCurrent ? 'text-white/95' : done ? 'text-emerald-700' : 'text-gray-400'
-                }`}
+                className={`text-[11px] font-semibold truncate ${isCurrent ? 'text-white/95' : done ? 'text-emerald-700' : 'text-gray-400'
+                  }`}
                 title={item.role}
               >
                 {shortRole}
