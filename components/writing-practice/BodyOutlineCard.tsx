@@ -54,6 +54,24 @@ export function BodyOutlineCard({
         ? 'bg-orange-50/80 border-orange-200'
         : 'bg-indigo-50/70 border-indigo-200';
 
+  const vocabChipStyle =
+    accent === 'emerald'
+      ? 'bg-emerald-50/70 border-emerald-200/80 text-emerald-950'
+      : accent === 'orange'
+        ? 'bg-orange-50/75 border-orange-200/80 text-orange-950'
+        : 'bg-indigo-50/70 border-indigo-200/80 text-indigo-950';
+
+  const vocabPhraseStyle =
+    accent === 'emerald'
+      ? 'text-emerald-800'
+      : accent === 'orange'
+        ? 'text-orange-800'
+        : 'text-indigo-800';
+
+  const vocabSuggestions = currentOutline.vocabSuggestions ?? [];
+  const grammarSuggestions = currentOutline.grammarSuggestions ?? [];
+  const hasLanguageSuggestions = vocabSuggestions.length > 0 || grammarSuggestions.length > 0;
+
   const showMinimalIcons = accent === 'orange';
 
   return (
@@ -102,21 +120,6 @@ export function BodyOutlineCard({
         </ul>
       </div>
 
-      {/* Điểm dữ liệu / luận điểm cụ thể */}
-      {currentOutline.keyPoints.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 items-center">
-          <span className="text-[11px] font-bold text-gray-500 mr-1">Gợi ý chi tiết:</span>
-          {currentOutline.keyPoints.map((kp, i) => (
-            <span
-              key={i}
-              className="text-xs font-medium bg-white border border-gray-200/90 text-gray-700 px-2.5 py-1 rounded-lg shadow-xs"
-            >
-              {kp}
-            </span>
-          ))}
-        </div>
-      )}
-
       {/* Gợi ý liên kết */}
       <div className={`flex items-start gap-2 border rounded-xl px-3.5 py-2.5 text-xs ${linkBoxStyle}`}>
         {!showMinimalIcons && <Link2 size={14} className="text-blue-600 flex-shrink-0 mt-0.5" />}
@@ -125,6 +128,73 @@ export function BodyOutlineCard({
           <span>{currentOutline.linkingTip}</span>
         </div>
       </div>
+
+      {/* Gợi ý chi tiết ở dưới cùng: Cụm Vocab Band 7.0+ (kèm nghĩa tiếng Việt) & Cụm ngữ pháp nên dùng */}
+      {hasLanguageSuggestions ? (
+        <div className="bg-white/95 rounded-xl border border-gray-200/80 p-3.5 sm:p-4 flex flex-col gap-3">
+          <p className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
+            Gợi ý chi tiết — Từ vựng Band 7.0+ &amp; Ngữ pháp nên dùng cho Body {currentBodyIndex + 1}
+          </p>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {vocabSuggestions.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-gray-700">
+                  Cụm vocab Band 7.0+ (kèm nghĩa tiếng Việt)
+                </span>
+                <div className="flex flex-col gap-1.5">
+                  {vocabSuggestions.map((v, i) => (
+                    <div
+                      key={i}
+                      className={`text-xs rounded-lg px-2.5 py-2 border leading-relaxed ${vocabChipStyle}`}
+                    >
+                      <span className={`font-bold ${vocabPhraseStyle}`}>{v.phrase}</span>
+                      {v.meaning && (
+                        <span className="text-gray-600 font-normal"> — {v.meaning}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {grammarSuggestions.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-bold text-gray-700">
+                  Cụm / cấu trúc ngữ pháp nên sử dụng
+                </span>
+                <div className="flex flex-col gap-1.5">
+                  {grammarSuggestions.map((g, i) => (
+                    <div
+                      key={i}
+                      className="text-xs rounded-lg px-2.5 py-2 bg-stone-50/90 border border-stone-200/90 text-gray-800 leading-relaxed"
+                    >
+                      <p className="font-semibold text-gray-900">{g.structure}</p>
+                      {g.usage && (
+                        <p className="text-[11px] text-gray-600 mt-0.5">{g.usage}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        currentOutline.keyPoints.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 items-center">
+            <span className="text-[11px] font-bold text-gray-500 mr-1">Gợi ý chi tiết:</span>
+            {currentOutline.keyPoints.map((kp, i) => (
+              <span
+                key={i}
+                className="text-xs font-medium bg-white border border-gray-200/90 text-gray-700 px-2.5 py-1 rounded-lg shadow-xs"
+              >
+                {kp}
+              </span>
+            ))}
+          </div>
+        )
+      )}
 
       {/* Toàn bộ dàn ý tham khảo */}
       {showFullPlan && (
@@ -137,8 +207,8 @@ export function BodyOutlineCard({
               <div
                 key={o.bodyIndex}
                 className={`p-2.5 rounded-lg border text-xs ${o.bodyIndex === currentBodyIndex
-                    ? activeOverviewRowStyle
-                    : 'bg-gray-50/70 border-gray-100'
+                  ? activeOverviewRowStyle
+                  : 'bg-gray-50/70 border-gray-100'
                   }`}
               >
                 <p className="font-bold text-gray-800 mb-1">

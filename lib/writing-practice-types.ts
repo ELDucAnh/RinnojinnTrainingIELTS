@@ -2,12 +2,24 @@
 
 export type ChartType = 'bar' | 'line' | 'pie' | 'table' | 'process' | 'map';
 
+export interface SuggestedVocabItem {
+  phrase: string;
+  meaning: string;
+}
+
+export interface SuggestedGrammarItem {
+  structure: string;
+  usage: string;
+}
+
 export interface OutlineBodyItem {
   bodyIndex: number;
   label: string;
   role: string;
   viGuide: string[];
   keyPoints: string[];
+  vocabSuggestions?: SuggestedVocabItem[];
+  grammarSuggestions?: SuggestedGrammarItem[];
   linkingTip: string;
 }
 
@@ -171,6 +183,53 @@ export function countWords(text: string): number {
   return trimmed.split(/\s+/).filter(Boolean).length;
 }
 
+function normalizeVocabSuggestions(raw: unknown): SuggestedVocabItem[] {
+  if (!Array.isArray(raw)) return [];
+  const results: SuggestedVocabItem[] = [];
+  for (const item of raw) {
+    if (typeof item === 'string') {
+      const cleaned = item.trim();
+      if (!cleaned) continue;
+      const parenMatch = cleaned.match(/^(.+?)\s*\((.+)\)\s*$/);
+      if (parenMatch) {
+        results.push({ phrase: parenMatch[1].trim(), meaning: parenMatch[2].trim() });
+      } else {
+        results.push({ phrase: cleaned, meaning: '' });
+      }
+      continue;
+    }
+    if (item && typeof item === 'object') {
+      const phrase = String((item as any).phrase ?? (item as any).word ?? (item as any).term ?? '').trim();
+      const meaning = String((item as any).meaning ?? (item as any).viMeaning ?? (item as any).meaningVi ?? '').trim();
+      if (phrase) {
+        results.push({ phrase, meaning });
+      }
+    }
+  }
+  return results;
+}
+
+function normalizeGrammarSuggestions(raw: unknown): SuggestedGrammarItem[] {
+  if (!Array.isArray(raw)) return [];
+  const results: SuggestedGrammarItem[] = [];
+  for (const item of raw) {
+    if (typeof item === 'string') {
+      const cleaned = item.trim();
+      if (!cleaned) continue;
+      results.push({ structure: cleaned, usage: '' });
+      continue;
+    }
+    if (item && typeof item === 'object') {
+      const structure = String((item as any).structure ?? (item as any).pattern ?? (item as any).grammar ?? '').trim();
+      const usage = String((item as any).usage ?? (item as any).note ?? (item as any).explanation ?? '').trim();
+      if (structure) {
+        results.push({ structure, usage });
+      }
+    }
+  }
+  return results;
+}
+
 export function normalizeOutline(
   rawOutline: unknown,
   task: 'task1' | 'task2'
@@ -199,6 +258,9 @@ export function normalizeOutline(
       ? found.keyPoints.map((s: any) => String(s).trim()).filter(Boolean)
       : [];
 
+    const vocabSuggestions = normalizeVocabSuggestions(found.vocabSuggestions);
+    const grammarSuggestions = normalizeGrammarSuggestions(found.grammarSuggestions);
+
     const linkingTip =
       typeof found.linkingTip === 'string' && found.linkingTip.trim()
         ? found.linkingTip.trim()
@@ -212,6 +274,8 @@ export function normalizeOutline(
       role: typeof found.role === 'string' && found.role.trim() ? found.role.trim() : tpl.role,
       viGuide,
       keyPoints,
+      vocabSuggestions,
+      grammarSuggestions,
       linkingTip,
     };
   });

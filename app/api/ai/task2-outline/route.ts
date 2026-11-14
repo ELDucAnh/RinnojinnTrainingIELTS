@@ -42,9 +42,10 @@ Return ONLY valid JSON with:
      * Tổng hợp súc tích mạch Body 2–4 + tái khẳng định Thesis sắc gọn + 1 hàm ý định hướng tinh tế (TUYỆT ĐỐI không đưa ý mới).
 
 STRICT RULES (concise yet Band 8.5+ insightful):
-- Write ALL guidance in VIETNAMESE. Do NOT write sample English sentences/paragraphs!
+- Write "role", "viGuide", and "linkingTip" in VIETNAMESE. Do NOT write full sample English sentences or paragraphs!
 - "viGuide": 3 razor-sharp steps showing exact logical progression (Topic Claim -> Deep Mechanism -> Concrete Illustration -> Thesis Anchor).
-- "keyPoints": 3 concrete, non-cliché Vietnamese mechanism/example/nuance hooks.
+- "vocabSuggestions": 3–4 academic Band 7.0–8.0+ English phrases/collocations specifically tailored to THIS Body's argument, each with concise Vietnamese meaning: [{ "phrase": "...", "meaning": "..." }]. Only short phrases/collocations, NOT full sentences.
+- "grammarSuggestions": 2–3 Band 7.0–8.0+ grammar structures tailored to THIS Body, with brief Vietnamese usage note: [{ "structure": "...", "usage": "..." }].
 - "linkingTip": 1 specific semantic cohesion cue explaining how this body hooks naturally into adjacent bodies (referencing Thesis/preceding concept instead of mechanical "Firstly/Moreover").
 
 JSON shape ("outline" MUST contain ALL 5 items bodyIndex 0..4):
@@ -52,11 +53,11 @@ JSON shape ("outline" MUST contain ALL 5 items bodyIndex 0..4):
   "essayType": "...",
   "promptAnalysis": "...",
   "outline": [
-    { "bodyIndex": 0, "role": "Body 1 — Mở bài (Introduction & Thesis Roadmap)", "viGuide": ["Bước 1...", "Bước 2...", "Bước 3..."], "keyPoints": ["Ý 1...", "Ý 2...", "Ý 3..."], "linkingTip": "1 câu liên kết mạch bài..." },
-    { "bodyIndex": 1, "role": "Body 2 — Thân bài 1 (Luận điểm trụ cột 1)", "viGuide": ["..."], "keyPoints": ["..."], "linkingTip": "..." },
-    { "bodyIndex": 2, "role": "Body 3 — Thân bài 2 (Luận điểm trụ cột 2)", "viGuide": ["..."], "keyPoints": ["..."], "linkingTip": "..." },
-    { "bodyIndex": 3, "role": "Body 4 — Thân bài 3 (Nhượng bộ & Phản biện / Chiều sâu 8.5+)", "viGuide": ["..."], "keyPoints": ["..."], "linkingTip": "..." },
-    { "bodyIndex": 4, "role": "Body 5 — Kết bài (Tổng hợp & Khẳng định Thesis)", "viGuide": ["..."], "keyPoints": ["..."], "linkingTip": "..." }
+    { "bodyIndex": 0, "role": "Body 1 — Mở bài (Introduction & Thesis Roadmap)", "viGuide": ["Bước 1...", "Bước 2...", "Bước 3..."], "vocabSuggestions": [{ "phrase": "spark polarized debate", "meaning": "châm ngòi tranh luận trái chiều" }], "grammarSuggestions": [{ "structure": "While some contend that..., I firmly believe...", "usage": "Khung câu mở bài nhượng bộ + Thesis rõ lập trường" }], "linkingTip": "1 câu liên kết mạch bài..." },
+    { "bodyIndex": 1, "role": "Body 2 — Thân bài 1 (Luận điểm trụ cột 1)", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." },
+    { "bodyIndex": 2, "role": "Body 3 — Thân bài 2 (Luận điểm trụ cột 2)", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." },
+    { "bodyIndex": 3, "role": "Body 4 — Thân bài 3 (Nhượng bộ & Phản biện / Chiều sâu 8.5+)", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." },
+    { "bodyIndex": 4, "role": "Body 5 — Kết bài (Tổng hợp & Khẳng định Thesis)", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." }
   ]
 }`;
 
@@ -81,8 +82,8 @@ JSON shape ("outline" MUST contain ALL 5 items bodyIndex 0..4):
       },
       {
         temperature: 0.6,
-        maxOutputTokens: 2400,
-        perModelTimeoutMs: 20_000,
+        maxOutputTokens: 3200,
+        perModelTimeoutMs: 22_000,
         totalBudgetMs: 52_000,
       }
     );

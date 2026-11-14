@@ -61,21 +61,21 @@ export async function POST(req: NextRequest) {
 
     const fullOutlineSummary = Array.isArray(outline)
       ? outline
-          .map(
-            (o, idx) =>
-              `- Body ${idx + 1} (${o.role}): ${(o.viGuide || []).join(' | ')}`
-          )
-          .join('\n')
+        .map(
+          (o, idx) =>
+            `- Body ${idx + 1} (${o.role}): ${(o.viGuide || []).join(' | ')}`
+        )
+        .join('\n')
       : 'Không có dàn ý đính kèm.';
 
     const previousBodiesText =
       Array.isArray(previousBodies) && previousBodies.length > 0
         ? previousBodies
-            .map(
-              (pb) =>
-                `[Body ${pb.bodyIndex + 1} — ${pb.role || TASK2_BODY_TEMPLATES[pb.bodyIndex]?.role || ''}]:\n"${pb.content}"`
-            )
-            .join('\n\n')
+          .map(
+            (pb) =>
+              `[Body ${pb.bodyIndex + 1} — ${pb.role || TASK2_BODY_TEMPLATES[pb.bodyIndex]?.role || ''}]:\n"${pb.content}"`
+          )
+          .join('\n\n')
         : 'Chưa có body nào trước đó (đây là Body 1 — phần mở bài).';
 
     const aiPrompt = `
@@ -102,7 +102,7 @@ ${previousBodiesText}
 === BODY HIỆN TẠI ĐANG CHẤM ===
 - Vị trí: ${currentTemplate.label} (${currentOutline?.role || currentTemplate.role})
 - Dàn ý tiếng Việt cho Body này: ${currentOutline ? JSON.stringify(currentOutline.viGuide) : 'Theo chuẩn IELTS Task 2'}
-- Ý/ví dụ gợi ý: ${currentOutline ? JSON.stringify(currentOutline.keyPoints) : 'Theo đề bài'}
+- Từ vựng & ngữ pháp Band 7.0+ gợi ý cho Body này: ${currentOutline ? JSON.stringify({ vocab: currentOutline.vocabSuggestions || [], grammar: currentOutline.grammarSuggestions || [], legacyPoints: currentOutline.keyPoints || [] }) : 'Theo đề bài'}
 - Bài viết tiếng Anh của học viên cho Body ${bodyIndex + 1}:
 """
 ${cleanContent}

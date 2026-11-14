@@ -161,18 +161,19 @@ const OUTLINE_INSTRUCTIONS = `
   * Chỉ rõ phép quy chiếu/chuyển ý tự nhiên từ Body 3 (tránh "Secondly/Moreover" máy móc).
 
 RULES:
-- Write ALL fields ("role", "viGuide", "keyPoints", "linkingTip") in sharp, insightful VIETNAMESE.
-- DO NOT provide pre-written English sentences! Only ideas, exact data figures, comparison angles, and structural cues in Vietnamese.
+- Write "role", "viGuide", and "linkingTip" in sharp, insightful VIETNAMESE. Embed exact chart numbers, units, and labels directly inside "viGuide" steps for Body 3 & 4.
+- DO NOT write full sample English sentences or paragraphs!
 - "viGuide": 3 crisp, high-impact analytical steps tailored to THIS exact chart (engineering TA & CC > 8.0).
-- "keyPoints": 3–4 concrete exact numbers/comparisons/structural hooks from THIS chart.
+- "vocabSuggestions": 3–4 academic Band 7.0–8.0+ English collocations/verbs/nouns specifically useful for THIS Body, each with concise Vietnamese meaning: [{ "phrase": "...", "meaning": "..." }]. Do NOT write whole sentences.
+- "grammarSuggestions": 2–3 high-scoring Band 7.0–8.0+ grammar structures specifically useful for THIS Body, with brief Vietnamese usage note: [{ "structure": "...", "usage": "..." }].
 - "linkingTip": 1 specific Vietnamese cohesion cue explaining the exact logical/referential bridge with adjacent bodies.
 
 "outline" shape (EXACTLY 4 items):
 [
-  { "bodyIndex": 0, "role": "Introduction — Mở bài (Paraphrase chuẩn xác đủ chiều dữ liệu)", "viGuide": ["Bước 1...", "Bước 2...", "Bước 3..."], "keyPoints": ["Dữ kiện 1...", "Dữ kiện 2...", "Dữ kiện 3..."], "linkingTip": "1 câu liên kết mạch bài..." },
-  { "bodyIndex": 1, "role": "Overview — Tổng quan chiến lược 2 tầng xu hướng", "viGuide": ["..."], "keyPoints": ["..."], "linkingTip": "..." },
-  { "bodyIndex": 2, "role": "Body 3 — Thân bài 1 (Gom nhóm & đối chiếu số liệu nhóm 1)", "viGuide": ["..."], "keyPoints": ["..."], "linkingTip": "..." },
-  { "bodyIndex": 3, "role": "Body 4 — Thân bài 2 (Nhóm còn lại & đối chiếu chéo với Body 3)", "viGuide": ["..."], "keyPoints": ["..."], "linkingTip": "..." }
+  { "bodyIndex": 0, "role": "Introduction — Mở bài (Paraphrase chuẩn xác đủ chiều dữ liệu)", "viGuide": ["Bước 1...", "Bước 2...", "Bước 3..."], "vocabSuggestions": [{ "phrase": "illustrate the proportion of...", "meaning": "minh họa tỷ lệ của..." }], "grammarSuggestions": [{ "structure": "The [chart] illustrates how [S] + V over a [N]-year period", "usage": "Paraphrase mở bài chuẩn xác đủ chiều thời gian" }], "linkingTip": "1 câu liên kết mạch bài..." },
+  { "bodyIndex": 1, "role": "Overview — Tổng quan chiến lược 2 tầng xu hướng", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." },
+  { "bodyIndex": 2, "role": "Body 3 — Thân bài 1 (Gom nhóm & đối chiếu số liệu nhóm 1)", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." },
+  { "bodyIndex": 3, "role": "Body 4 — Thân bài 2 (Nhóm còn lại & đối chiếu chéo với Body 3)", "viGuide": ["..."], "vocabSuggestions": [...], "grammarSuggestions": [...], "linkingTip": "..." }
 ]
 `;
 
@@ -219,8 +220,8 @@ Return ONLY valid JSON:
         },
         {
           temperature: 0.6,
-          maxOutputTokens: 2100,
-          perModelTimeoutMs: 18_000,
+          maxOutputTokens: 2800,
+          perModelTimeoutMs: 20_000,
           totalBudgetMs: 50_000,
         }
       );
@@ -278,7 +279,7 @@ ${OUTLINE_INSTRUCTIONS}`;
       },
       {
         temperature: chartOnly ? 0.7 : 0.65,
-        maxOutputTokens: chartOnly ? 1400 : 2800,
+        maxOutputTokens: chartOnly ? 1400 : 3200,
         perModelTimeoutMs: chartOnly ? 16_000 : 20_000,
         totalBudgetMs: 50_000,
       }

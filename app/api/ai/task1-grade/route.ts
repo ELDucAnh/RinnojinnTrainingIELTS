@@ -88,7 +88,7 @@ ${previousBodiesText}
 === BODY HIỆN TẠI ĐANG CHẤM ===
 - Vị trí: ${currentTemplate.label} (${currentOutline?.role || currentTemplate.role})
 - Dàn ý tiếng Việt cho Body này: ${currentOutline ? JSON.stringify(currentOutline.viGuide) : 'Theo chuẩn IELTS Task 1'}
-- Điểm dữ liệu gợi ý: ${currentOutline ? JSON.stringify(currentOutline.keyPoints) : 'Theo biểu đồ'}
+- Từ vựng & ngữ pháp Band 7.0+ gợi ý cho Body này: ${currentOutline ? JSON.stringify({ vocab: currentOutline.vocabSuggestions || [], grammar: currentOutline.grammarSuggestions || [], legacyPoints: currentOutline.keyPoints || [] }) : 'Theo biểu đồ'}
 - Bài viết tiếng Anh của học viên cho Body ${bodyIndex + 1}:
 """
 ${cleanContent}
