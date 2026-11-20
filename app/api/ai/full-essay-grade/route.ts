@@ -1,9 +1,17 @@
 export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from 'next/server';
-import { formatGeminiError, generateJsonWithFallback } from '@/lib/gemini-helper';
+import {
+  formatGeminiError,
+  generateJsonWithFallback,
+  isLengthOrTransientError,
+} from '@/lib/gemini-helper';
 import {
   buildAlignedCriteriaDirectives,
+  buildGraLrPhaseSchema,
+  buildPreviousAttemptBlock,
+  buildTaskCcPhaseSchema,
+  buildTutorClosingPhaseSchema,
   buildUnifiedGradeJsonSchema,
 } from '@/lib/writing-grade-prompt';
 import {
@@ -11,7 +19,10 @@ import {
   normalizeFullEssayGradeResult,
   type ChartData,
   type OutlineBodyItem,
+  type PreviousAttemptSummary,
 } from '@/lib/writing-practice-types';
+
+type FullEssayPhase = 'full' | 'task-cc' | 'gra-lr' | 'paragraphs-tutor';
 
 function summarizeChartData(chartData: ChartData): string {
   const axisValues = chartData.xValues || chartData.categories || [];
@@ -35,8 +46,12 @@ function summarizeChartData(chartData: ChartData): string {
     .join('\n');
   const mapText = [
     chartData.location ? `Địa điểm: ${chartData.location}` : '',
-    chartData.period1 ? `Giai đoạn 1 (${chartData.period1}): ${(chartData.features1 || []).map((f) => `${f.name} (${f.position}): ${f.description}`).join('; ')}` : '',
-    chartData.period2 ? `Giai đoạn 2 (${chartData.period2}): ${(chartData.features2 || []).map((f) => `${f.name} (${f.position}): ${f.description}`).join('; ')}` : '',
+    chartData.period1
+      ? `Giai đoạn 1 (${chartData.period1}): ${(chartData.features1 || []).map((f) => `${f.name} (${f.position}): ${f.description}`).join('; ')}`
+      : '',
+    chartData.period2
+      ? `Giai đoạn 2 (${chartData.period2}): ${(chartData.features2 || []).map((f) => `${f.name} (${f.position}): ${f.description}`).join('; ')}`
+      : '',
     chartData.changes?.length ? `Thay đổi chính: ${chartData.changes.join(' | ')}` : '',
   ]
     .filter(Boolean)
@@ -70,6 +85,10 @@ export async function POST(req: NextRequest) {
       essayType,
       outline,
       essay,
+      previousAttempt,
+      phase = 'full',
+      phase1Context,
+      criteriaContext,
     }: {
       taskType: 'task1' | 'task2';
       chartData?: ChartData;
@@ -77,6 +96,10 @@ export async function POST(req: NextRequest) {
       essayType?: string;
       outline?: OutlineBodyItem[];
       essay: string;
+      previousAttempt?: PreviousAttemptSummary | null;
+      phase?: FullEssayPhase;
+      phase1Context?: any;
+      criteriaContext?: any;
     } = body;
 
     if (taskType !== 'task1' && taskType !== 'task2') {
@@ -103,16 +126,12 @@ export async function POST(req: NextRequest) {
 
     const expectedBodyCount = taskType === 'task1' ? 4 : 5;
     const minWordTarget = taskType === 'task1' ? 150 : 250;
-    const taskCritName = taskType === 'task1' ? 'Task Achievement (TA)' : 'Task Response (TR)';
-    const taskShort = taskType === 'task1' ? 'TA' : 'TR';
+    const taskShort: 'TA' | 'TR' = taskType === 'task1' ? 'TA' : 'TR';
 
     const outlineSummary =
       Array.isArray(outline) && outline.length > 0
         ? outline
-            .map(
-              (o, idx) =>
-                `- Body ${idx + 1} (${o.role}): ${(o.viGuide || []).join(' | ')}`
-            )
+            .map((o, idx) => `- Body ${idx + 1} (${o.role}): ${(o.viGuide || []).join(' | ')}`)
             .join('\n')
         : 'Không có dàn ý đính kèm.';
 
@@ -121,61 +140,152 @@ export async function POST(req: NextRequest) {
         ? `=== ĐỀ BÀI TASK 1 & DỮ LIỆU GỐC ===\n${summarizeChartData(chartData!)}`
         : `=== ĐỀ BÀI TASK 2 ===\n"${task2Prompt!.trim()}"\nDạng bài: ${essayType || 'IELTS Task 2'}`;
 
+    const previousAttemptBlock = buildPreviousAttemptBlock(previousAttempt);
+
     const taskSpecificRules =
       taskType === 'task1'
         ? `
 - "task" — Task Achievement (TA) [CHẤM CỰC GẮT — MỤC TIÊU >= 8.0]:
   + Độ dài: ${wordCount} từ (IELTS Task 1 yêu cầu >= 150 từ; nếu < 150 từ -> TRẦN TA <= 6.5).
-  + Đoạn 1 (Intro): Phải paraphrase sắc gọn, đầy đủ 100% các chiều thông tin (đối tượng, đơn vị, địa điểm, mốc thời gian). Copy > 3 từ liên tiếp -> hạ TA.
-  + Đoạn 2 (Overview): Phải bao quát đủ 2 tầng nổi bật (xu hướng/thứ bậc chính + điểm tương phản/bước ngoặt), KHÔNG đưa số liệu chi tiết. Thiếu Overview hoặc lỡ đưa số liệu -> TRẦN TA <= 6.5–7.0.
-  + Các đoạn Detail: Gom nhóm thông minh, có đối chiếu định lượng (tỷ lệ/chênh lệch/đỉnh-đáy) và ĐÚNG TUYỆT ĐỐI 100% số liệu trong chartData. Sai bất kỳ con số nào -> hạ nặng TA <= 6.5.
-- "cc" — Coherence & Cohesion (CC) [CHẤM CỰC GẮT — MỤC TIÊU >= 8.0]:
-  + Phân đoạn rõ ràng chuẩn 4 đoạn (Intro -> Overview -> Detail 1 -> Detail 2).
-  + Dòng chảy mạch lạc giữa các đoạn và trong từng đoạn nhờ phép quy chiếu tự nhiên ('this figure', 'respectively', 'the former/latter', 'mirroring this trend'). Lạm dụng từ nối liệt kê máy móc ('Firstly, Secondly, Moreover, In conclusion') -> TRẦN CC <= 7.0–7.5.`
+  + Đoạn 1 (Intro): Paraphrase sắc gọn, đủ 100% chiều thông tin (đối tượng, đơn vị, địa điểm, mốc thời gian). Copy > 3 từ liên tiếp -> hạ TA.
+  + Đoạn 2 (Overview): Bao quát đủ 2 tầng nổi bật (xu hướng/thứ bậc chính + điểm tương phản/bước ngoặt), KHÔNG đưa số liệu chi tiết.
+  + Các đoạn Detail: Gom nhóm thông minh, có đối chiếu định lượng (gấp mấy lần/chênh lệch/đỉnh-đáy) và ĐÚNG 100% số liệu trong chartData.
+- "cc" — Coherence & Cohesion (CC) [SIÊU KHẮT KHE — MỤC TIÊU = 9.0]:
+  + Phân đoạn chuẩn 4 đoạn (Intro -> Overview -> Detail 1 -> Detail 2).
+  + Đạt 9.0 CHỈ KHI liên kết "tàng hình": dòng chảy Cũ -> Mới liền mạch, dùng phép quy chiếu tự nhiên ("this figure", "respectively", "the former/latter", "mirroring this trend"). Lạm dụng từ nối máy móc ("Firstly, Secondly, Moreover, In conclusion") -> TRẦN CC <= 7.5–8.0.`
         : `
 - "task" — Task Response (TR) [CHẤM CỰC GẮT — MỤC TIÊU >= 8.0]:
   + Độ dài: ${wordCount} từ (IELTS Task 2 yêu cầu >= 250 từ; nếu < 250 từ -> TRẦN TR <= 6.5).
-  + Mở bài: Paraphrase đề tự nhiên + Thesis trả lời TRỰC DIỆN mọi vế câu hỏi và lộ trình lập luận rõ.
-  + Các thân bài (chuẩn cấu trúc 5 đoạn: Mở bài - Thân bài 1 - Thân bài 2 - Thân bài 3 mở rộng/phản biện - Kết bài): Topic sentence bám Thesis -> Cơ chế nhân-quả SÂU ("tại sao & bằng cách nào") -> Ví dụ/bối cảnh thực tế hợp lý -> Chốt luận điểm. Nếu hời hợt, bịa số liệu thống kê ảo, hoặc thân bài mâu thuẫn Thesis -> TRẦN TR <= 6.5–7.0.
+  + Mở bài: Paraphrase tự nhiên + Thesis trả lời TRỰC DIỆN mọi vế câu hỏi và lộ trình lập luận rõ.
+  + Các thân bài (chuẩn cấu trúc 5 đoạn): Topic sentence bám Thesis -> Cơ chế nhân-quả SÂU ("tại sao & bằng cách nào") -> Ví dụ/bối cảnh thực tế hợp lý -> Chốt luận điểm. Hời hợt, bịa thống kê ảo hoặc tự mâu thuẫn Thesis -> TRẦN TR <= 6.5–7.0.
   + Kết bài: Tổng hợp đủ các mạch ý chính và khẳng định lại Thesis, không đưa ý mới.
-- "cc" — Coherence & Cohesion (CC) [CHẤM CỰC GẮT — MỤC TIÊU >= 8.0]:
-  + Bố cục rõ 5 đoạn hoặc các đoạn mạch lạc tuyệt đối, nối tiếp ý mượt mà từ Intro -> Body 1 -> Body 2 -> Body 3 -> Conclusion.
-  + Dùng phép quy chiếu & chuỗi từ vựng tự nhiên ('such measures', 'this shift', 'while...'). Lạm dụng 'Firstly, Secondly, Thirdly, Moreover, In conclusion' -> TRẦN CC <= 7.0–7.5.`;
+- "cc" — Coherence & Cohesion (CC) [SIÊU KHẮT KHE — MỤC TIÊU = 9.0]:
+  + Bố cục chuẩn 5 đoạn mạch lạc tuyệt đối, nối tiếp ý mượt mà từ Intro -> Body 1 -> Body 2 -> Body 3 -> Conclusion.
+  + Đạt 9.0 CHỈ KHI liên kết "tàng hình" qua quy chiếu & chuỗi chủ đề tự nhiên ("such measures", "this shift", "this reluctance"). Lạm dụng "Firstly, Secondly, Thirdly, Moreover, Furthermore, In conclusion" -> TRẦN CC <= 7.5–8.0.`;
 
-    const aiPrompt = `
-Bạn là cựu giám khảo IELTS Academic Writing CỰC KỲ KHẮT KHE & TỈ MỈ.
-Học viên đã luyện xong dàn ý từng phần và bây giờ TỰ VIẾT TOÀN BỘ BÀI ESSAY HOÀN CHỈNH (${taskType === 'task1' ? 'Task 1' : 'Task 2'} — mục tiêu chuẩn ${expectedBodyCount} đoạn, độ dài >= ${minWordTarget} từ, bài hiện tại ${wordCount} từ).
-Đây là chế độ **CHẤM & CHỮA TOÀN BÀI CHUYÊN SÂU** (chi tiết hơn cả chấm lẻ từng body): ngoài chấm 4 tiêu chí theo đúng chiến lược **${taskShort} >= 8.0, CC >= 8.0, LR >= 7.0, GRA >= 7.0 (Overall >= 7.5)**, bạn phải soi TỪNG ĐOẠN trong bài, phát hiện lỗi lặp từ/ý XUYÊN SUỐT CÁC ĐOẠN, kiểm tra mạch chuyển đoạn toàn cục và gợi ý sửa CỤ THỂ từng chỗ.
+    const sharedContext = `
+Bạn là cựu giám khảo IELTS Academic Writing & GIA SƯ KÈM 1-1 chuyên nâng học viên từ Band 6.0 lên Band 8.0.
+Học viên đang ở chế độ **TỰ VIẾT & CHẤM CHỮA TOÀN BÀI CHUYÊN SÂU** (${taskType === 'task1' ? 'Task 1' : 'Task 2'} — mục tiêu chuẩn ${expectedBodyCount} đoạn, độ dài >= ${minWordTarget} từ, bài hiện tại ${wordCount} từ).
+Mục tiêu đạt chuẩn: **${taskShort} >= 8.0 · CC = 9.0 · GRA >= 8.0 · LR >= 7.0 (Overall >= 8.0)**.
 
 ${promptContext}
 
-=== DÀN Ý GỐC HỌC VIÊN ĐÃ HỌC (THAM KHẢO ĐỐI CHIẾU CẤU TRÚC) ===
+=== DÀN Ý GỐC HỌC VIÊN ĐÃ HỌC (ĐỐI CHIẾU CẤU TRÚC) ===
 ${outlineSummary}
-
+${previousAttemptBlock}
 === BÀI ESSAY HOÀN CHỈNH DO HỌC VIÊN TỰ VIẾT (${wordCount} từ) ===
 """
 ${cleanEssay}
 """
 
-=== CHIẾN LƯỢC CHẤM ĐIỂM TOÀN BÀI (${taskShort} 8.0 · CC 8.0 · LR 7.0 · GRA 7.0) ===
+=== RUBRIC CHẤM TOÀN BÀI (${taskShort} 8.0 · CC 9.0 · GRA 8.0 · LR 7.0) ===
 ${taskSpecificRules}
+- "gra" — Grammatical Range & Accuracy (GRA) [MỤC TIÊU >= 8.0]:
+  + Đa số câu xuyên suốt toàn bài phải sạch lỗi (error-free) VÀ sử dụng đa dạng cấu trúc phức tự nhiên (mệnh đề nhượng bộ While/Whereas/Although, mệnh đề quan hệ không xác định ", which + V", cụm phân từ, with + N + V-ing, bị động/điều kiện/so sánh), chia thì nhất quán toàn bài, kiểm soát chuẩn mạo từ/giới từ/dấu câu. Nếu lặp câu đơn giản hoặc còn lỗi ngữ pháp rải rác -> TRẦN GRA <= 6.5–7.5.
 - "lr" — Lexical Resource (LR) [MỤC TIÊU >= 7.0 — B1–B2 COLLOCATION TỰ NHIÊN]:
-  + Học viên CHỈ aim LR **7.0**, ưu tiên **collocation tự nhiên mức B1–B2 mà người bản xứ hay dùng trong văn viết học thuật vừa phải**${taskType === 'task1' ? ' (VD: account for, reach a peak of, rise steadily, drop sharply, by contrast, in comparison with)' : ' (VD: play a crucial role, raise public awareness, face financial pressure, have a serious impact on)'}.
-  + TUYỆT ĐỐI KHÔNG trừ điểm hay ép xuống dưới 7.0 chỉ vì học viên không dùng từ hiếm C1–C2! Chỉ trừ xuống <= 6.5 nếu lặp từ sơ đẳng xuyên suốt nhiều đoạn, dịch word-by-word từ tiếng Việt hoặc sai collocation.
-- "gra" — Grammatical Range & Accuracy (GRA) [MỤC TIÊU >= 7.0]:
-  + Kết hợp tự nhiên câu đơn và câu phức phổ biến (while/whereas, mệnh đề quan hệ, câu điều kiện, bị động, phân từ), chia thì nhất quán xuyên suốt toàn bài và kiểm soát tốt mạo từ/giới từ/chủ-vị. Không đòi hỏi đảo ngữ/C2 hiếm mới cho 7.0.
+  + Ưu tiên **collocation tự nhiên mức B1–B2 chuẩn văn viết học thuật**${taskType === 'task1' ? ' (VD: account for, reach a peak of, rise steadily, drop sharply, by contrast, in comparison with)' : ' (VD: play a crucial role, raise public awareness, face financial pressure, have a serious impact on)'}.
+  + TUYỆT ĐỐI KHÔNG trừ xuống < 7.0 chỉ vì không dùng từ hiếm C1–C2! Chỉ trừ <= 6.5 khi lặp từ sơ đẳng xuyên suốt nhiều đoạn, dịch word-by-word từ tiếng Việt hoặc sai collocation.
+`;
 
+    // ─── CHUNKED PHASE HANDLERS ───
+    if (phase === 'task-cc') {
+      const p1Prompt = `${sharedContext}
+${buildAlignedCriteriaDirectives({ taskType, isFullEssay: true })}
+NHIỆM VỤ BƯỚC 1/3: Chấm & bóc tách SIÊU CHI TIẾT **${taskShort} (>= 8.0)** và **CC (= 9.0)** kèm "wholeEssayStructureFeedback" và "repetitionAlerts".
+Trả về DUY NHẤT JSON hợp lệ:
+${buildTaskCcPhaseSchema({
+  taskShort,
+  extraFieldsSchema: `"wholeEssayStructureFeedback": "Nhận xét tổng thể cấu trúc toàn bài, cân đối dung lượng, mạch chuyển giữa các đoạn và độ dài ${wordCount} từ.",
+  "repetitionAlerts": [
+    "Lặp từ/cụm X ở Đoạn 1 & Đoạn 3 -> Đoạn 1 giữ ..., Đoạn 3 đổi sang B1–B2 collocation ..."
+  ]`,
+})}`;
+
+      const { data } = await generateJsonWithFallback(
+        p1Prompt,
+        `full-essay-grade:${taskType}:p1`,
+        (parsed) => {
+          if (!parsed?.criteria?.task || !parsed?.criteria?.cc) {
+            throw new Error('Thiếu criteria.task hoặc criteria.cc');
+          }
+          return parsed;
+        },
+        { temperature: 0.3, maxOutputTokens: 3600, perModelTimeoutMs: 24_000, totalBudgetMs: 50_000 }
+      );
+      return NextResponse.json(data, { status: 200 });
+    }
+
+    if (phase === 'gra-lr') {
+      const p2Prompt = `${sharedContext}
+=== KẾ HOẠCH ĐÃ CHẤM Ở BƯỚC 1 (ĐỒNG BỘ 100%, KHÔNG MÂU THUẪN) ===
+${JSON.stringify(phase1Context || {})}
+
+${buildAlignedCriteriaDirectives({ taskType, isFullEssay: true })}
+NHIỆM VỤ BƯỚC 2/3: Chấm & bóc tách SIÊU CHI TIẾT **GRA (>= 8.0)** và **LR (>= 7.0)** kèm "grammarErrors" và "vocabularyTips" toàn bài, khớp 100% với kế hoạch Bước 1.
+Trả về DUY NHẤT JSON hợp lệ:
+${buildGraLrPhaseSchema()}`;
+
+      const { data } = await generateJsonWithFallback(
+        p2Prompt,
+        `full-essay-grade:${taskType}:p2`,
+        (parsed) => {
+          if (!parsed?.criteria?.gra || !parsed?.criteria?.lr) {
+            throw new Error('Thiếu criteria.gra hoặc criteria.lr');
+          }
+          return parsed;
+        },
+        { temperature: 0.3, maxOutputTokens: 3800, perModelTimeoutMs: 24_000, totalBudgetMs: 50_000 }
+      );
+      return NextResponse.json(data, { status: 200 });
+    }
+
+    if (phase === 'paragraphs-tutor') {
+      const p3Prompt = `${sharedContext}
+=== KẾT QUẢ 4 TIÊU CHÍ ĐÃ CHẤM ===
+${JSON.stringify(criteriaContext || {})}
+
+NHIỆM VỤ BƯỚC 3/3:
+1. "paragraphBreakdown": Mổ xẻ TỪNG ĐOẠN thực tế trong bài học viên (strengths, weaknesses, suggestedEdit = hướng tự sửa & bổ sung cụ thể ngay trên câu cũ + cụm B1–B2, KHÔNG dán đoạn viết mới).
+2. "generalFeedback": Tóm tắt 2 câu tiếng Việt.
+3. "tutorClosingNote": Đoạn chốt nhận xét sâu sắc 180–260 từ của GIA SƯ IELTS WRITING bằng tiếng Việt (tách 3–4 đoạn bằng \\n\\n): bóc tách điểm mạnh/nút thắt tư duy Band 6, đối chiếu tiến bộ nếu có bản nháp cũ, lộ trình sửa 1->2->3 toàn bài để chạm mốc ${taskShort} 8.0 · CC 9.0 · GRA 8.0 · LR 7.0.
+4. "modelUpgrade": Toàn bài essay tham khảo chuẩn Band 8.0+ (chỉ mở sau khi đạt chuẩn).
+
+Trả về DUY NHẤT JSON hợp lệ:
+${buildTutorClosingPhaseSchema({
+  taskShort,
+  includeParagraphBreakdown: true,
+  modelUpgradeInstruction:
+    'Toàn bộ bài essay tham khảo chuẩn TA/TR 8.0+ · CC 9.0 · GRA 8.0+ (ngắt đoạn bằng \\n\\n, giữ văn phong B1–B2 tự nhiên — hệ thống chỉ mở SAU KHI ĐẠT CHUẨN Overall >= 8.0).',
+})}`;
+
+      const { data } = await generateJsonWithFallback(
+        p3Prompt,
+        `full-essay-grade:${taskType}:p3`,
+        (parsed) => {
+          if (!parsed || (!parsed.tutorClosingNote && !parsed.paragraphBreakdown)) {
+            throw new Error('Thiếu paragraphBreakdown/tutorClosingNote');
+          }
+          return parsed;
+        },
+        { temperature: 0.35, maxOutputTokens: 4200, perModelTimeoutMs: 24_000, totalBudgetMs: 50_000 }
+      );
+      return NextResponse.json(data, { status: 200 });
+    }
+
+    // ─── DEFAULT FULL SINGLE-SHOT MODE (fail fast on truncation so client runs 3 crisp phases) ───
+    const fullPrompt = `${sharedContext}
 ${buildAlignedCriteriaDirectives({ taskType, isFullEssay: true })}
 
 === YÊU CẦU CHỮA CHI TIẾT TOÀN BÀI ===
-1. Cả 4 tiêu chí trong "criteria" ĐỒNG BỘ HOÀN TOÀN qua "mappings" (gọi rõ từng Đoạn & từng Câu trong bài, VD: "Đoạn 2 — sau Câu 1", khớp với paragraphBreakdown/vocabularyTips/grammarErrors).
-2. "paragraphBreakdown": Mổ xẻ TỪNG ĐOẠN thực tế trong bài học viên: nêu "strengths", "weaknesses", và "suggestedEdit" = HƯỚNG TỰ SỬA / BỔ SUNG CỤ THỂ cho đoạn đó (chỉ rõ thêm ý gì vào sau câu nào, đổi cụm từ/từ nối gì sang cụm B1–B2 nào — KHÔNG viết sẵn cả đoạn mới thay thế!).
-3. "repetitionAlerts": Liệt kê tất cả từ/cụm từ/từ nối bị lặp xuyên suốt các đoạn (kèm gợi ý các collocation B1–B2 thay thế cho từng đoạn).
+1. Cả 4 tiêu chí trong "criteria" ĐỒNG BỘ HOÀN TOÀN qua "mappings" (gọi rõ từng Đoạn & từng Câu trong bài, VD: "Đoạn 2 — sau Câu 1").
+2. "paragraphBreakdown": Mổ xẻ TỪNG ĐOẠN thực tế trong bài học viên: nêu "strengths", "weaknesses", và "suggestedEdit" = HƯỚNG TỰ SỬA / BỔ SUNG CỤ THỂ ngay trên câu cũ (KHÔNG dán nguyên đoạn mới thay thế!).
+3. "repetitionAlerts": Liệt kê tất cả từ/cụm từ/từ nối bị lặp xuyên suốt các đoạn kèm gợi ý thay thế B1–B2.
 4. "wholeEssayStructureFeedback": Đánh giá mạch liên kết tổng thể, phân bổ dung lượng giữa các đoạn và độ dài ${wordCount} từ.
+5. "tutorClosingNote": Đoạn chốt nhận xét sâu sắc 180–260 từ của GIA SƯ IELTS WRITING bằng tiếng Việt ở cuối cùng.
 
-TRẢ VỀ DUY NHẤT JSON HỢP LỆ (KHÔNG MARKDOWN, KHÔNG \`\`\`):
+TRẢ VỀ DUY NHẤT JSON HỢP LỆ (KHÔNG MARKDOWN):
 ${buildUnifiedGradeJsonSchema({
-  taskShort: taskShort as 'TA' | 'TR',
+  taskShort,
   extraFieldsSchema: `"wholeEssayStructureFeedback": "Nhận xét tổng thể cấu trúc toàn bài, cân đối dung lượng, mạch chuyển giữa các đoạn và độ dài ${wordCount} từ.",
   "paragraphBreakdown": [
     {
@@ -190,28 +300,36 @@ ${buildUnifiedGradeJsonSchema({
     "Lặp từ/cụm X ở Đoạn 1 & Đoạn 3 -> Đoạn 1 giữ ..., Đoạn 3 đổi sang B1–B2 collocation ..."
   ],`,
   modelUpgradeInstruction:
-    'Toàn bộ bài essay tham khảo chuẩn 8.0+ (ngắt đoạn bằng \\n\\n, giữ văn phong B1–B2 tự nhiên — hệ thống chỉ mở cho học viên đối chiếu SAU KHI ĐẠT CHUẨN).',
-})}
-`.trim();
+    'Toàn bộ bài essay tham khảo chuẩn TA/TR 8.0+ · CC 9.0 · GRA 8.0+ (ngắt đoạn bằng \\n\\n, giữ văn phong B1–B2 tự nhiên — hệ thống chỉ mở SAU KHI ĐẠT CHUẨN Overall >= 8.0).',
+})}`.trim();
 
-    const { data } = await generateJsonWithFallback(
-      aiPrompt,
-      `full-essay-grade:${taskType}`,
-      (parsed) => {
-        if (!parsed || !parsed.criteria) {
-          throw new Error('AI trả về thiếu trường criteria');
+    try {
+      const { data } = await generateJsonWithFallback(
+        fullPrompt,
+        `full-essay-grade:${taskType}`,
+        (parsed) => {
+          if (!parsed || !parsed.criteria) {
+            throw new Error('AI trả về thiếu trường criteria');
+          }
+          return normalizeFullEssayGradeResult(parsed);
+        },
+        {
+          temperature: 0.35,
+          maxOutputTokens: 7800,
+          perModelTimeoutMs: 26_000,
+          totalBudgetMs: 42_000,
+          failFastOnTooLong: true,
         }
-        return normalizeFullEssayGradeResult(parsed);
-      },
-      {
-        temperature: 0.35,
-        maxOutputTokens: 4800,
-        perModelTimeoutMs: 27_000,
-        totalBudgetMs: 55_000,
-      }
-    );
+      );
 
-    return NextResponse.json(data, { status: 200 });
+      return NextResponse.json(data, { status: 200 });
+    } catch (err: any) {
+      if (isLengthOrTransientError(err)) {
+        const { message, status } = formatGeminiError(err, 'Lỗi chấm chữa toàn bài: ');
+        return NextResponse.json({ error: message }, { status });
+      }
+      throw err;
+    }
   } catch (error: any) {
     console.error('[full-essay-grade] Error:', error);
     const { message, status } = formatGeminiError(error, 'Lỗi chấm chữa toàn bài: ');

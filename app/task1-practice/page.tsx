@@ -12,16 +12,21 @@ import {
 } from 'lucide-react';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { appConfirm } from '@/lib/dialog';
-import { postWritingAi } from '@/lib/writing-ai-client';
 import {
+  generateTask1OutlineResilient,
+  gradeBodyResilient,
+  postWritingAi,
+} from '@/lib/writing-ai-client';
+import {
+  buildPreviousAttemptSummary,
   countWords,
-  normalizeOutline,
   type BodyGradeResult,
   type ChartData,
   type CompletedBody,
   type FullEssayGradeResult,
   type LegacyTask1Session,
   type OutlineBodyItem,
+  type PreviousAttemptSummary,
   type Task1CompletedSession,
 } from '@/lib/writing-practice-types';
 import { Task1ChartRenderer } from '@/components/writing-practice/Task1ChartRenderer';
@@ -100,6 +105,7 @@ export default function Task1PracticePage() {
   const [outline, setOutline] = useState<OutlineBodyItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [genStep, setGenStep] = useState<'chart' | 'outline' | null>(null);
+  const [genStatus, setGenStatus] = useState('');
   const [isRegenOutline, setIsRegenOutline] = useState(false);
   const [genError, setGenError] = useState('');
   const [selectedType, setSelectedType] = useState<string>('random');
@@ -111,10 +117,12 @@ export default function Task1PracticePage() {
   const [completedBodies, setCompletedBodies] = useState<CompletedBody[]>([]);
   const [inputText, setInputText] = useState('');
   const [isGrading, setIsGrading] = useState(false);
+  const [gradingStatus, setGradingStatus] = useState('');
   const [gradeError, setGradeError] = useState('');
   const [gradeResult, setGradeResult] = useState<BodyGradeResult | null>(null);
   const [attemptCount, setAttemptCount] = useState(0);
   const [lastGradedText, setLastGradedText] = useState('');
+  const [previousAttempt, setPreviousAttempt] = useState<PreviousAttemptSummary | null>(null);
 
   // History (only completed 4-body essays saved in localStorage)
   const [sessions, setSessions] = useState<Task1CompletedSession[]>([]);
@@ -143,10 +151,12 @@ export default function Task1PracticePage() {
     setCompletedBodies([]);
     setInputText('');
     setIsGrading(false);
+    setGradingStatus('');
     setGradeError('');
     setGradeResult(null);
     setAttemptCount(0);
     setLastGradedText('');
+    setPreviousAttempt(null);
     sessionSavedRef.current = false;
   };
 
@@ -170,6 +180,7 @@ export default function Task1PracticePage() {
 
       setIsGenerating(true);
       setGenStep('chart');
+      setGenStatus('Bước 1/2: Đang tạo dữ liệu biểu đồ chuẩn IELTS Academic...');
       setIsRegenOutline(false);
       setGenError('');
       setChartData(null);
@@ -188,7 +199,7 @@ export default function Task1PracticePage() {
             customTopic: topicToSend,
             mode: 'chart-only',
           },
-          { signal: controller.signal }
+          { signal: controller.signal, maxRetries: 2, onStatus: setGenStatus }
         );
         if (controller.signal.aborted) return;
 
@@ -197,18 +208,14 @@ export default function Task1PracticePage() {
         setGenStep('outline');
         setIsRegenOutline(true);
 
-        // Bước 2: Sinh dàn ý tiếng Việt 4 Body dựa trên biểu đồ vừa tạo
-        const outlinePayload = await postWritingAi<{ outline: OutlineBodyItem[] }>(
-          '/api/ai/task1-generate',
-          {
-            mode: 'outline-only',
-            chartData: chartPayload,
-          },
-          { signal: controller.signal }
-        );
+        // Bước 2: Sinh dàn ý tiếng Việt 4 Body (tự động chia nhỏ & thử lại nếu phản hồi dài)
+        const nextOutline = await generateTask1OutlineResilient(chartPayload, {
+          signal: controller.signal,
+          onStatus: (msg) => setGenStatus(`Bước 2/2: ${msg}`),
+        });
         if (controller.signal.aborted) return;
 
-        setOutline(normalizeOutline(outlinePayload.outline, 'task1'));
+        setOutline(nextOutline);
       } catch (e: any) {
         if (controller.signal.aborted || e?.name === 'AbortError') return;
         setGenError(e.message || 'Không thể tạo đề bài. Vui lòng thử lại.');
@@ -217,6 +224,7 @@ export default function Task1PracticePage() {
           setIsGenerating(false);
           setIsRegenOutline(false);
           setGenStep(null);
+          setGenStatus('');
         }
       }
     },
@@ -231,23 +239,21 @@ export default function Task1PracticePage() {
 
     setIsRegenOutline(true);
     setGenStep('outline');
+    setGenStatus('Đang tạo lại dàn ý 4 Body chuẩn 8 TA · 9 CC · 8 GRA · 7 LR...');
     setGenError('');
     try {
-      const data = await postWritingAi<{ outline: OutlineBodyItem[] }>(
-        '/api/ai/task1-generate',
-        {
-          mode: 'outline-only',
-          chartData,
-        },
-        { signal: controller.signal }
-      );
+      const nextOutline = await generateTask1OutlineResilient(chartData, {
+        signal: controller.signal,
+        onStatus: setGenStatus,
+      });
       if (controller.signal.aborted) return;
 
-      setOutline(normalizeOutline(data.outline, 'task1'));
+      setOutline(nextOutline);
       setGradeResult(null);
       setGradeError('');
       setAttemptCount(0);
       setLastGradedText('');
+      setPreviousAttempt(null);
     } catch (e: any) {
       if (controller.signal.aborted || e?.name === 'AbortError') return;
       setGenError(e.message || 'Không thể tạo lại dàn ý.');
@@ -255,6 +261,7 @@ export default function Task1PracticePage() {
       if (genAbortRef.current === controller) {
         setIsRegenOutline(false);
         setGenStep(null);
+        setGenStatus('');
       }
     }
   };
@@ -270,11 +277,17 @@ export default function Task1PracticePage() {
     }
 
     if (gradeResult && !gradeResult.passed && trimmed === lastGradedText) {
-      setGradeError('Bạn chưa chỉnh sửa nội dung so với lần chấm trước. Hãy sửa theo góp ý của AI rồi thử lại.');
+      setGradeError('Bạn chưa chỉnh sửa nội dung so với lần chấm trước. Hãy sửa theo góp ý của gia sư rồi thử lại.');
       return;
     }
 
+    const prevSummary =
+      gradeResult && !gradeResult.passed && lastGradedText
+        ? buildPreviousAttemptSummary(attemptCount, lastGradedText, gradeResult)
+        : previousAttempt;
+
     setIsGrading(true);
+    setGradingStatus('');
     setGradeError('');
     setGradeResult(null);
     const nextAttempt = attemptCount + 1;
@@ -290,17 +303,23 @@ export default function Task1PracticePage() {
           content: b.content,
         }));
 
-      const result = await postWritingAi<BodyGradeResult>('/api/ai/task1-grade', {
-        chartData,
-        outline,
-        previousBodies: previousBodiesPayload,
-        bodyIndex: currentBodyIndex,
-        content: trimmed,
-      });
+      const result = await gradeBodyResilient(
+        '/api/ai/task1-grade',
+        {
+          chartData,
+          outline,
+          previousBodies: previousBodiesPayload,
+          bodyIndex: currentBodyIndex,
+          content: trimmed,
+          previousAttempt: prevSummary,
+        },
+        { onStatus: setGradingStatus }
+      );
       setGradeResult(result);
       setLastGradedText(trimmed);
+      setPreviousAttempt(buildPreviousAttemptSummary(nextAttempt, trimmed, result));
 
-      // Nếu là Body cuối (Body 4) và đã đạt chuẩn Band 7.5 -> hoàn tất và lưu vào localStorage NGAY LÚC NÀY
+      // Nếu là Body cuối (Body 4) và đã đạt chuẩn Band 8.0 -> hoàn tất và lưu vào localStorage NGAY LÚC NÀY
       const isLastBody = currentBodyIndex + 1 >= TOTAL_BODIES;
       if (result.passed && isLastBody && !sessionSavedRef.current) {
         sessionSavedRef.current = true;
@@ -347,6 +366,7 @@ export default function Task1PracticePage() {
       setGradeError(e.message || 'Lỗi kết nối khi chấm bài. Vui lòng thử lại.');
     } finally {
       setIsGrading(false);
+      setGradingStatus('');
     }
   };
 
@@ -370,8 +390,10 @@ export default function Task1PracticePage() {
     setInputText('');
     setGradeResult(null);
     setGradeError('');
+    setGradingStatus('');
     setAttemptCount(0);
     setLastGradedText('');
+    setPreviousAttempt(null);
     setTimeout(() => textareaRef.current?.focus(), 100);
   };
 
@@ -450,7 +472,7 @@ export default function Task1PracticePage() {
           Luyện IELTS Writing Task 1
         </h1>
         <p className="text-gray-600 max-w-2xl z-10 text-[13px] leading-relaxed">
-          AI tạo đề &amp; gợi ý <b>dàn bài 4 Body chuẩn Band 8.0+</b> bằng tiếng Việt (tối ưu <b>TA &amp; CC ≥ 8.0</b> để gánh điểm — <b>LR &amp; GRA chỉ cần 7.0</b> với collocation B1–B2 tự nhiên). Đạt mốc <b>Overall ≥ 7.5</b> cả 4 Body để lưu bài hoàn chỉnh.
+          Gia sư AI tạo đề &amp; thiết kế <b>dàn bài 4 Body nâng band 6 → 8</b> theo chiến lược <b>TA 8.0 · CC 9.0 · GRA 8.0 · LR 7.0</b> (Overall ≥ 8.0), kèm lưu ý từng Body &amp; đoạn chốt nhận xét gia sư 1-1.
         </p>
 
         <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 bg-white/80 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-orange-200/60 z-10">
@@ -476,8 +498,8 @@ export default function Task1PracticePage() {
             {eligibleFullEssaySessions.length > 0 && (
               <span
                 className={`ml-0.5 text-xs font-black px-1.5 rounded-full ${tab === 'full-essay'
-                    ? 'bg-white/25 text-white'
-                    : 'bg-orange-100 text-orange-700'
+                  ? 'bg-white/25 text-white'
+                  : 'bg-orange-100 text-orange-700'
                   }`}
               >
                 {eligibleFullEssaySessions.length}
@@ -496,8 +518,8 @@ export default function Task1PracticePage() {
             {sessions.length > 0 && (
               <span
                 className={`ml-0.5 text-xs font-black px-1.5 rounded-full ${tab === 'history'
-                    ? 'bg-white/25 text-white'
-                    : 'bg-orange-100 text-orange-700'
+                  ? 'bg-white/25 text-white'
+                  : 'bg-orange-100 text-orange-700'
                   }`}
               >
                 {sessions.length}
@@ -522,7 +544,7 @@ export default function Task1PracticePage() {
                     Chọn dạng biểu đồ & chủ đề mong muốn
                   </h2>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    AI sinh dữ liệu biểu đồ kèm dàn ý 4 Body chuẩn Band 8.0+ (TA & CC) bằng tiếng Việt
+                    AI sinh dữ liệu biểu đồ kèm dàn ý 4 Body chuẩn 8 TA · 9 CC · 8 GRA · 7 LR bằng tiếng Việt
                   </p>
                 </div>
                 {chartData && (
@@ -725,7 +747,8 @@ export default function Task1PracticePage() {
                 <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-orange-200/80 p-6 flex items-center justify-center gap-3 text-orange-700">
                   <Loader2 size={20} className="animate-spin flex-shrink-0" />
                   <p className="text-sm font-semibold">
-                    Bước 2/2: Đã tạo xong biểu đồ! AI đang thiết kế dàn ý 4 Body chuẩn Band 8.0+...
+                    {genStatus ||
+                      'Bước 2/2: Đã tạo xong biểu đồ! AI đang thiết kế dàn ý 4 Body chuẩn 8 TA · 9 CC · 8 GRA · 7 LR...'}
                   </p>
                 </div>
               )}
@@ -751,6 +774,7 @@ export default function Task1PracticePage() {
                       currentBodyIndex={currentBodyIndex}
                       totalBodies={TOTAL_BODIES}
                       accent="orange"
+                      taskType="task1"
                     />
                   )}
 
@@ -782,7 +806,7 @@ export default function Task1PracticePage() {
                       ref={textareaRef}
                       rows={6}
                       disabled={isCurrentBodyLocked}
-                      placeholder={`Dựa vào dàn ý tiếng Việt phía trên, hãy tự viết và dịch ${currentOutline?.label || 'Body này'} sang tiếng Anh tự nhiên chuẩn mục tiêu (TA/CC 8.0 • LR/GRA 7.0)...`}
+                      placeholder={`Dựa vào dàn ý & lưu ý 8 TA · 9 CC · 8 GRA · 7 LR phía trên, hãy tự viết ${currentOutline?.label || 'Body này'} bằng tiếng Anh...`}
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       onKeyDown={(e) => {
@@ -807,8 +831,8 @@ export default function Task1PracticePage() {
                         >
                           {isGrading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                           {gradeResult && !gradeResult.passed
-                            ? `Gửi AI chấm lại Body ${currentBodyIndex + 1}`
-                            : `Chấm Body ${currentBodyIndex + 1} (Siết TA & CC)`}
+                            ? `Gửi Gia sư chấm lại Body ${currentBodyIndex + 1}`
+                            : `Chấm Body ${currentBodyIndex + 1} (8 TA · 9 CC · 8 GRA · 7 LR)`}
                         </button>
                       </div>
                     )}
@@ -821,6 +845,7 @@ export default function Task1PracticePage() {
                       bodyIndex={currentBodyIndex}
                       totalBodies={TOTAL_BODIES}
                       isGrading={isGrading}
+                      gradingStatus={gradingStatus}
                       gradeError={gradeError}
                       gradeResult={gradeResult}
                       accent="orange"
@@ -843,18 +868,18 @@ export default function Task1PracticePage() {
               {[
                 {
                   num: '01',
-                  title: 'Dàn ý Band 8.0+ (TA & CC)',
-                  desc: 'Chọn dạng biểu đồ để AI tạo số liệu kèm dàn ý tiếng Việt gom nhóm & đối chiếu sắc bén, giúp tối ưu sẵn điểm TA và CC.',
+                  title: 'Dàn ý chiến lược 8/9/8/7',
+                  desc: 'AI tạo biểu đồ kèm dàn ý 4 Body note rõ từng lưu ý để đạt TA 8.0, CC 9.0 (liên kết tàng hình), GRA 8.0 và LR 7.0→8.0.',
                 },
                 {
                   num: '02',
-                  title: 'Tập trung collocation B1–B2 (7.0)',
-                  desc: 'Dựa vào mạch ý sẵn có để viết & dịch sang tiếng Anh. AI siết gắt TA ≥ 8.0 và CC ≥ 8.0, còn LR & GRA chỉ chấm chuẩn Band 7.0 tự nhiên kèm gợi ý sửa cụ thể.',
+                  title: 'Gia sư 1-1 bóc tách tư duy',
+                  desc: 'Chấm siêu chi tiết từng vị trí câu, chỉ rõ cần đổi tư duy Band 6 → 8 ra sao, nên học thêm gì và có đoạn chốt nhận xét gia sư bằng tiếng Việt.',
                 },
                 {
                   num: '03',
-                  title: 'Hoàn tất 4/4 Body mới lưu',
-                  desc: 'Vượt qua đủ 4 Body (TA/CC ≥ 8.0, LR/GRA ≥ 7.0 — Overall ≥ 7.5) thì bài hoàn chỉnh mới được lưu vào bộ nhớ trình duyệt.',
+                  title: 'Hoàn tất 4/4 Body chuẩn 8.0',
+                  desc: 'Vượt qua đủ 4 Body (TA 8.0 · CC 9.0 · GRA 8.0 · LR 7.0 — Overall ≥ 8.0) để lưu bài và luyện viết toàn bài hoàn chỉnh.',
                 },
               ].map((c) => (
                 <div key={c.num} className="bg-[var(--card)] rounded-2xl p-5 shadow-sm border border-orange-100/90">
@@ -1058,9 +1083,9 @@ export default function Task1PracticePage() {
                       onPracticeFullEssay={
                         selectedSession.sourceType !== 'full-essay' && selectedSession.bodies.length > 0
                           ? () => {
-                              setFullEssaySourceId(selectedSession.id);
-                              setTab('full-essay');
-                            }
+                            setFullEssaySourceId(selectedSession.id);
+                            setTab('full-essay');
+                          }
                           : undefined
                       }
                     />

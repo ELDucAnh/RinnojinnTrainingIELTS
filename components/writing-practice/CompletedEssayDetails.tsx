@@ -9,6 +9,7 @@ import {
   FileEdit,
   Sparkles,
   FileText,
+  GraduationCap,
 } from 'lucide-react';
 import {
   countWords,
@@ -115,7 +116,7 @@ export function CompletedEssayDetails({
       {bodies.length > 0 && (
         <div>
           <p className="text-xs font-extrabold uppercase tracking-wider text-gray-400 mb-2.5">
-            Chi tiết từng Body & Điểm 4 tiêu chí
+            Chi tiết từng Body &amp; Điểm 4 tiêu chí ({taskCritLabel} · CC · GRA · LR)
           </p>
           <div className="flex flex-col gap-2.5">
             {bodies.map((b) => {
@@ -149,10 +150,10 @@ export function CompletedEssayDetails({
                           CC {c.cc.band.toFixed(1)}
                         </span>
                         <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">
-                          LR {c.lr.band.toFixed(1)}
+                          GRA {c.gra.band.toFixed(1)}
                         </span>
                         <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">
-                          GRA {c.gra.band.toFixed(1)}
+                          LR {c.lr.band.toFixed(1)}
                         </span>
                       </div>
                       {isOpen ? (
@@ -184,17 +185,23 @@ export function CompletedEssayDetails({
                         {[
                           { label: taskCritLabel, item: c.task },
                           { label: 'CC', item: c.cc },
-                          { label: 'LR', item: c.lr },
                           { label: 'GRA', item: c.gra },
+                          { label: 'LR', item: c.lr },
                         ].map((crit) => (
                           <div
                             key={crit.label}
-                            className="p-2.5 rounded-lg bg-white border border-gray-200"
+                            className="p-2.5 rounded-lg bg-white border border-gray-200 flex flex-col gap-1"
                           >
-                            <p className="font-bold text-gray-800 mb-0.5">
+                            <p className="font-bold text-gray-800">
                               {crit.label}: {crit.item.band.toFixed(1)}
                             </p>
                             <p className="text-gray-600 leading-relaxed">{crit.item.reason}</p>
+                            {crit.item.mindsetShift && (
+                              <p className="text-[11px] text-amber-800 bg-amber-50/70 rounded px-2 py-1 mt-0.5">
+                                <b>Tư duy: </b>
+                                {crit.item.mindsetShift}
+                              </p>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -202,12 +209,26 @@ export function CompletedEssayDetails({
                       {b.grade.crossBodyFeedback && (
                         <div
                           className={`text-xs border rounded-lg p-2.5 ${isOrange
-                            ? 'bg-orange-50/70 border-orange-100 text-orange-950'
-                            : 'bg-indigo-50/70 border-indigo-100 text-indigo-900'
+                              ? 'bg-orange-50/70 border-orange-100 text-orange-950'
+                              : 'bg-indigo-50/70 border-indigo-100 text-indigo-900'
                             }`}
                         >
                           <span className="font-bold">Liên kết Body: </span>
                           {b.grade.crossBodyFeedback}
+                        </div>
+                      )}
+
+                      {b.grade.tutorClosingNote && (
+                        <div
+                          className={`text-xs border rounded-lg p-3 whitespace-pre-line leading-relaxed ${isOrange
+                              ? 'bg-orange-50/60 border-orange-200/80 text-orange-950'
+                              : 'bg-emerald-50/60 border-emerald-200/80 text-emerald-950'
+                            }`}
+                        >
+                          <p className="font-bold flex items-center gap-1.5 mb-1">
+                            <GraduationCap size={13} /> Lời chốt của Gia sư Writing:
+                          </p>
+                          {b.grade.tutorClosingNote}
                         </div>
                       )}
 
@@ -230,4 +251,3 @@ export function CompletedEssayDetails({
     </div>
   );
 }
-

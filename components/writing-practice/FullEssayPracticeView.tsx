@@ -14,11 +14,13 @@ import {
 } from 'lucide-react';
 import { Task1ChartRenderer } from '@/components/writing-practice/Task1ChartRenderer';
 import { FullEssayFeedbackPanel } from '@/components/writing-practice/FullEssayFeedbackPanel';
-import { postWritingAi } from '@/lib/writing-ai-client';
+import { gradeFullEssayResilient } from '@/lib/writing-ai-client';
 import {
+  buildPreviousAttemptSummary,
   countWords,
   type FullEssayGradeResult,
   type OutlineBodyItem,
+  type PreviousAttemptSummary,
   type Task1CompletedSession,
   type Task2CompletedSession,
 } from '@/lib/writing-practice-types';
@@ -75,6 +77,7 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
   } = props;
 
   const isTask1 = taskType === 'task1';
+  const taskShort = isTask1 ? 'TA' : 'TR';
   const minWordGoal = isTask1 ? 150 : 250;
   const expectedBodies = isTask1 ? 4 : 5;
 
@@ -87,18 +90,20 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
     selectedSourceId && eligibleSessions.some((s) => s.id === selectedSourceId)
       ? selectedSourceId
       : internalSelectedId && eligibleSessions.some((s) => s.id === internalSelectedId)
-      ? internalSelectedId
-      : eligibleSessions[0]?.id || '';
+        ? internalSelectedId
+        : eligibleSessions[0]?.id || '';
 
   const activeSession = eligibleSessions.find((s) => s.id === activeId) || null;
 
   const [essayInput, setEssayInput] = useState('');
   const [showOutlineHint, setShowOutlineHint] = useState(false);
   const [isGrading, setIsGrading] = useState(false);
+  const [gradingStatus, setGradingStatus] = useState('');
   const [gradeError, setGradeError] = useState('');
   const [gradeResult, setGradeResult] = useState<FullEssayGradeResult | null>(null);
   const [lastGradedText, setLastGradedText] = useState('');
   const [attemptCount, setAttemptCount] = useState(0);
+  const [previousAttempt, setPreviousAttempt] = useState<PreviousAttemptSummary | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
@@ -110,9 +115,11 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
       prevActiveIdRef.current = activeId;
       setEssayInput('');
       setGradeError('');
+      setGradingStatus('');
       setGradeResult(null);
       setLastGradedText('');
       setAttemptCount(0);
+      setPreviousAttempt(null);
       setShowOutlineHint(false);
       savedAttemptRef.current = false;
     }
@@ -126,9 +133,11 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
   const handleResetEditor = () => {
     setEssayInput('');
     setGradeError('');
+    setGradingStatus('');
     setGradeResult(null);
     setLastGradedText('');
     setAttemptCount(0);
+    setPreviousAttempt(null);
     savedAttemptRef.current = false;
     setTimeout(() => textareaRef.current?.focus(), 80);
   };
@@ -153,9 +162,7 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
           type="button"
           onClick={onBackToPractice}
           className={`mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm transition-colors ${
-            isTask1
-              ? 'bg-orange-500 hover:bg-orange-600'
-              : 'bg-emerald-600 hover:bg-emerald-700'
+            isTask1 ? 'bg-orange-500 hover:bg-orange-600' : 'bg-emerald-600 hover:bg-emerald-700'
           }`}
         >
           <ArrowLeft size={15} /> Quay lại Luyện tập
@@ -179,14 +186,21 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
     }
 
     if (gradeResult && !gradeResult.passed && trimmed === lastGradedText) {
-      setGradeError('Bạn chưa chỉnh sửa nội dung so với lần chấm trước. Hãy sửa theo góp ý của AI rồi chấm lại.');
+      setGradeError('Bạn chưa chỉnh sửa nội dung so với lần chấm trước. Hãy sửa theo góp ý của gia sư rồi chấm lại.');
       return;
     }
 
+    const prevSummary =
+      gradeResult && !gradeResult.passed && lastGradedText
+        ? buildPreviousAttemptSummary(attemptCount, lastGradedText, gradeResult)
+        : previousAttempt;
+
     setIsGrading(true);
+    setGradingStatus('');
     setGradeError('');
     setGradeResult(null);
-    setAttemptCount((c) => c + 1);
+    const nextAttempt = attemptCount + 1;
+    setAttemptCount(nextAttempt);
 
     try {
       const payload =
@@ -196,6 +210,7 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
               chartData: (activeSession as Task1CompletedSession).chartData,
               outline: activeSession.outline,
               essay: trimmed,
+              previousAttempt: prevSummary,
             }
           : {
               taskType: 'task2' as const,
@@ -203,11 +218,15 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
               essayType: (activeSession as Task2CompletedSession).essayType,
               outline: activeSession.outline,
               essay: trimmed,
+              previousAttempt: prevSummary,
             };
 
-      const result = await postWritingAi<FullEssayGradeResult>('/api/ai/full-essay-grade', payload);
+      const result = await gradeFullEssayResilient(payload, {
+        onStatus: (msg) => setGradingStatus(msg),
+      });
       setGradeResult(result);
       setLastGradedText(trimmed);
+      setPreviousAttempt(buildPreviousAttemptSummary(nextAttempt, trimmed, result));
 
       if (result.passed && !savedAttemptRef.current) {
         savedAttemptRef.current = true;
@@ -225,6 +244,7 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
       setGradeError(e.message || 'Không thể chấm bài hoàn chỉnh lúc này. Vui lòng thử lại.');
     } finally {
       setIsGrading(false);
+      setGradingStatus('');
     }
   };
 
@@ -250,7 +270,7 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
               Chọn từ các bài đã hoàn tất đủ {expectedBodies} Body ({eligibleSessions.length} đề)
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
-              Tự viết lại toàn bộ bài hoàn chỉnh không có sẵn câu mẫu — AI chấm chữa chi tiết từng đoạn &amp; toàn bài (TA/TR 8.0 · CC 8.0 · LR 7.0 · GRA 7.0).
+              Tự viết lại toàn bộ bài hoàn chỉnh không có sẵn câu mẫu — Gia sư AI chấm chữa chi tiết từng đoạn &amp; toàn bài ({taskShort} 8.0 · CC 9.0 · GRA 8.0 · LR 7.0 — Overall ≥ 8.0).
             </p>
           </div>
         </div>
@@ -349,15 +369,15 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
           >
             <span className="flex items-center gap-2">
               <ListChecks size={15} className={isTask1 ? 'text-orange-500' : 'text-emerald-600'} />
-              Xem lại dàn ý tiếng Việt Band 8.0+ đã học ({activeSession.outline.length} Body) — tùy chọn
+              Xem lại dàn ý &amp; lưu ý 8/9/8/7 đã học ({activeSession.outline.length} Body) — tùy chọn
             </span>
             {showOutlineHint ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
           </button>
           {showOutlineHint && (
             <div className="px-4 pb-4 pt-2 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-3 bg-gray-50/40">
               {activeSession.outline.map((item: OutlineBodyItem, idx: number) => (
-                <div key={idx} className="rounded-xl bg-white border border-gray-200 p-3 text-xs">
-                  <p className="font-extrabold text-gray-900 mb-1.5">
+                <div key={idx} className="rounded-xl bg-white border border-gray-200 p-3 text-xs flex flex-col gap-1.5">
+                  <p className="font-extrabold text-gray-900">
                     Body {idx + 1}: {item.role}
                   </p>
                   <ul className="list-disc pl-4 space-y-1 text-gray-700">
@@ -365,6 +385,18 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
                       <li key={li}>{line}</li>
                     ))}
                   </ul>
+                  {item.bandStrategy?.cc9Note && (
+                    <p className="text-[11px] bg-emerald-50/70 border border-emerald-100 rounded-md px-2 py-1 text-emerald-900">
+                      <b>CC 9.0: </b>
+                      {item.bandStrategy.cc9Note}
+                    </p>
+                  )}
+                  {item.bandStrategy?.lrNote && (
+                    <p className="text-[11px] bg-sky-50/70 border border-sky-100 rounded-md px-2 py-1 text-sky-900">
+                      <b>LR 7→8: </b>
+                      {item.bandStrategy.lrNote}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
@@ -380,7 +412,7 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
               Tự viết bài hoàn chỉnh bằng tiếng Anh (nhấn Enter 2 lần để xuống đoạn mới)
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              Khuyến nghị viết đủ cấu trúc {expectedBodies} đoạn và đạt tối thiểu {minWordGoal} từ. Đạt chuẩn Overall ≥ 7.5 bài sẽ tự động lưu vào <b>Bài đã hoàn tất</b>.
+              Khuyến nghị viết đủ cấu trúc {expectedBodies} đoạn và đạt tối thiểu {minWordGoal} từ. Đạt chuẩn Overall ≥ 8.0 ({taskShort} 8.0 · CC 9.0 · GRA 8.0 · LR 7.0) bài sẽ tự động lưu vào <b>Bài đã hoàn tất</b>.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -444,7 +476,7 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
               </>
             ) : (
               <>
-                <Send size={15} /> Chấm &amp; chữa toàn bài (8/8/7/7)
+                <Send size={15} /> Chấm &amp; chữa toàn bài (8/9/8/7)
               </>
             )}
           </button>
@@ -456,6 +488,7 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
         <FullEssayFeedbackPanel
           taskType={taskType}
           isGrading={isGrading}
+          gradingStatus={gradingStatus}
           gradeError={gradeError}
           gradeResult={gradeResult}
           accent={isTask1 ? 'orange' : 'emerald'}

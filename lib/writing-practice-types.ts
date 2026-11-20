@@ -19,12 +19,20 @@ export interface IdeaLanguageGuide {
   grammarPatterns: SuggestedGrammarItem[];
 }
 
+export interface BodyBandStrategyNotes {
+  task8Note: string; // Yêu cầu bắt buộc để đạt TA/TR >= 8.0
+  cc9Note: string;   // Yêu cầu bắt buộc để đạt CC = 9.0 (liên kết vô hình, thematic progression, referencing)
+  gra8Note: string;  // Yêu cầu bắt buộc để đạt GRA >= 8.0 (đa dạng cấu trúc phức hợp, độ chính xác cao)
+  lrNote: string;    // Chiến lược LR 7.0 -> 8.0 (collocations tự nhiên, sắc thái chính xác, tránh lặp & dịch word-by-word)
+}
+
 export interface OutlineBodyItem {
   bodyIndex: number;
   label: string;
   role: string;
   viGuide: string[];
   keyPoints: string[];
+  bandStrategy?: BodyBandStrategyNotes;
   ideaGuides?: IdeaLanguageGuide[];
   vocabSuggestions?: SuggestedVocabItem[];
   grammarSuggestions?: SuggestedGrammarItem[];
@@ -71,8 +79,10 @@ export interface CriterionActionMapping {
 
 export interface CriterionFeedback {
   band: number;
-  passed75: boolean;
+  passed75: boolean; // Kept for backward compatibility; equals band >= criterion target
   reason: string;
+  mindsetShift?: string;  // Thay đổi tư duy từ Band 6 -> Band 8/9 ở tiêu chí này
+  whatToStudy?: string[]; // Chủ điểm cần học thêm (nếu cần) để bứt band
   evidence: string[];
   fixes?: string[];
   mappings?: CriterionActionMapping[];
@@ -90,19 +100,33 @@ export interface BodyVocabularyTip {
   reason: string;
 }
 
+export interface PreviousAttemptSummary {
+  attemptNumber: number;
+  content: string;
+  overallBand: number;
+  bands: {
+    task: number;
+    cc: number;
+    gra: number;
+    lr: number;
+  };
+  keyIssues: string[];
+}
+
 export interface BodyGradeResult {
   overallBand: number;
   passed: boolean;
   criteria: {
-    task: CriterionFeedback; // TA (Task 1) or TR (Task 2)
-    cc: CriterionFeedback;   // Coherence & Cohesion
-    lr: CriterionFeedback;   // Lexical Resource
-    gra: CriterionFeedback;  // Grammatical Range & Accuracy
+    task: CriterionFeedback; // TA (Task 1) >= 8.0 or TR (Task 2) >= 8.0
+    cc: CriterionFeedback;   // Coherence & Cohesion >= 9.0
+    gra: CriterionFeedback;  // Grammatical Range & Accuracy >= 8.0
+    lr: CriterionFeedback;   // Lexical Resource >= 7.0
   };
   crossBodyFeedback: string;
   grammarErrors: BodyGrammarError[];
   vocabularyTips: BodyVocabularyTip[];
   generalFeedback: string;
+  tutorClosingNote?: string; // Đoạn chốt bóc tách & nhận xét của gia sư Writing bằng tiếng Việt ở cuối cùng
   modelUpgrade?: string;
 }
 
@@ -131,9 +155,9 @@ export interface FullEssayGradeResult {
   passed: boolean;
   criteria: {
     task: CriterionFeedback; // TA (Task 1) >= 8.0 or TR (Task 2) >= 8.0
-    cc: CriterionFeedback;   // Coherence & Cohesion >= 8.0
-    lr: CriterionFeedback;   // Lexical Resource >= 7.0 (B1-B2 collocations)
-    gra: CriterionFeedback;  // Grammatical Range & Accuracy >= 7.0
+    cc: CriterionFeedback;   // Coherence & Cohesion >= 9.0
+    gra: CriterionFeedback;  // Grammatical Range & Accuracy >= 8.0
+    lr: CriterionFeedback;   // Lexical Resource >= 7.0
   };
   wholeEssayStructureFeedback: string;
   paragraphBreakdown: FullEssayParagraphFeedback[];
@@ -141,6 +165,7 @@ export interface FullEssayGradeResult {
   grammarErrors: BodyGrammarError[];
   vocabularyTips: BodyVocabularyTip[];
   generalFeedback: string;
+  tutorClosingNote?: string; // Đoạn chốt bóc tách & nhận xét của gia sư Writing bằng tiếng Việt ở cuối cùng
   modelUpgrade?: string;
 }
 
@@ -187,10 +212,13 @@ export interface Task2CompletedSession {
 }
 
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
+// Chiến lược Band 8.0 Overall: (8.0 TA/TR + 9.0 CC + 8.0 GRA + 7.0 LR) / 4 = 8.0
 
-export const BAND_PASS_THRESHOLD = 7.5;
-export const MIN_TASK_CC_BAND = 8.0;
-export const MIN_LR_GRA_BAND = 7.0;
+export const BAND_PASS_THRESHOLD = 8.0;
+export const MIN_TASK_BAND = 8.0;
+export const MIN_CC_BAND = 9.0;
+export const MIN_GRA_BAND = 8.0;
+export const MIN_LR_BAND = 7.0;
 export const MIN_CRITERION_BAND = 7.0;
 
 export const TASK1_BODY_TEMPLATES: Array<{ bodyIndex: number; label: string; role: string }> = [
@@ -220,17 +248,17 @@ export function computeOverallBand(bands: [number, number, number, number]): num
   return Math.round(avg * 2) / 2;
 }
 
-export function isBodyPassedBand75(bands: { task: number; cc: number; lr: number; gra: number }): {
+export function isBodyPassedTarget(bands: { task: number; cc: number; gra: number; lr: number }): {
   overallBand: number;
   passed: boolean;
 } {
-  const overallBand = computeOverallBand([bands.task, bands.cc, bands.lr, bands.gra]);
+  const overallBand = computeOverallBand([bands.task, bands.cc, bands.gra, bands.lr]);
   const passed =
     overallBand >= BAND_PASS_THRESHOLD &&
-    bands.task >= MIN_TASK_CC_BAND &&
-    bands.cc >= MIN_TASK_CC_BAND &&
-    bands.lr >= MIN_LR_GRA_BAND &&
-    bands.gra >= MIN_LR_GRA_BAND;
+    bands.task >= MIN_TASK_BAND &&
+    bands.cc >= MIN_CC_BAND &&
+    bands.gra >= MIN_GRA_BAND &&
+    bands.lr >= MIN_LR_BAND;
 
   return {
     overallBand,
@@ -238,10 +266,48 @@ export function isBodyPassedBand75(bands: { task: number; cc: number; lr: number
   };
 }
 
+// Backward-compatible alias
+export const isBodyPassedBand75 = isBodyPassedTarget;
+
 export function countWords(text: string): number {
   const trimmed = text.trim();
   if (!trimmed) return 0;
   return trimmed.split(/\s+/).filter(Boolean).length;
+}
+
+export function buildPreviousAttemptSummary(
+  attemptNumber: number,
+  content: string,
+  grade: BodyGradeResult | FullEssayGradeResult
+): PreviousAttemptSummary {
+  const keyIssues: string[] = [];
+  const entries: Array<[string, CriterionFeedback, number]> = [
+    ['TA/TR', grade.criteria.task, MIN_TASK_BAND],
+    ['CC', grade.criteria.cc, MIN_CC_BAND],
+    ['GRA', grade.criteria.gra, MIN_GRA_BAND],
+    ['LR', grade.criteria.lr, MIN_LR_BAND],
+  ];
+
+  for (const [name, crit, target] of entries) {
+    if (crit.band < target) {
+      const firstAction =
+        crit.mappings?.[0]?.actionGuide || crit.fixes?.[0] || crit.reason;
+      keyIssues.push(`${name} (${crit.band.toFixed(1)}/${target.toFixed(1)}): ${firstAction}`);
+    }
+  }
+
+  return {
+    attemptNumber,
+    content: content.slice(0, 2200),
+    overallBand: grade.overallBand,
+    bands: {
+      task: grade.criteria.task.band,
+      cc: grade.criteria.cc.band,
+      gra: grade.criteria.gra.band,
+      lr: grade.criteria.lr.band,
+    },
+    keyIssues: keyIssues.slice(0, 6),
+  };
 }
 
 function normalizeVocabSuggestions(raw: unknown): SuggestedVocabItem[] {
@@ -320,6 +386,90 @@ function normalizeIdeaGuides(raw: unknown): IdeaLanguageGuide[] {
   return results;
 }
 
+function normalizeBandStrategy(raw: unknown): BodyBandStrategyNotes | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const obj = raw as any;
+  const task8Note = String(obj.task8Note ?? obj.ta8Note ?? obj.tr8Note ?? obj.task ?? '').trim();
+  const cc9Note = String(obj.cc9Note ?? obj.ccNote ?? obj.cc ?? '').trim();
+  const gra8Note = String(obj.gra8Note ?? obj.graNote ?? obj.gra ?? '').trim();
+  const lrNote = String(obj.lrNote ?? obj.lr8Note ?? obj.lr7Note ?? obj.lr ?? '').trim();
+
+  if (!task8Note && !cc9Note && !gra8Note && !lrNote) return undefined;
+  return {
+    task8Note,
+    cc9Note,
+    gra8Note,
+    lrNote,
+  };
+}
+
+export function normalizeOutlineBodyItem(
+  found: any,
+  tpl: { bodyIndex: number; label: string; role: string },
+  idx: number
+): OutlineBodyItem {
+  const safeFound = found && typeof found === 'object' ? found : {};
+  const ideaGuides = normalizeIdeaGuides(safeFound.ideaGuides);
+
+  let viGuide = Array.isArray(safeFound.viGuide)
+    ? safeFound.viGuide.map((s: any) => String(s).trim()).filter(Boolean)
+    : typeof safeFound.viGuide === 'string' && safeFound.viGuide.trim()
+      ? [safeFound.viGuide.trim()]
+      : [];
+
+  if (viGuide.length === 0 && ideaGuides.length > 0) {
+    viGuide = ideaGuides.map((g) => (g.ideaLabel ? `${g.ideaLabel}: ${g.ideaVi}` : g.ideaVi));
+  }
+  if (viGuide.length === 0) {
+    viGuide = [`Triển khai nội dung phần ${tpl.role} bằng tiếng Anh mạch lạc, chuẩn học thuật Band 8.0+.`];
+  }
+
+  const keyPoints = Array.isArray(safeFound.keyPoints)
+    ? safeFound.keyPoints.map((s: any) => String(s).trim()).filter(Boolean)
+    : [];
+
+  const bandStrategy = normalizeBandStrategy(safeFound.bandStrategy);
+
+  // Aggregate vocab & grammar across top-level + ideaGuides (deduped)
+  const vocabMap = new Map<string, SuggestedVocabItem>();
+  for (const v of [
+    ...normalizeVocabSuggestions(safeFound.vocabSuggestions),
+    ...ideaGuides.flatMap((g) => g.vocabPhrases),
+  ]) {
+    const k = v.phrase.toLowerCase();
+    if (!vocabMap.has(k)) vocabMap.set(k, v);
+  }
+
+  const grammarMap = new Map<string, SuggestedGrammarItem>();
+  for (const g of [
+    ...normalizeGrammarSuggestions(safeFound.grammarSuggestions),
+    ...ideaGuides.flatMap((ig) => ig.grammarPatterns),
+  ]) {
+    const k = g.structure.toLowerCase();
+    if (!grammarMap.has(k)) grammarMap.set(k, g);
+  }
+
+  const linkingTip =
+    typeof safeFound.linkingTip === 'string' && safeFound.linkingTip.trim()
+      ? safeFound.linkingTip.trim()
+      : idx === 0
+        ? 'Mở đầu tự nhiên, xác lập khung thông tin rõ ràng để tạo điểm neo quy chiếu (CC 9.0) cho các body sau.'
+        : 'Liên kết "tàng hình" với body trước bằng phép quy chiếu danh từ (this shift / such measures / the former) thay cho từ nối máy móc.';
+
+  return {
+    bodyIndex: idx,
+    label: tpl.label,
+    role: typeof safeFound.role === 'string' && safeFound.role.trim() ? safeFound.role.trim() : tpl.role,
+    viGuide,
+    keyPoints,
+    bandStrategy,
+    ideaGuides,
+    vocabSuggestions: Array.from(vocabMap.values()),
+    grammarSuggestions: Array.from(grammarMap.values()),
+    linkingTip,
+  };
+}
+
 export function normalizeOutline(
   rawOutline: unknown,
   task: 'task1' | 'task2'
@@ -338,62 +488,7 @@ export function normalizeOutline(
       arr[idx] ??
       {};
 
-    const ideaGuides = normalizeIdeaGuides(found.ideaGuides);
-
-    let viGuide = Array.isArray(found.viGuide)
-      ? found.viGuide.map((s: any) => String(s).trim()).filter(Boolean)
-      : typeof found.viGuide === 'string' && found.viGuide.trim()
-        ? [found.viGuide.trim()]
-        : [];
-
-    if (viGuide.length === 0 && ideaGuides.length > 0) {
-      viGuide = ideaGuides.map((g) => (g.ideaLabel ? `${g.ideaLabel}: ${g.ideaVi}` : g.ideaVi));
-    }
-    if (viGuide.length === 0) {
-      viGuide = [`Triển khai nội dung phần ${tpl.role} bằng tiếng Anh mạch lạc, chuẩn học thuật.`];
-    }
-
-    const keyPoints = Array.isArray(found.keyPoints)
-      ? found.keyPoints.map((s: any) => String(s).trim()).filter(Boolean)
-      : [];
-
-    // Aggregate vocab & grammar across top-level + ideaGuides (deduped)
-    const vocabMap = new Map<string, SuggestedVocabItem>();
-    for (const v of [
-      ...normalizeVocabSuggestions(found.vocabSuggestions),
-      ...ideaGuides.flatMap((g) => g.vocabPhrases),
-    ]) {
-      const k = v.phrase.toLowerCase();
-      if (!vocabMap.has(k)) vocabMap.set(k, v);
-    }
-
-    const grammarMap = new Map<string, SuggestedGrammarItem>();
-    for (const g of [
-      ...normalizeGrammarSuggestions(found.grammarSuggestions),
-      ...ideaGuides.flatMap((ig) => ig.grammarPatterns),
-    ]) {
-      const k = g.structure.toLowerCase();
-      if (!grammarMap.has(k)) grammarMap.set(k, g);
-    }
-
-    const linkingTip =
-      typeof found.linkingTip === 'string' && found.linkingTip.trim()
-        ? found.linkingTip.trim()
-        : idx === 0
-          ? 'Mở đầu tự nhiên và tạo nền tảng rõ ràng cho các body tiếp theo.'
-          : 'Liên kết mượt mà với ý ở body trước bằng từ nối và phép quy chiếu phù hợp.';
-
-    return {
-      bodyIndex: idx,
-      label: tpl.label,
-      role: typeof found.role === 'string' && found.role.trim() ? found.role.trim() : tpl.role,
-      viGuide,
-      keyPoints,
-      ideaGuides,
-      vocabSuggestions: Array.from(vocabMap.values()),
-      grammarSuggestions: Array.from(grammarMap.values()),
-      linkingTip,
-    };
+    return normalizeOutlineBodyItem(found, tpl, idx);
   });
 }
 
@@ -440,47 +535,75 @@ function normalizeActionMappings(raw: unknown): CriterionActionMapping[] {
   return results;
 }
 
+export function normalizeSingleCriterion(
+  c: any,
+  defaultLabel: string,
+  targetBand: number
+): CriterionFeedback {
+  const band = roundToHalfBand(c?.band ?? 0);
+  const mappings = normalizeActionMappings(c?.mappings);
+  const mindsetShift =
+    typeof c?.mindsetShift === 'string' && c.mindsetShift.trim()
+      ? c.mindsetShift.trim()
+      : undefined;
+  const whatToStudy = Array.isArray(c?.whatToStudy)
+    ? c.whatToStudy.map((s: any) => String(s).trim()).filter(Boolean)
+    : typeof c?.whatToStudy === 'string' && c.whatToStudy.trim()
+      ? [c.whatToStudy.trim()]
+      : [];
+
+  return {
+    band,
+    passed75: band >= targetBand,
+    reason:
+      typeof c?.reason === 'string' && c.reason.trim()
+        ? c.reason.trim()
+        : band >= targetBand
+          ? `${defaultLabel} đạt mục tiêu Band ${targetBand.toFixed(1)}+.`
+          : `${defaultLabel} hiện ở Band ${band.toFixed(1)} (chưa đạt mục tiêu ${targetBand.toFixed(1)}), cần điều chỉnh theo phân tích bên dưới.`,
+    mindsetShift,
+    whatToStudy: whatToStudy.length > 0 ? whatToStudy : undefined,
+    evidence: Array.isArray(c?.evidence)
+      ? c.evidence.map((e: any) => String(e).trim()).filter(Boolean)
+      : [],
+    fixes: Array.isArray(c?.fixes)
+      ? c.fixes.map((f: any) => String(f).trim()).filter(Boolean)
+      : typeof c?.fix === 'string' && c.fix.trim()
+        ? [c.fix.trim()]
+        : [],
+    mappings: mappings.length > 0 ? mappings : undefined,
+  };
+}
+
 export function normalizeGradeResult(raw: any): BodyGradeResult {
   const rawCriteria = raw?.criteria || {};
 
-  const normalizeCriterion = (c: any, defaultLabel: string, targetBand: number): CriterionFeedback => {
-    const band = roundToHalfBand(c?.band ?? 0);
-    const mappings = normalizeActionMappings(c?.mappings);
-    return {
-      band,
-      passed75: band >= targetBand,
-      reason:
-        typeof c?.reason === 'string' && c.reason.trim()
-          ? c.reason.trim()
-          : band >= targetBand
-            ? `${defaultLabel} đạt mục tiêu Band ${targetBand.toFixed(1)}+.`
-            : `${defaultLabel} chưa đạt mục tiêu Band ${targetBand.toFixed(1)}, cần chỉnh sửa theo ánh xạ bên dưới.`,
-      evidence: Array.isArray(c?.evidence)
-        ? c.evidence.map((e: any) => String(e).trim()).filter(Boolean)
-        : [],
-      fixes: Array.isArray(c?.fixes)
-        ? c.fixes.map((f: any) => String(f).trim()).filter(Boolean)
-        : typeof c?.fix === 'string' && c.fix.trim()
-          ? [c.fix.trim()]
-          : [],
-      mappings: mappings.length > 0 ? mappings : undefined,
-    };
-  };
-
-  const taskCrit = normalizeCriterion(
+  const taskCrit = normalizeSingleCriterion(
     rawCriteria.task ?? rawCriteria.ta ?? rawCriteria.tr ?? rawCriteria.TA ?? rawCriteria.TR ?? rawCriteria.TASK,
     'Tiêu chí nội dung',
-    MIN_TASK_CC_BAND
+    MIN_TASK_BAND
   );
-  const ccCrit = normalizeCriterion(rawCriteria.cc ?? rawCriteria.CC, 'Coherence & Cohesion', MIN_TASK_CC_BAND);
-  const lrCrit = normalizeCriterion(rawCriteria.lr ?? rawCriteria.LR, 'Lexical Resource', MIN_LR_GRA_BAND);
-  const graCrit = normalizeCriterion(rawCriteria.gra ?? rawCriteria.GRA, 'Grammatical Range & Accuracy', MIN_LR_GRA_BAND);
+  const ccCrit = normalizeSingleCriterion(
+    rawCriteria.cc ?? rawCriteria.CC,
+    'Coherence & Cohesion',
+    MIN_CC_BAND
+  );
+  const graCrit = normalizeSingleCriterion(
+    rawCriteria.gra ?? rawCriteria.GRA,
+    'Grammatical Range & Accuracy',
+    MIN_GRA_BAND
+  );
+  const lrCrit = normalizeSingleCriterion(
+    rawCriteria.lr ?? rawCriteria.LR,
+    'Lexical Resource',
+    MIN_LR_BAND
+  );
 
-  const { overallBand, passed } = isBodyPassedBand75({
+  const { overallBand, passed } = isBodyPassedTarget({
     task: taskCrit.band,
     cc: ccCrit.band,
-    lr: lrCrit.band,
     gra: graCrit.band,
+    lr: lrCrit.band,
   });
 
   const grammarErrors: BodyGrammarError[] = Array.isArray(raw?.grammarErrors)
@@ -503,7 +626,12 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
       }))
     : [];
 
-  // Chỉ trả modelUpgrade khi đã đạt chuẩn Band 7.5 để người học tự sửa trước
+  const tutorClosingNote =
+    typeof raw?.tutorClosingNote === 'string' && raw.tutorClosingNote.trim()
+      ? raw.tutorClosingNote.trim()
+      : undefined;
+
+  // Chỉ mở khóa modelUpgrade khi đã đạt chuẩn Band 8.0 (8/9/8/7) để học viên tự sửa & ngấm tư duy trước
   const modelUpgrade =
     passed && typeof raw?.modelUpgrade === 'string' && raw.modelUpgrade.trim()
       ? raw.modelUpgrade.trim()
@@ -515,8 +643,8 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
     criteria: {
       task: taskCrit,
       cc: ccCrit,
-      lr: lrCrit,
       gra: graCrit,
+      lr: lrCrit,
     },
     crossBodyFeedback:
       typeof raw?.crossBodyFeedback === 'string' && raw.crossBodyFeedback.trim()
@@ -528,8 +656,9 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
       typeof raw?.generalFeedback === 'string' && raw.generalFeedback.trim()
         ? raw.generalFeedback.trim()
         : passed
-          ? 'Đoạn văn đã đạt mục tiêu (TA/TR ≥ 8.0, CC ≥ 8.0, LR ≥ 7.0, GRA ≥ 7.0 — Overall ≥ 7.5).'
-          : 'Đoạn văn chưa đạt mục tiêu (TA/TR ≥ 8.0, CC ≥ 8.0, LR ≥ 7.0, GRA ≥ 7.0). Hãy xem cách sửa cụ thể cho từng tiêu chí.',
+          ? 'Đoạn văn đã đạt chuẩn mục tiêu (TA/TR ≥ 8.0, CC ≥ 9.0, GRA ≥ 8.0, LR ≥ 7.0 — Overall ≥ 8.0).'
+          : 'Đoạn văn chưa đạt mục tiêu (TA/TR ≥ 8.0, CC ≥ 9.0, GRA ≥ 8.0, LR ≥ 7.0). Hãy đọc kỹ từng tiêu chí & lời chốt của gia sư ở cuối để sửa lại.',
+    tutorClosingNote,
     modelUpgrade,
   };
 }
@@ -553,7 +682,6 @@ export function normalizeFullEssayGradeResult(raw: any): FullEssayGradeResult {
     ? raw.repetitionAlerts.map((r: any) => String(r).trim()).filter(Boolean)
     : [];
 
-  // Chỉ mở khóa modelUpgrade khi đã đạt chuẩn (>= 7.5), tránh học vẹt viết lại đoạn mới trước khi tự sửa
   const modelUpgrade = base.modelUpgrade;
 
   return {
@@ -572,8 +700,9 @@ export function normalizeFullEssayGradeResult(raw: any): FullEssayGradeResult {
       typeof raw?.generalFeedback === 'string' && raw.generalFeedback.trim()
         ? raw.generalFeedback.trim()
         : base.passed
-          ? 'Bài viết toàn bài đã đạt chuẩn (TA/TR ≥ 8.0, CC ≥ 8.0, LR ≥ 7.0, GRA ≥ 7.0 — Overall ≥ 7.5) và được lưu vào Bài đã hoàn tất!'
-          : 'Bài viết toàn bài chưa đạt ngưỡng (TA/TR ≥ 8.0, CC ≥ 8.0, LR ≥ 7.0, GRA ≥ 7.0). Hãy sửa theo phân tích từng đoạn & từng tiêu chí bên dưới rồi chấm lại.',
+          ? 'Bài viết toàn bài đã đạt chuẩn (TA/TR ≥ 8.0, CC ≥ 9.0, GRA ≥ 8.0, LR ≥ 7.0 — Overall ≥ 8.0) và được lưu vào Bài đã hoàn tất!'
+          : 'Bài viết toàn bài chưa đạt ngưỡng (TA/TR ≥ 8.0, CC ≥ 9.0, GRA ≥ 8.0, LR ≥ 7.0). Hãy sửa theo phân tích từng đoạn, 4 tiêu chí và lời chốt của gia sư bên dưới rồi chấm lại.',
+    tutorClosingNote: base.tutorClosingNote,
     modelUpgrade,
   };
 }

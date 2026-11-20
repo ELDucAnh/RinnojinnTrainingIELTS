@@ -9,11 +9,25 @@ export interface GeminiGenerateOptions {
   maxOutputTokens?: number;
   perModelTimeoutMs?: number;
   totalBudgetMs?: number;
+  /**
+   * When true, if the primary model truncates output (MAX_TOKENS / incomplete JSON),
+   * throw GeminiResponseTooLongError immediately so the caller can split into smaller chunks
+   * instead of burning the entire Vercel budget retrying other models with the same oversized prompt.
+   */
+  failFastOnTooLong?: boolean;
+}
+
+export class GeminiResponseTooLongError extends Error {
+  public readonly code = 'RESPONSE_TOO_LONG';
+  constructor(message: string) {
+    super(message);
+    this.name = 'GeminiResponseTooLongError';
+  }
 }
 
 export function extractJsonString(rawText: string): string {
   let text = rawText.trim();
-  if (!text.startsWith('{')) {
+  if (!text.startsWith('{') && !text.startsWith('[')) {
     text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
   }
   const firstBrace = text.indexOf('{');
@@ -22,6 +36,105 @@ export function extractJsonString(rawText: string): string {
     return text.substring(firstBrace, lastBrace + 1);
   }
   return text;
+}
+
+/**
+ * Escapes raw unescaped newlines/tabs inside JSON string literals and strips trailing commas.
+ */
+function sanitizeRelaxedJson(jsonStr: string): string {
+  let result = '';
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < jsonStr.length; i++) {
+    const ch = jsonStr[i];
+    if (inString) {
+      if (escaped) {
+        result += ch;
+        escaped = false;
+        continue;
+      }
+      if (ch === '\\') {
+        result += ch;
+        escaped = true;
+        continue;
+      }
+      if (ch === '"') {
+        inString = false;
+        result += ch;
+        continue;
+      }
+      if (ch === '\n') {
+        result += '\\n';
+        continue;
+      }
+      if (ch === '\r') {
+        continue;
+      }
+      if (ch === '\t') {
+        result += '\\t';
+        continue;
+      }
+      result += ch;
+    } else {
+      if (ch === '"') {
+        inString = true;
+      }
+      result += ch;
+    }
+  }
+
+  // Strip trailing commas before } or ]
+  return result.replace(/,\s*([}\]])/g, '$1');
+}
+
+export function tryParseJsonRelaxed(rawText: string, finishReason?: string): any {
+  const extracted = extractJsonString(rawText);
+
+  try {
+    return JSON.parse(extracted);
+  } catch (firstErr: any) {
+    try {
+      const sanitized = sanitizeRelaxedJson(extracted);
+      return JSON.parse(sanitized);
+    } catch (secondErr: any) {
+      const errMsg = String(secondErr?.message || firstErr?.message || '');
+      const looksTruncated =
+        finishReason === 'MAX_TOKENS' ||
+        /unexpected end|unterminated|end of json|expected .* after|position \d+/i.test(errMsg) ||
+        !rawText.trim().endsWith('}');
+
+      if (looksTruncated) {
+        throw new GeminiResponseTooLongError(
+          `RESPONSE_TOO_LONG: Phản hồi JSON bị cắt giữa chừng (finishReason=${finishReason || 'unknown'}): ${errMsg}`
+        );
+      }
+      throw secondErr;
+    }
+  }
+}
+
+export function isLengthOrTransientError(error: unknown): boolean {
+  const err = error as any;
+  if (err instanceof GeminiResponseTooLongError || err?.code === 'RESPONSE_TOO_LONG') {
+    return true;
+  }
+  const msg = String(err?.message || err || '');
+  return (
+    msg.includes('RESPONSE_TOO_LONG') ||
+    msg.includes('MAX_TOKENS') ||
+    msg.includes('GEMINI_TIMEOUT') ||
+    msg.includes('GEMINI_MODEL_TIMEOUT') ||
+    msg.includes('SyntaxError') ||
+    msg.includes('Unexpected end') ||
+    msg.includes('Unterminated') ||
+    msg.includes('504') ||
+    msg.includes('503') ||
+    msg.includes('502') ||
+    msg.includes('429') ||
+    msg.includes('overloaded') ||
+    msg.includes('RESOURCE_EXHAUSTED')
+  );
 }
 
 async function generateWithTimeout(
@@ -41,7 +154,7 @@ async function generateWithTimeout(
   });
 
   const apiPromise = model.generateContent(prompt, { signal: controller.signal });
-  apiPromise.catch(() => { });
+  apiPromise.catch(() => {});
 
   try {
     return await Promise.race([apiPromise, timeoutPromise]);
@@ -62,24 +175,26 @@ export async function generateJsonWithFallback<T = any>(
 
   const {
     temperature = 0.65,
-    maxOutputTokens = 2400,
-    perModelTimeoutMs = 18_000,
+    maxOutputTokens = 3600,
+    perModelTimeoutMs = 20_000,
     totalBudgetMs = 50_000,
+    failFastOnTooLong = false,
   } = options;
 
   const deadline = Date.now() + totalBudgetMs;
   let lastError: any;
   const errors: string[] = [];
+  let tooLongHits = 0;
 
   for (const modelName of GEMINI_FALLBACK_MODELS) {
     const remainingMs = deadline - Date.now();
-    if (remainingMs < 4000) {
+    if (remainingMs < 3500) {
       errors.push(`[budget]: Đã chạm ngưỡng thời gian ${Math.round(totalBudgetMs / 1000)}s`);
       lastError = new Error(`GEMINI_TIMEOUT: Hệ thống AI phản hồi quá thời gian (${errors.join(' | ')})`);
       break;
     }
 
-    const attemptTimeoutMs = Math.min(perModelTimeoutMs, remainingMs - 1000);
+    const attemptTimeoutMs = Math.min(perModelTimeoutMs, remainingMs - 800);
 
     try {
       const model = genAI.getGenerativeModel({
@@ -94,13 +209,13 @@ export async function generateJsonWithFallback<T = any>(
       const result = await generateWithTimeout(model, prompt, attemptTimeoutMs);
       if (!result) continue;
 
+      const finishReason = result.response.candidates?.[0]?.finishReason;
       const rawText = result.response.text();
       if (!rawText || !rawText.trim()) {
         throw new Error('Model trả về phản hồi rỗng');
       }
 
-      const jsonStr = extractJsonString(rawText);
-      const parsed = JSON.parse(jsonStr);
+      const parsed = tryParseJsonRelaxed(rawText, finishReason);
       const validated = validate ? validate(parsed) : (parsed as T);
 
       console.log(`[${tag}] Thành công với model: ${modelName}`);
@@ -114,6 +229,13 @@ export async function generateJsonWithFallback<T = any>(
       if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
         break;
       }
+
+      if (e instanceof GeminiResponseTooLongError || e?.code === 'RESPONSE_TOO_LONG') {
+        tooLongHits += 1;
+        if (failFastOnTooLong || tooLongHits >= 2) {
+          throw e;
+        }
+      }
     }
   }
 
@@ -124,6 +246,12 @@ export function formatGeminiError(error: any, fallbackPrefix = 'Lỗi AI: '): { 
   const msg = error?.message || String(error);
   if (msg.includes('Chưa cấu hình GEMINI_API_KEY')) {
     return { message: msg, status: 500 };
+  }
+  if (error instanceof GeminiResponseTooLongError || msg.includes('RESPONSE_TOO_LONG')) {
+    return {
+      message: 'Phản hồi phân tích quá dài nên hệ thống đang tự chuyển sang chế độ chia nhỏ.',
+      status: 502,
+    };
   }
   const isTimeoutError =
     msg.includes('GEMINI_TIMEOUT') ||
@@ -160,4 +288,3 @@ export function formatGeminiError(error: any, fallbackPrefix = 'Lỗi AI: '): { 
   }
   return { message: `${fallbackPrefix}${msg}`, status: 500 };
 }
-

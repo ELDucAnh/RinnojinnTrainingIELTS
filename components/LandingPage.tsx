@@ -236,7 +236,7 @@ export function LandingPage() {
                 icon: <BookOpen size={28} />,
                 color: 'from-pink-500 to-rose-600',
                 title: 'Luyện IELTS Writing AI',
-                desc: 'Luyện Task 1 & Task 2 từng Body theo dàn ý Band 8.0+, chấm chữa 4 tiêu chí 8/8/7/7 và viết lại toàn bài hoàn chỉnh.',
+                desc: 'Luyện Task 1 & Task 2 từng Body theo dàn ý Band 8.0+, gia sư AI chấm 4 tiêu chí 8/9/8/7 (Overall 8.0) và viết lại toàn bài hoàn chỉnh.',
                 delay: 'scroll-reveal-delay-1',
               },
               {

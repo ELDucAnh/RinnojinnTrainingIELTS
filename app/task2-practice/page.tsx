@@ -18,14 +18,18 @@ import {
 } from 'lucide-react';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { appConfirm } from '@/lib/dialog';
-import { postWritingAi } from '@/lib/writing-ai-client';
 import {
+  generateTask2OutlineResilient,
+  gradeBodyResilient,
+} from '@/lib/writing-ai-client';
+import {
+  buildPreviousAttemptSummary,
   countWords,
-  normalizeOutline,
   type BodyGradeResult,
   type CompletedBody,
   type FullEssayGradeResult,
   type OutlineBodyItem,
+  type PreviousAttemptSummary,
   type Task2CompletedSession,
 } from '@/lib/writing-practice-types';
 import { BodyProgressStepper } from '@/components/writing-practice/BodyProgressStepper';
@@ -91,6 +95,7 @@ export default function Task2PracticePage() {
   const [promptAnalysis, setPromptAnalysis] = useState('');
   const [outline, setOutline] = useState<OutlineBodyItem[]>([]);
   const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
+  const [genStatus, setGenStatus] = useState('');
   const [genError, setGenError] = useState('');
   const [showPromptPanel, setShowPromptPanel] = useState(true);
 
@@ -99,10 +104,12 @@ export default function Task2PracticePage() {
   const [completedBodies, setCompletedBodies] = useState<CompletedBody[]>([]);
   const [inputText, setInputText] = useState('');
   const [isGrading, setIsGrading] = useState(false);
+  const [gradingStatus, setGradingStatus] = useState('');
   const [gradeError, setGradeError] = useState('');
   const [gradeResult, setGradeResult] = useState<BodyGradeResult | null>(null);
   const [attemptCount, setAttemptCount] = useState(0);
   const [lastGradedText, setLastGradedText] = useState('');
+  const [previousAttempt, setPreviousAttempt] = useState<PreviousAttemptSummary | null>(null);
 
   // History (only completed 5-body essays stored in localStorage)
   const [sessions, setSessions] = useState<Task2CompletedSession[]>([]);
@@ -128,10 +135,12 @@ export default function Task2PracticePage() {
     setCompletedBodies([]);
     setInputText('');
     setIsGrading(false);
+    setGradingStatus('');
     setGradeError('');
     setGradeResult(null);
     setAttemptCount(0);
     setLastGradedText('');
+    setPreviousAttempt(null);
     sessionSavedRef.current = false;
   };
 
@@ -160,6 +169,7 @@ export default function Task2PracticePage() {
       genAbortRef.current = controller;
 
       setIsGeneratingOutline(true);
+      setGenStatus('Đang phân tích đề & thiết kế dàn ý 5 Body chuẩn 8 TR · 9 CC · 8 GRA · 7 LR...');
       setGenError('');
       if (!regenerateExisting) {
         setActivePrompt('');
@@ -168,17 +178,15 @@ export default function Task2PracticePage() {
       }
 
       try {
-        const data = await postWritingAi<{
-          essayType?: string;
-          promptAnalysis?: string;
-          outline: OutlineBodyItem[];
-        }>(
-          '/api/ai/task2-outline',
+        const data = await generateTask2OutlineResilient(
           {
             prompt: targetPrompt,
             stanceHint: stanceHint.trim(),
           },
-          { signal: controller.signal }
+          {
+            signal: controller.signal,
+            onStatus: setGenStatus,
+          }
         );
         if (controller.signal.aborted) return;
 
@@ -188,7 +196,7 @@ export default function Task2PracticePage() {
         setActivePrompt(targetPrompt);
         setEssayType(data.essayType || 'IELTS Writing Task 2');
         setPromptAnalysis(data.promptAnalysis || '');
-        setOutline(normalizeOutline(data.outline, 'task2'));
+        setOutline(data.outline);
         setShowPromptPanel(false);
       } catch (e: any) {
         if (controller.signal.aborted || e?.name === 'AbortError') return;
@@ -196,6 +204,7 @@ export default function Task2PracticePage() {
       } finally {
         if (genAbortRef.current === controller) {
           setIsGeneratingOutline(false);
+          setGenStatus('');
         }
       }
     },
@@ -213,11 +222,17 @@ export default function Task2PracticePage() {
     }
 
     if (gradeResult && !gradeResult.passed && trimmed === lastGradedText) {
-      setGradeError('Bạn chưa chỉnh sửa nội dung so với lần chấm trước. Hãy sửa theo góp ý của AI rồi thử lại.');
+      setGradeError('Bạn chưa chỉnh sửa nội dung so với lần chấm trước. Hãy sửa theo góp ý của gia sư rồi thử lại.');
       return;
     }
 
+    const prevSummary =
+      gradeResult && !gradeResult.passed && lastGradedText
+        ? buildPreviousAttemptSummary(attemptCount, lastGradedText, gradeResult)
+        : previousAttempt;
+
     setIsGrading(true);
+    setGradingStatus('');
     setGradeError('');
     setGradeResult(null);
     const nextAttempt = attemptCount + 1;
@@ -233,18 +248,24 @@ export default function Task2PracticePage() {
           content: b.content,
         }));
 
-      const result = await postWritingAi<BodyGradeResult>('/api/ai/task2-grade', {
-        prompt: activePrompt,
-        essayType,
-        outline,
-        previousBodies: previousBodiesPayload,
-        bodyIndex: currentBodyIndex,
-        content: trimmed,
-      });
+      const result = await gradeBodyResilient(
+        '/api/ai/task2-grade',
+        {
+          prompt: activePrompt,
+          essayType,
+          outline,
+          previousBodies: previousBodiesPayload,
+          bodyIndex: currentBodyIndex,
+          content: trimmed,
+          previousAttempt: prevSummary,
+        },
+        { onStatus: setGradingStatus }
+      );
       setGradeResult(result);
       setLastGradedText(trimmed);
+      setPreviousAttempt(buildPreviousAttemptSummary(nextAttempt, trimmed, result));
 
-      // Chỉ khi hoàn thành đủ 5/5 Body (Body 5 đạt >= 7.5) mới lưu bài vào localStorage
+      // Chỉ khi hoàn thành đủ 5/5 Body (Body 5 đạt >= 8.0) mới lưu bài vào localStorage
       const isLastBody = currentBodyIndex + 1 >= TOTAL_BODIES;
       if (result.passed && isLastBody && !sessionSavedRef.current) {
         sessionSavedRef.current = true;
@@ -292,6 +313,7 @@ export default function Task2PracticePage() {
       setGradeError(e.message || 'Lỗi kết nối khi chấm bài. Vui lòng thử lại.');
     } finally {
       setIsGrading(false);
+      setGradingStatus('');
     }
   };
 
@@ -315,8 +337,10 @@ export default function Task2PracticePage() {
     setInputText('');
     setGradeResult(null);
     setGradeError('');
+    setGradingStatus('');
     setAttemptCount(0);
     setLastGradedText('');
+    setPreviousAttempt(null);
     setTimeout(() => textareaRef.current?.focus(), 100);
   };
 
@@ -383,7 +407,7 @@ export default function Task2PracticePage() {
           Luyện IELTS Writing Task 2
         </h1>
         <p className="text-gray-600 max-w-2xl z-10 text-[13px] leading-relaxed">
-          Nhập đề bài Task 2 của bạn — AI phân tích đề &amp; gợi ý <b>dàn bài 5 Body chuẩn Band 8.0+</b> (tối ưu <b>TR &amp; CC ≥ 8.0</b> để gánh điểm — <b>LR &amp; GRA chỉ cần 7.0</b> với collocation B1–B2 tự nhiên). Hoàn tất 5 Body mốc <b>Overall ≥ 7.5</b> để lưu bài.
+          Nhập đề bài Task 2 của bạn — Gia sư AI phân tích đề &amp; thiết kế <b>dàn bài 5 Body nâng band 6 → 8</b> theo chiến lược <b>TR 8.0 · CC 9.0 · GRA 8.0 · LR 7.0</b> (Overall ≥ 8.0), kèm lưu ý từng Body &amp; đoạn chốt gia sư 1-1.
         </p>
 
         <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 bg-white/75 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-gray-200/60 z-10">
@@ -561,6 +585,20 @@ export default function Task2PracticePage() {
             </div>
           )}
 
+          {isGeneratingOutline && (
+            <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-emerald-200/80 p-5 flex items-center justify-center gap-3 text-emerald-700 animate-fade-in">
+              <Loader2 size={18} className="animate-spin flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-bold">
+                  {genStatus || 'Đang phân tích đề & thiết kế dàn ý 5 Body chuẩn 8 TR · 9 CC · 8 GRA · 7 LR...'}
+                </p>
+                <p className="text-xs text-emerald-600/80 mt-0.5">
+                  Dàn ý chi tiết 5 Body — nếu phản hồi dài hệ thống sẽ tự chia nhỏ &amp; tải lần lượt cho bạn
+                </p>
+              </div>
+            </div>
+          )}
+
           {genError && (
             <div className="flex items-center justify-between gap-3 flex-wrap p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
               <div className="flex items-center gap-3 min-w-0">
@@ -626,6 +664,7 @@ export default function Task2PracticePage() {
                   currentBodyIndex={currentBodyIndex}
                   totalBodies={TOTAL_BODIES}
                   accent="emerald"
+                  taskType="task2"
                 />
               )}
 
@@ -657,7 +696,7 @@ export default function Task2PracticePage() {
                   ref={textareaRef}
                   rows={7}
                   disabled={isCurrentBodyLocked}
-                  placeholder={`Dựa vào dàn ý tiếng Việt của ${currentOutline?.label || 'Body này'}, hãy tự viết và dịch sang tiếng Anh tự nhiên chuẩn mục tiêu (TR/CC 8.0 • LR/GRA 7.0)...`}
+                  placeholder={`Dựa vào dàn ý & lưu ý 8 TR · 9 CC · 8 GRA · 7 LR phía trên, hãy tự viết ${currentOutline?.label || 'Body này'} bằng tiếng Anh...`}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={(e) => {
@@ -682,8 +721,8 @@ export default function Task2PracticePage() {
                     >
                       {isGrading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                       {gradeResult && !gradeResult.passed
-                        ? `Gửi AI chấm lại Body ${currentBodyIndex + 1}`
-                        : `Chấm Body ${currentBodyIndex + 1} (TR/CC 8.0 • LR/GRA 7.0)`}
+                        ? `Gửi Gia sư chấm lại Body ${currentBodyIndex + 1}`
+                        : `Chấm Body ${currentBodyIndex + 1} (8 TR · 9 CC · 8 GRA · 7 LR)`}
                     </button>
                   </div>
                 )}
@@ -696,6 +735,7 @@ export default function Task2PracticePage() {
                   bodyIndex={currentBodyIndex}
                   totalBodies={TOTAL_BODIES}
                   isGrading={isGrading}
+                  gradingStatus={gradingStatus}
                   gradeError={gradeError}
                   gradeResult={gradeResult}
                   accent="emerald"
@@ -710,28 +750,30 @@ export default function Task2PracticePage() {
             </div>
           )}
 
-          {/* Idle cards */}
+          {/* Idle cards (synchronized minimalist editorial numbers matching Task 1) */}
           {!activePrompt && !isGeneratingOutline && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
                 {
-                  icon: '📝',
-                  title: 'Tự nhập đề Task 2 bất kỳ',
-                  desc: 'Dán bất kỳ đề bài IELTS Task 2 nào của bạn — AI nhận diện dạng bài và lập dàn ý 5 Body bằng tiếng Việt (Mở bài, 3 Thân bài, Kết bài).',
+                  num: '01',
+                  title: 'Dàn ý 5 Body chiến lược 8/9/8/7',
+                  desc: 'Dán bất kỳ đề Task 2 nào — AI lập dàn ý 5 Body kèm lưu ý bắt buộc cho từng đoạn để đạt TR 8.0, CC 9.0, GRA 8.0 và LR 7.0→8.0.',
                 },
                 {
-                  icon: '⚖️',
-                  title: 'Feedback & cách sửa từng tiêu chí',
-                  desc: 'Siết gắt TR ≥ 8.0 & CC ≥ 8.0, chấm LR & GRA chuẩn Band 7.0 (collocation B1–B2 tự nhiên), chỉ rõ vị trí cần thêm câu và cách sửa cụ thể.',
+                  num: '02',
+                  title: 'Gia sư 1-1 bóc tách tư duy',
+                  desc: 'Feedback siêu chi tiết từng vị trí câu, chỉ rõ cần đổi tư duy Band 6 → 8 ra sao, nên học thêm gì và chốt nhận xét bằng tiếng Việt ở cuối.',
                 },
                 {
-                  icon: '💾',
-                  title: 'Hoàn tất 5/5 Body mới lưu',
-                  desc: 'Bài viết hoàn chỉnh 5 đoạn chỉ được lưu vào bộ nhớ trình duyệt sau khi bạn vượt qua tất cả 5 Body (Overall ≥ 7.5).',
+                  num: '03',
+                  title: 'Hoàn tất 5/5 Body chuẩn 8.0',
+                  desc: 'Vượt qua đủ 5 Body (TR 8.0 · CC 9.0 · GRA 8.0 · LR 7.0 — Overall ≥ 8.0) để lưu bài và luyện tự viết toàn bài hoàn chỉnh.',
                 },
-              ].map((c, i) => (
-                <div key={i} className="bg-[var(--card)] rounded-2xl p-5 shadow-sm border border-[var(--border)]">
-                  <div className="text-3xl mb-2.5">{c.icon}</div>
+              ].map((c) => (
+                <div key={c.num} className="bg-[var(--card)] rounded-2xl p-5 shadow-sm border border-emerald-100/90">
+                  <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/70 text-xs font-black mb-3">
+                    {c.num}
+                  </span>
                   <h3 className="font-bold text-gray-800 mb-1.5 text-[15px]">{c.title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{c.desc}</p>
                 </div>

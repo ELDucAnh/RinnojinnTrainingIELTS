@@ -18,6 +18,7 @@ export function BodyProgressStepper({
 }: BodyProgressStepperProps) {
   const completedCount = completedBodies.length;
   const totalCount = outline.length;
+  const taskShort = totalCount === 4 ? 'TA' : 'TR';
 
   const activeStyle =
     accent === 'emerald'
@@ -43,7 +44,11 @@ export function BodyProgressStepper({
             Tiến độ hoàn thành ({completedCount}/{totalCount} Body)
           </p>
           <p className="text-xs text-[var(--text-muted)] mt-0.5">
-            Mỗi Body cần đạt <span className="font-bold text-emerald-600">TA/TR &amp; CC ≥ 8.0 • LR &amp; GRA ≥ 7.0</span> (Overall ≥ 7.5) mới mở khóa Body tiếp theo
+            Mỗi Body cần đạt{' '}
+            <span className="font-bold text-emerald-600">
+              {taskShort} 8.0 • CC 9.0 • GRA 8.0 • LR 7.0
+            </span>{' '}
+            (Overall ≥ 8.0) mới mở khóa Body tiếp theo
           </p>
         </div>
         <span className="text-xs font-black px-2.5 py-1 rounded-full bg-gray-100 text-gray-700">
@@ -104,4 +109,3 @@ export function BodyProgressStepper({
     </div>
   );
 }
-
