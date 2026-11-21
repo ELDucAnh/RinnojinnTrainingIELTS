@@ -128,8 +128,9 @@ ${cleanContent}
 3. "gra" — Grammatical Range and Accuracy (GRA) [MỤC TIÊU >= 8.0]:
    - Đòi hỏi đa số câu hoàn toàn sạch lỗi (error-free) VÀ sử dụng linh hoạt nhiều cấu trúc phức tự nhiên (While/Whereas, mệnh đề quan hệ không xác định ", which + V", cụm phân từ, "with + N + V-ing", bị động, so sánh định lượng nâng cao), chia thì chuẩn xác 100% nhất quán với previousBodies.
    - Chỉ dùng câu đơn/câu ghép cơ bản hoặc còn lỗi mạo từ/giới từ/chủ-vị/thì -> TRẦN GRA <= 6.5–7.5.
-4. "lr" — Lexical Resource (LR) [MỤC TIÊU >= 7.0 — B1–B2 COLLOCATION TỰ NHIÊN]:
-   - Ưu tiên collocations tự nhiên mức B1–B2 chuẩn văn viết ("account for", "reach a peak of", "rise steadily", "drop sharply", "remain stable", "by contrast"). KHÔNG hạ < 7.0 chỉ vì thiếu từ C1–C2 hiếm! Chỉ trừ <= 6.5 khi sai collocation, dịch word-by-word từ tiếng Việt, hoặc lặp từ sơ đẳng.
+4. "lr" — Lexical Resource (LR) [MỤC TIÊU CHỈ CẦN = 7.0 — TỪ VỰNG B1–B2 PHỔ THÔNG, RÕ NGHĨA, SÁT BIỂU ĐỒ]:
+   - Học viên CHỈ cần **LR 7.0**, ưu tiên collocations B1–B2 quen thuộc, chính xác với đúng biểu đồ ("account for", "make up", "reach a peak of", "rise steadily", "drop sharply", "remain steady", "compared with", "by contrast").
+   - TUYỆT ĐỐI KHÔNG hạ < 7.0 chỉ vì thiếu từ C1–C2 hiếm, và KHÔNG ĐỀ XUẤT từ cao siêu/màu mè (CẤM gợi ý kiểu: skyrocket, plummet, unprecedented surge, trajectory, preponderance, eclipse, dwarf, metamorphose, stark dichotomy) vì dễ làm lệch ngữ cảnh dữ liệu! Chỉ sửa khi học viên sai collocation, dịch từng chữ tiếng Việt, lặp từ quá nhiều hoặc dùng sai đơn vị/đối tượng.
 - Nếu viết tiếng Việt, sơ sài hoặc lạc đề -> <= 4.0. Thang điểm 0.0–9.0 (bước 0.5).
 `;
 

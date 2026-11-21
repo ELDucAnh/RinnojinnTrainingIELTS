@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Task1ChartRenderer } from '@/components/writing-practice/Task1ChartRenderer';
 import { FullEssayFeedbackPanel } from '@/components/writing-practice/FullEssayFeedbackPanel';
+import { VocabParaphrasePrepPanel } from '@/components/writing-practice/VocabParaphrasePrepPanel';
 import { gradeFullEssayResilient } from '@/lib/writing-ai-client';
 import {
   buildPreviousAttemptSummary,
@@ -146,9 +147,8 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
     return (
       <div className="bg-[var(--card)] rounded-3xl p-8 md:p-10 text-center border border-[var(--border)] shadow-sm flex flex-col items-center gap-3">
         <div
-          className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-            isTask1 ? 'bg-orange-50 text-orange-500' : 'bg-emerald-50 text-emerald-600'
-          }`}
+          className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isTask1 ? 'bg-orange-50 text-orange-500' : 'bg-emerald-50 text-emerald-600'
+            }`}
         >
           <FileEdit size={22} />
         </div>
@@ -161,9 +161,8 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
         <button
           type="button"
           onClick={onBackToPractice}
-          className={`mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm transition-colors ${
-            isTask1 ? 'bg-orange-500 hover:bg-orange-600' : 'bg-emerald-600 hover:bg-emerald-700'
-          }`}
+          className={`mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white shadow-sm transition-colors ${isTask1 ? 'bg-orange-500 hover:bg-orange-600' : 'bg-emerald-600 hover:bg-emerald-700'
+            }`}
         >
           <ArrowLeft size={15} /> Quay lại Luyện tập
         </button>
@@ -206,20 +205,20 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
       const payload =
         props.taskType === 'task1'
           ? {
-              taskType: 'task1' as const,
-              chartData: (activeSession as Task1CompletedSession).chartData,
-              outline: activeSession.outline,
-              essay: trimmed,
-              previousAttempt: prevSummary,
-            }
+            taskType: 'task1' as const,
+            chartData: (activeSession as Task1CompletedSession).chartData,
+            outline: activeSession.outline,
+            essay: trimmed,
+            previousAttempt: prevSummary,
+          }
           : {
-              taskType: 'task2' as const,
-              prompt: (activeSession as Task2CompletedSession).prompt,
-              essayType: (activeSession as Task2CompletedSession).essayType,
-              outline: activeSession.outline,
-              essay: trimmed,
-              previousAttempt: prevSummary,
-            };
+            taskType: 'task2' as const,
+            prompt: (activeSession as Task2CompletedSession).prompt,
+            essayType: (activeSession as Task2CompletedSession).essayType,
+            outline: activeSession.outline,
+            essay: trimmed,
+            previousAttempt: prevSummary,
+          };
 
       const result = await gradeFullEssayResilient(payload, {
         onStatus: (msg) => setGradingStatus(msg),
@@ -256,16 +255,14 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
     <div className="flex flex-col gap-5">
       {/* Completed topic selector */}
       <div
-        className={`bg-[var(--card)] rounded-2xl p-4 sm:p-5 border shadow-sm flex flex-col gap-3 ${
-          isTask1 ? 'border-orange-200/80' : 'border-emerald-200/80'
-        }`}
+        className={`bg-[var(--card)] rounded-2xl p-4 sm:p-5 border shadow-sm flex flex-col gap-3 ${isTask1 ? 'border-orange-200/80' : 'border-emerald-200/80'
+          }`}
       >
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div>
             <p
-              className={`text-xs font-extrabold uppercase tracking-wider ${
-                isTask1 ? 'text-orange-600' : 'text-emerald-700'
-              }`}
+              className={`text-xs font-extrabold uppercase tracking-wider ${isTask1 ? 'text-orange-600' : 'text-emerald-700'
+                }`}
             >
               Chọn từ các bài đã hoàn tất đủ {expectedBodies} Body ({eligibleSessions.length} đề)
             </p>
@@ -288,23 +285,21 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
                 key={sess.id}
                 type="button"
                 onClick={() => handleSelectSession(sess.id)}
-                className={`text-left rounded-xl p-3 border transition-all flex flex-col gap-1.5 ${
-                  isSelected
-                    ? isTask1
-                      ? 'bg-orange-50 border-orange-400 ring-1 ring-orange-200'
-                      : 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-200'
-                    : 'bg-white border-gray-200 hover:bg-gray-50'
-                }`}
+                className={`text-left rounded-xl p-3 border transition-all flex flex-col gap-1.5 ${isSelected
+                  ? isTask1
+                    ? 'bg-orange-50 border-orange-400 ring-1 ring-orange-200'
+                    : 'bg-emerald-50 border-emerald-500 ring-1 ring-emerald-200'
+                  : 'bg-white border-gray-200 hover:bg-gray-50'
+                  }`}
               >
                 <div className="flex items-center justify-between gap-1.5">
                   <span
-                    className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                      isSelected
-                        ? isTask1
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-emerald-600 text-white'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}
+                    className={`text-[10px] font-black px-2 py-0.5 rounded-full ${isSelected
+                      ? isTask1
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-emerald-600 text-white'
+                      : 'bg-gray-100 text-gray-700'
+                      }`}
                   >
                     Band {sess.overallBand.toFixed(1)} · {sess.bodies.length} Body
                   </span>
@@ -359,6 +354,16 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
         </div>
       )}
 
+      {/* Optional collapsible confirmed vocab & paraphrase reference */}
+      {activeSession.vocabPrep && (
+        <VocabParaphrasePrepPanel
+          taskType={taskType}
+          vocabPrep={activeSession.vocabPrep}
+          mode="reference"
+          accent={isTask1 ? 'orange' : 'emerald'}
+        />
+      )}
+
       {/* Optional collapsible Vietnamese outline reference */}
       {activeSession.outline.length > 0 && (
         <div className="bg-[var(--card)] rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
@@ -393,7 +398,7 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
                   )}
                   {item.bandStrategy?.lrNote && (
                     <p className="text-[11px] bg-sky-50/70 border border-sky-100 rounded-md px-2 py-1 text-sky-900">
-                      <b>LR 7→8: </b>
+                      <b>LR 7.0: </b>
                       {item.bandStrategy.lrNote}
                     </p>
                   )}
@@ -422,11 +427,10 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
               </span>
             )}
             <span
-              className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                meetsRecommendedLength
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                  : 'bg-amber-50 text-amber-700 border border-amber-200'
-              }`}
+              className={`text-xs font-bold px-2.5 py-1 rounded-full ${meetsRecommendedLength
+                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                }`}
             >
               {wordCount} / {minWordGoal}+ từ
             </span>
@@ -447,11 +451,10 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
               : 'Viết toàn bộ bài Task 2 (Đoạn 1: Intro -> Đoạn 2: Body 1 -> Đoạn 3: Body 2 -> Đoạn 4: Body 3 -> Đoạn 5: Conclusion)...'
           }
           rows={12}
-          className={`w-full rounded-2xl border p-4 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 transition-all leading-relaxed resize-y disabled:bg-gray-50 disabled:text-gray-600 ${
-            isTask1
-              ? 'border-orange-200/80 focus:border-orange-400 focus:ring-orange-100'
-              : 'border-emerald-200/80 focus:border-emerald-500 focus:ring-emerald-100'
-          }`}
+          className={`w-full rounded-2xl border p-4 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 transition-all leading-relaxed resize-y disabled:bg-gray-50 disabled:text-gray-600 ${isTask1
+            ? 'border-orange-200/80 focus:border-orange-400 focus:ring-orange-100'
+            : 'border-emerald-200/80 focus:border-emerald-500 focus:ring-emerald-100'
+            }`}
         />
 
         <div className="flex items-center justify-between gap-2 flex-wrap">

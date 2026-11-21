@@ -182,9 +182,9 @@ ${cleanEssay}
 ${taskSpecificRules}
 - "gra" — Grammatical Range & Accuracy (GRA) [MỤC TIÊU >= 8.0]:
   + Đa số câu xuyên suốt toàn bài phải sạch lỗi (error-free) VÀ sử dụng đa dạng cấu trúc phức tự nhiên (mệnh đề nhượng bộ While/Whereas/Although, mệnh đề quan hệ không xác định ", which + V", cụm phân từ, with + N + V-ing, bị động/điều kiện/so sánh), chia thì nhất quán toàn bài, kiểm soát chuẩn mạo từ/giới từ/dấu câu. Nếu lặp câu đơn giản hoặc còn lỗi ngữ pháp rải rác -> TRẦN GRA <= 6.5–7.5.
-- "lr" — Lexical Resource (LR) [MỤC TIÊU >= 7.0 — B1–B2 COLLOCATION TỰ NHIÊN]:
-  + Ưu tiên **collocation tự nhiên mức B1–B2 chuẩn văn viết học thuật**${taskType === 'task1' ? ' (VD: account for, reach a peak of, rise steadily, drop sharply, by contrast, in comparison with)' : ' (VD: play a crucial role, raise public awareness, face financial pressure, have a serious impact on)'}.
-  + TUYỆT ĐỐI KHÔNG trừ xuống < 7.0 chỉ vì không dùng từ hiếm C1–C2! Chỉ trừ <= 6.5 khi lặp từ sơ đẳng xuyên suốt nhiều đoạn, dịch word-by-word từ tiếng Việt hoặc sai collocation.
+- "lr" — Lexical Resource (LR) [MỤC TIÊU CHỈ CẦN = 7.0 — TỪ VỰNG B1–B2 PHỔ THÔNG, RÕ NGHĨA, SÁT ĐỀ]:
+  + Học viên CHỈ cần **LR 7.0** — ưu tiên **collocation B1–B2 quen thuộc, tự nhiên, bám sát 100% chủ đề bài viết**${taskType === 'task1' ? ' (VD: account for, make up, reach a peak of, rise steadily, drop sharply, remain steady, compared with, by contrast)' : ' (VD: play an important role in, have a negative effect on, reduce financial pressure, raise public awareness, equal opportunities, lead to serious problems)'}.
+  + TUYỆT ĐỐI KHÔNG trừ xuống < 7.0 chỉ vì học viên dùng từ phổ thông rõ nghĩa, và **CẤM TUYỆT ĐỐI** đề xuất từ C1–C2 cao siêu/hoa mỹ dễ gây lệch đề (CẤM kiểu: ubiquitous, exacerbate, mitigate, proliferate, paramount, deleterious, detrimental, unprecedented, multifaceted, paradigm shift, galvanize, bolster, unyielding, supremacy, ramifications, trajectory, skyrocket, plummet, eclipse, dwarf). Chỉ sửa khi lặp từ sơ đẳng xuyên suốt nhiều đoạn, dịch word-by-word từ tiếng Việt, sai collocation hoặc dùng từ lệch đề.
 `;
 
     // ─── CHUNKED PHASE HANDLERS ───

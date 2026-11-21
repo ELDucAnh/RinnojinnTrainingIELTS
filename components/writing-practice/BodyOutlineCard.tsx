@@ -110,7 +110,7 @@ export function BodyOutlineCard({
         </button>
       </div>
 
-      {/* Yêu cầu bắt buộc cho Body này để đạt 8 TA/TR · 9 CC · 8 GRA · 7->8 LR */}
+      {/* Yêu cầu bắt buộc cho Body này để đạt 8 TA/TR · 9 CC · 8 GRA · 7 LR */}
       {bandStrategy && (
         <div className="bg-white/95 rounded-xl border border-gray-200/90 p-3.5 sm:p-4 flex flex-col gap-2.5">
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -122,7 +122,7 @@ export function BodyOutlineCard({
                 />
               )}
               <span>
-                Lưu ý bắt buộc cho Body {currentBodyIndex + 1} để đạt chuẩn 8 {taskShort} · 9 CC · 8 GRA · 7→8 LR
+                Lưu ý bắt buộc cho Body {currentBodyIndex + 1} để đạt chuẩn 8 {taskShort} · 9 CC · 8 GRA · 7 LR
               </span>
             </div>
             <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
@@ -160,10 +160,10 @@ export function BodyOutlineCard({
               <div className="rounded-xl p-3 border bg-sky-50/70 border-sky-200/80 text-sky-950 text-xs leading-relaxed">
                 <div className="flex items-center justify-between gap-1.5 mb-1">
                   <span className="font-black text-[11px] uppercase tracking-wider text-sky-800">
-                    Từ vựng chuẩn LR 7.0 → 8.0
+                    Từ vựng LR 7.0 (B1–B2 sát đề)
                   </span>
                   <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-600 text-white">
-                    7→8 LR
+                    7.0 LR
                   </span>
                 </div>
                 <p>{bandStrategy.lrNote}</p>
@@ -208,7 +208,7 @@ export function BodyOutlineCard({
             <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700">
               {!showMinimalIcons && <Lightbulb size={14} className="text-amber-500 flex-shrink-0" />}
               <span>
-                Lộ trình từng Idea + Collocation (LR 7→8) &amp; Ngữ pháp (GRA 8.0) cho Body {currentBodyIndex + 1}:
+                Lộ trình từng Idea + Collocation B1–B2 (LR 7.0) &amp; Ngữ pháp (GRA 8.0) cho Body {currentBodyIndex + 1}:
               </span>
             </div>
             <span className="text-[11px] font-semibold text-gray-400">
@@ -322,7 +322,7 @@ export function BodyOutlineCard({
         (hasLanguageSuggestions ? (
           <div className="bg-white/95 rounded-xl border border-gray-200/80 p-3.5 sm:p-4 flex flex-col gap-3">
             <p className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
-              Gợi ý chi tiết — Collocation (LR 7→8) &amp; Ngữ pháp (GRA 8.0) cho Body {currentBodyIndex + 1}
+              Gợi ý chi tiết — Collocation B1–B2 (LR 7.0) &amp; Ngữ pháp (GRA 8.0) cho Body {currentBodyIndex + 1}
             </p>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">

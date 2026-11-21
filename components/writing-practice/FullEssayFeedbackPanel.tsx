@@ -60,9 +60,8 @@ export function FullEssayFeedbackPanel({
   if (isGrading) {
     return (
       <div
-        className={`flex items-center gap-3 p-5 bg-[var(--card)] rounded-2xl border shadow-sm animate-fade-in ${
-          isOrange ? 'border-orange-200/80' : 'border-emerald-200'
-        }`}
+        className={`flex items-center gap-3 p-5 bg-[var(--card)] rounded-2xl border shadow-sm animate-fade-in ${isOrange ? 'border-orange-200/80' : 'border-emerald-200'
+          }`}
       >
         <Loader2
           size={20}
@@ -110,11 +109,10 @@ export function FullEssayFeedbackPanel({
     <div className="flex flex-col gap-4 bg-[var(--card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden animate-fade-in">
       {/* Header score banner */}
       <div
-        className={`flex flex-col sm:flex-row sm:items-center gap-4 p-5 text-white bg-gradient-to-r ${
-          passed
-            ? 'from-emerald-600 via-emerald-500 to-teal-500'
-            : 'from-rose-600 via-red-500 to-amber-500'
-        }`}
+        className={`flex flex-col sm:flex-row sm:items-center gap-4 p-5 text-white bg-gradient-to-r ${passed
+          ? 'from-emerald-600 via-emerald-500 to-teal-500'
+          : 'from-rose-600 via-red-500 to-amber-500'
+          }`}
       >
         <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex flex-col items-center justify-center flex-shrink-0 border border-white/25">
           <span className="text-2xl font-black leading-none">{gradeResult.overallBand.toFixed(1)}</span>
@@ -149,9 +147,8 @@ export function FullEssayFeedbackPanel({
 
         {/* Whole essay flow & paragraph structure */}
         <div
-          className={`p-3.5 rounded-xl border flex items-start gap-2.5 ${
-            isOrange ? 'bg-orange-50/70 border-orange-200/80' : 'bg-indigo-50/70 border-indigo-200'
-          }`}
+          className={`p-3.5 rounded-xl border flex items-start gap-2.5 ${isOrange ? 'bg-orange-50/70 border-orange-200/80' : 'bg-indigo-50/70 border-indigo-200'
+            }`}
         >
           <Layers
             size={16}
@@ -276,9 +273,8 @@ export function FullEssayFeedbackPanel({
                     </span>
                     <span className="text-gray-400">→</span>
                     <span
-                      className={`px-1.5 py-0.5 rounded font-bold ${
-                        isOrange ? 'bg-orange-100 text-orange-800' : 'bg-emerald-100 text-emerald-800'
-                      }`}
+                      className={`px-1.5 py-0.5 rounded font-bold ${isOrange ? 'bg-orange-100 text-orange-800' : 'bg-emerald-100 text-emerald-800'
+                        }`}
                     >
                       {tip.betterAlternative}
                     </span>
@@ -317,26 +313,23 @@ export function FullEssayFeedbackPanel({
         {/* SIGNATURE: Vietnamese Tutor Deep-Dive Closing Verdict at the bottom */}
         {gradeResult.tutorClosingNote && (
           <div
-            className={`rounded-2xl border-2 p-4 sm:p-5 shadow-xs flex flex-col gap-2.5 ${
-              isOrange
-                ? 'bg-gradient-to-br from-orange-50/90 via-amber-50/50 to-white border-orange-200/90'
-                : 'bg-gradient-to-br from-emerald-50/90 via-teal-50/50 to-white border-emerald-200/90'
-            }`}
+            className={`rounded-2xl border-2 p-4 sm:p-5 shadow-xs flex flex-col gap-2.5 ${isOrange
+              ? 'bg-gradient-to-br from-orange-50/90 via-amber-50/50 to-white border-orange-200/90'
+              : 'bg-gradient-to-br from-emerald-50/90 via-teal-50/50 to-white border-emerald-200/90'
+              }`}
           >
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 <span
-                  className={`w-7 h-7 rounded-xl flex items-center justify-center text-white shadow-xs flex-shrink-0 ${
-                    isOrange ? 'bg-orange-500' : 'bg-emerald-600'
-                  }`}
+                  className={`w-7 h-7 rounded-xl flex items-center justify-center text-white shadow-xs flex-shrink-0 ${isOrange ? 'bg-orange-500' : 'bg-emerald-600'
+                    }`}
                 >
                   <GraduationCap size={15} />
                 </span>
                 <div>
                   <p
-                    className={`text-[10.5px] font-black uppercase tracking-wider ${
-                      isOrange ? 'text-orange-700' : 'text-emerald-700'
-                    }`}
+                    className={`text-[10.5px] font-black uppercase tracking-wider ${isOrange ? 'text-orange-700' : 'text-emerald-700'
+                      }`}
                   >
                     Gia sư Writing 1-1 • Chấm toàn bài Band 6.0 → 8.0
                   </p>

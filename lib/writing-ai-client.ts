@@ -3,12 +3,14 @@ import {
   normalizeFullEssayGradeResult,
   normalizeGradeResult,
   normalizeOutline,
+  normalizeVocabPrep,
   type BodyGradeResult,
   type ChartData,
   type FullEssayGradeResult,
   type OutlineBodyItem,
   type PreviousAttemptSummary,
   type Task2OutlineResponse,
+  type WritingVocabPrep,
 } from '@/lib/writing-practice-types';
 
 export interface WritingAiFetchOptions {
@@ -185,6 +187,55 @@ export async function postWritingAi<T = any>(
 // ─── Resilient Chunked Orchestrators (Auto-split when response is too long / times out) ───
 
 /**
+ * Pre-outline Vocabulary & Paraphrase Table generator (Task 1 & Task 2):
+ * 1) Try full single-shot call.
+ * 2) If response is too long / fails -> split into 2 small calls: 'paraphrase' then 'collocations'.
+ */
+export async function generateVocabPrepResilient(
+  payload:
+    | { taskType: 'task1'; chartData: ChartData }
+    | { taskType: 'task2'; prompt: string; stanceHint?: string },
+  options: { signal?: AbortSignal; onStatus?: (msg: string) => void } = {}
+): Promise<WritingVocabPrep> {
+  const { signal, onStatus } = options;
+  const endpoint = '/api/ai/writing-vocab-prep';
+
+  try {
+    onStatus?.('Đang tổng hợp bảng Paraphrase & kho Collocation B1–B2 sát đề...');
+    const full = await postWritingAiOnce<WritingVocabPrep>(endpoint, payload, {
+      timeoutMs: 52_000,
+      signal,
+    });
+    const normalized = normalizeVocabPrep(full);
+    if (normalized.paraphraseTable.length > 0 || normalized.collocationGroups.length > 0) {
+      return normalized;
+    }
+  } catch (err: any) {
+    if (err?.name === 'AbortError' || !isRetriableError(err)) throw err;
+    console.warn('[writing-vocab-prep] Full request failed, switching to 2-part fallback:', err?.message);
+  }
+
+  onStatus?.('Đang tự chia nhỏ bước 1/2: Lập bảng Paraphrase từ khóa tránh lặp từ...');
+  const p1 = await postWritingAi<any>(
+    endpoint,
+    { ...payload, phase: 'paraphrase' },
+    { timeoutMs: 40_000, signal, maxRetries: 2, onStatus }
+  );
+
+  onStatus?.('Đang tự chia nhỏ bước 2/2: Tổng hợp kho cụm Collocation B1–B2 sát đề...');
+  const p2 = await postWritingAi<any>(
+    endpoint,
+    { ...payload, phase: 'collocations', paraphraseSummary: p1?.paraphraseTable || [] },
+    { timeoutMs: 40_000, signal, maxRetries: 2, onStatus }
+  );
+
+  return normalizeVocabPrep({
+    ...p1,
+    collocationGroups: p2?.collocationGroups || [],
+  });
+}
+
+/**
  * Task 1 Outline:
  * 1) Try full 4-body outline in 1 call.
  * 2) If response is too long / fails -> auto-split into 2 chunks ([0,1] then [2,3]).
@@ -192,15 +243,15 @@ export async function postWritingAi<T = any>(
  */
 export async function generateTask1OutlineResilient(
   chartData: ChartData,
-  options: { signal?: AbortSignal; onStatus?: (msg: string) => void } = {}
+  options: { signal?: AbortSignal; onStatus?: (msg: string) => void; vocabPrep?: WritingVocabPrep | null } = {}
 ): Promise<OutlineBodyItem[]> {
-  const { signal, onStatus } = options;
+  const { signal, onStatus, vocabPrep } = options;
 
   try {
     onStatus?.('Đang thiết kế dàn ý 4 Body chuẩn 8 TA · 9 CC · 8 GRA · 7 LR...');
     const full = await postWritingAiOnce<{ outline: OutlineBodyItem[] }>(
       '/api/ai/task1-generate',
-      { mode: 'outline-only', chartData },
+      { mode: 'outline-only', chartData, vocabPrep: vocabPrep || undefined },
       { timeoutMs: 58_000, signal }
     );
     if (Array.isArray(full?.outline) && full.outline.length >= 4) {
@@ -229,6 +280,7 @@ export async function generateTask1OutlineResilient(
         {
           mode: 'outline-chunk',
           chartData,
+          vocabPrep: vocabPrep || undefined,
           bodyIndices: group,
           previousOutlineSummary: collected.map((o) => ({
             bodyIndex: o.bodyIndex,
@@ -253,6 +305,7 @@ export async function generateTask1OutlineResilient(
           {
             mode: 'outline-chunk',
             chartData,
+            vocabPrep: vocabPrep || undefined,
             bodyIndices: [singleIdx],
             previousOutlineSummary: collected.map((o) => ({
               bodyIndex: o.bodyIndex,
@@ -283,22 +336,26 @@ export async function generateTask1OutlineResilient(
  * 3) If any 2-body chunk fails -> auto-split down to 1 body at a time with retries!
  */
 export async function generateTask2OutlineResilient(
-  params: { prompt: string; stanceHint?: string },
+  params: { prompt: string; stanceHint?: string; vocabPrep?: WritingVocabPrep | null },
   options: { signal?: AbortSignal; onStatus?: (msg: string) => void } = {}
 ): Promise<Task2OutlineResponse> {
   const { signal, onStatus } = options;
 
   try {
-    onStatus?.('Đang phân tích đề & lập dàn ý 5 Body chuẩn 8 TR · 9 CC · 8 GRA · 7 LR...');
+    onStatus?.('Đang lập dàn ý 5 Body bám sát bảng Paraphrase & Từ vựng bạn đã xác nhận...');
     const full = await postWritingAiOnce<Task2OutlineResponse>(
       '/api/ai/task2-outline',
-      { prompt: params.prompt, stanceHint: params.stanceHint || '' },
+      {
+        prompt: params.prompt,
+        stanceHint: params.stanceHint || '',
+        vocabPrep: params.vocabPrep || undefined,
+      },
       { timeoutMs: 58_000, signal }
     );
     if (Array.isArray(full?.outline) && full.outline.length >= 5) {
       return {
-        essayType: full.essayType || 'IELTS Writing Task 2',
-        promptAnalysis: full.promptAnalysis || '',
+        essayType: full.essayType || params.vocabPrep?.essayType || 'IELTS Writing Task 2',
+        promptAnalysis: full.promptAnalysis || params.vocabPrep?.promptAnalysis || '',
         outline: normalizeOutline(full.outline, 'task2'),
       };
     }
@@ -307,8 +364,8 @@ export async function generateTask2OutlineResilient(
     console.warn('[task2-outline] Full request failed, switching to chunked fallback:', err?.message);
   }
 
-  let essayType = 'IELTS Writing Task 2';
-  let promptAnalysis = '';
+  let essayType = params.vocabPrep?.essayType || 'IELTS Writing Task 2';
+  let promptAnalysis = params.vocabPrep?.promptAnalysis || '';
   const collected: any[] = [];
   const chunkGroups: number[][] = [
     [0, 1],
@@ -326,6 +383,7 @@ export async function generateTask2OutlineResilient(
       mode: 'chunk' as const,
       prompt: params.prompt,
       stanceHint: params.stanceHint || '',
+      vocabPrep: params.vocabPrep || undefined,
       bodyIndices: indices,
       includeMeta: gIdx === 0 && !promptAnalysis,
       essayType: essayType !== 'IELTS Writing Task 2' ? essayType : undefined,

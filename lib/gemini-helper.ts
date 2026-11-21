@@ -154,7 +154,7 @@ async function generateWithTimeout(
   });
 
   const apiPromise = model.generateContent(prompt, { signal: controller.signal });
-  apiPromise.catch(() => {});
+  apiPromise.catch(() => { });
 
   try {
     return await Promise.race([apiPromise, timeoutPromise]);

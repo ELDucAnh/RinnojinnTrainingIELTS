@@ -136,8 +136,9 @@ ${cleanContent}
 3. "gra" — Grammatical Range and Accuracy (GRA) [MỤC TIÊU >= 8.0]:
    - Đòi hỏi đa số câu hoàn toàn sạch lỗi (error-free) VÀ sử dụng linh hoạt, tự nhiên các cấu trúc phức đa dạng (mệnh đề nhượng bộ While/Although/Whereas, mệnh đề quan hệ không xác định ", which + V", cụm phân từ rút gọn, câu điều kiện/giả định, danh từ hóa học thuật vừa phải) với độ chính xác mạo từ, giới từ, chia động từ, dấu câu rất cao.
    - Quá nhiều câu đơn/câu ghép "and/but/so", lặp 1 mẫu câu, hoặc lỗi ngữ pháp rải rác -> TRẦN GRA <= 6.5–7.5.
-4. "lr" — Lexical Resource (LR) [MỤC TIÊU >= 7.0 — B1–B2 COLLOCATION TỰ NHIÊN]:
-   - Ưu tiên collocation tự nhiên mức B1–B2 ("play a crucial role", "have a serious impact on", "raise public awareness", "bridge the gap", "face financial pressure"). KHÔNG hạ < 7.0 chỉ vì thiếu từ C1–C2 hiếm! Chỉ trừ <= 6.5 khi sai collocation, dịch word-by-word từ tiếng Việt, hoặc lặp từ sơ đẳng.
+4. "lr" — Lexical Resource (LR) [MỤC TIÊU CHỈ CẦN = 7.0 — TỪ VỰNG B1–B2 PHỔ THÔNG, RÕ NGHĨA, SÁT ĐỀ]:
+   - Học viên CHỈ cần **LR 7.0**, ưu tiên collocation B1–B2 đơn giản, tự nhiên, bám chặt đúng chủ đề đề bài ("play an important role in", "have a negative effect on", "reduce financial pressure", "equal opportunities", "raise public awareness", "face high living costs", "lead to serious problems").
+   - TUYỆT ĐỐI KHÔNG hạ < 7.0 chỉ vì thiếu từ C1–C2 hiếm, và KHÔNG ĐỀ XUẤT từ đao to búa lớn gây lệch đề (CẤM gợi ý kiểu: ubiquitous, exacerbate, ameliorate, mitigate, proliferate, paramount, deleterious, detrimental, unprecedented, multifaceted, paradigm shift, galvanize, bolster, perpetuate, unyielding, supremacy, ramifications, myriad)! Chỉ sửa khi học viên sai collocation, dịch word-by-word từ tiếng Việt, lặp từ đơn giản liên tục hoặc dùng từ lệch nghĩa đề.
 - Nếu viết tiếng Việt, sơ sài hoặc lạc đề -> <= 4.0. Thang điểm 0.0–9.0 (bước 0.5).
 `;
 

@@ -10,6 +10,7 @@ import {
   normalizeOutline,
   normalizeOutlineBodyItem,
   TASK2_BODY_TEMPLATES,
+  type WritingVocabPrep,
 } from '@/lib/writing-practice-types';
 
 const BODY_SPECS_TASK2: Record<number, string> = {
@@ -26,6 +27,20 @@ const BODY_SPECS_TASK2: Record<number, string> = {
   * Tổng hợp súc tích mạch Body 2–4 + tái khẳng định Thesis sắc gọn + 1 hàm ý định hướng tinh tế (TUYỆT ĐỐI không đưa ý mới).`,
 };
 
+function buildConfirmedVocabBlock(vocabPrep?: WritingVocabPrep | null): string {
+  if (!vocabPrep) return '';
+  const hasTable = Array.isArray(vocabPrep.paraphraseTable) && vocabPrep.paraphraseTable.length > 0;
+  const hasGroups = Array.isArray(vocabPrep.collocationGroups) && vocabPrep.collocationGroups.length > 0;
+  if (!hasTable && !hasGroups) return '';
+
+  return `
+=== BẢNG PARAPHRASE & KHO TỪ VỰNG B1–B2 HỌC VIÊN ĐÃ XÁC NHẬN ===
+BẮT BUỘC phân bổ và xoay vòng chính các biến thể paraphrase & cụm collocation B1–B2 đã xác nhận bên dưới vào 5 Body (mỗi Body dùng một biến thể paraphrase khác nhau trong bảng để TRÁNH LẶP TỪ, KHÔNG thêm từ C1–C2 cao siêu ngoài bảng này!):
+- Bảng Paraphrase: ${JSON.stringify(vocabPrep.paraphraseTable || [])}
+- Kho Collocation theo nhóm: ${JSON.stringify(vocabPrep.collocationGroups || [])}
+`;
+}
+
 function buildTask2OutlinePrompt(params: {
   promptText: string;
   stanceHint: string;
@@ -34,6 +49,7 @@ function buildTask2OutlinePrompt(params: {
   essayType?: string;
   promptAnalysis?: string;
   previousOutlineSummary?: any[];
+  vocabPrep?: WritingVocabPrep | null;
 }): string {
   const {
     promptText,
@@ -43,6 +59,7 @@ function buildTask2OutlinePrompt(params: {
     essayType,
     promptAnalysis,
     previousOutlineSummary,
+    vocabPrep,
   } = params;
 
   const isPartial = bodyIndices.length < 5;
@@ -55,41 +72,46 @@ function buildTask2OutlinePrompt(params: {
     !includeMeta && (essayType || promptAnalysis)
       ? `\nIDENTIFIED ESSAY META:\n- Essay Type: ${essayType || 'IELTS Task 2'}\n- Prompt Analysis: ${promptAnalysis || ''}\n`
       : '';
+  const vocabBlock = buildConfirmedVocabBlock(vocabPrep);
 
   return `You are an elite IELTS Academic Writing Task 2 strategist & 1-on-1 tutor coaching a Band 6.0 Vietnamese learner to reach **Overall Band 8.0** via the exact score matrix:
-**TR >= 8.0 · CC = 9.0 · GRA >= 8.0 · LR >= 7.0 (with clear notes to push lexical precision cleanly toward 8.0)**
+**TR >= 8.0 · CC = 9.0 · GRA >= 8.0 · LR = 7.0 ONLY (STRICTLY clear, everyday B1–B2 on-topic collocations — NEVER fancy C1–C2 words!)**
 
 Task 2 prompt:
 """
 ${promptText}
 """
 ${stanceHint ? `Preferred stance/focus: "${stanceHint}"` : ''}
-${metaContext}${prevBlock}
+${metaContext}${vocabBlock}${prevBlock}
 Generate ${isPartial ? `ONLY the requested ${bodyIndices.length} Body item(s) (bodyIndex: ${bodyIndices.join(', ')})` : 'ALL 5 Body items (bodyIndex 0..4)'}:
 ${targetSpecs}
 
 STRICT COACHING RULES (tailor 100% to THIS exact prompt — NEVER generic rote tokens):
 - Write "role", "viGuide", "bandStrategy.*", "ideaGuides[].ideaLabel", "ideaGuides[].ideaVi", and "linkingTip" in sharp VIETNAMESE. Do NOT write full sample English sentences or paragraphs!
-- MANDATORY "bandStrategy" OBJECT ON EVERY BODY (crystal-clear rules so the learner knows EXACTLY how to earn 8 TR · 9 CC · 8 GRA · 7->8 LR in THIS body):
+- STRICT VOCABULARY CEILING = B1–B2 (LR 7.0 ONLY — CHỐNG TỪ CAO SIÊU & CHỐNG LỆCH ĐỀ):
+  * Learner ONLY aims for **LR 7.0** (TR 8 + CC 9 + GRA 8 + LR 7 = Overall 8.0). Do NOT push vocabulary toward Band 8–9 or C1–C2!
+  * Every phrase in "vocabPhrases" MUST be plain, clear, natural **B1–B2** English anchored 100% directly to the EXACT topic and scope of THIS prompt (so using it NEVER shifts the meaning off-topic or sounds unnatural/over-dramatic).
+  * GOOD LR 7.0 Task 2 style: "play an important role in", "have a negative effect on", "reduce financial pressure", "equal access to", "public funding", "create job opportunities", "rely heavily on", "face high living costs", "raise public awareness of", "find a balance between", "lead to serious problems", "gain practical skills" — plus concrete, plain nouns directly from THIS prompt's topic.
+  * STRICTLY BANNED (overly fancy C1–C2 / pompous / off-topic buzzwords): "ubiquitous", "exacerbate", "ameliorate", "mitigate", "proliferate", "paramount", "deleterious", "detrimental", "unprecedented", "multifaceted", "paradigm shift", "galvanize", "bolster", "perpetuate", "unyielding", "supremacy", "indispensable", "myriad", "plethora", "ramifications", "repercussions", "ostensibly", "inherently", "socio-economic stratification", "stark contrast", "double-edged sword", "spark heated debate".
+- MANDATORY "bandStrategy" OBJECT ON EVERY BODY (crystal-clear rules so the learner knows EXACTLY how to earn 8 TR · 9 CC · 8 GRA · 7 LR in THIS body):
   * "task8Note": Yêu cầu bắt buộc ở Body này để đạt **TR >= 8.0** (vế câu hỏi bắt buộc chạm tới, độ sâu cơ chế nhân-quả để thoát bẫy Band 6 chung chung/nhảy cóc).
-  * "cc9Note": Lưu ý CỰC KỸ để Body này đạt **CC = 9.0** (cách nối ý "tàng hình" bằng chuỗi thông tin Cũ -> Mới, phép quy chiếu danh từ khái quát như "this shift", "such policies", "this reluctance", cách neo ngược vào Thesis ở Body 1, và CHỈ RÕ từ nối máy móc nào phải loại bỏ).
+  * "cc9Note": Lưu ý CỰC KỸ để Body này đạt **CC = 9.0** (cách nối ý "tàng hình" bằng chuỗi thông tin Cũ -> Mới, phép quy chiếu danh từ khái quát như "this trend", "such policies", "this problem", cách neo ngược vào Thesis ở Body 1, và CHỈ RÕ từ nối máy móc nào phải loại bỏ).
   * "gra8Note": Yêu cầu bắt buộc để Body này đạt **GRA >= 8.0** (những cấu trúc phức hợp tự nhiên cần phối hợp trong đoạn này như mệnh đề nhượng bộ While/Whereas, mệnh đề quan hệ không xác định ", which + V", cụm phân từ, câu điều kiện/giả định, và các bẫy mạo từ/chia động từ hay gặp).
-  * "lrNote": Lưu ý CỰC KỸ cho **LR (vững 7.0 -> hướng 8.0)** ở Body này (chọn collocation B1-B2 bản xứ đúng ngữ cảnh & sắc thái học thuật, cách paraphrase khái niệm cốt lõi để KHÔNG lặp từ giữa các câu, tránh dịch từng chữ từ tiếng Việt và tránh nhồi từ C2 lạc văn phong).
+  * "lrNote": Lưu ý CỰC KỸ để giữ vững **LR 7.0 tự nhiên, sát đề** ở Body này (chỉ cần dùng từ B1–B2 quen thuộc, đúng collocation và bám sát chủ đề đề bài, biết paraphrase đơn giản để tránh lặp từ, TUYỆT ĐỐI không cố nhồi từ C1–C2 cao siêu gây lệch ý đề).
 - MANDATORY IDEA-BY-IDEA MAPPING ("ideaGuides"):
   For EACH Body, break it into **2–3 concrete, sequential ideas** (Body 1 & 5: 2 ideas; Body 2, 3, 4: 3 ideas covering Claim -> Deep Mechanism -> Concrete Illustration & Thesis Anchor), matching "viGuide":
-  * "vocabPhrases": **3–4 natural B1–B2/8.0 native written collocations** specifically tailored to expressing THAT exact idea, with Vietnamese meaning: [{ "phrase": "...", "meaning": "..." }].
+  * "vocabPhrases": **3–4 plain, everyday B1–B2 written collocations** strictly tied to THAT exact idea and prompt topic (ZERO fancy C1–C2 words, ZERO off-topic buzzwords), with concise Vietnamese meaning: [{ "phrase": "...", "meaning": "..." }].
   * "grammarPatterns": **1–2 practical Band 8.0 GRA complex grammar structures** fitted specifically for THAT idea, with concise Vietnamese "usage" explaining how to map THAT idea into the frame: [{ "structure": "...", "usage": "..." }].
 - "linkingTip": 1 specific CC 9.0 semantic/referential cohesion cue connecting this Body to adjacent bodies.
 
 Return ONLY valid JSON:
 {
-  ${
-    includeMeta
+  ${includeMeta
       ? `"essayType": "Exact IELTS Task 2 question type",
   "promptAnalysis": "2–3 sharp VIETNAMESE sentences pinpointing ALL mandatory parts of the question, limiting keywords/traps, and the Band 8.5+ strategic stance.",
   `
       : ''
-  }"${isPartial ? 'outlineChunk' : 'outline'}": [
+    }"${isPartial ? 'outlineChunk' : 'outline'}": [
     {
       "bodyIndex": ${bodyIndices[0]},
       "role": "...",
@@ -105,12 +127,12 @@ Return ONLY valid JSON:
           "ideaLabel": "Ý 1 — ...",
           "ideaVi": "...",
           "vocabPhrases": [
-            { "phrase": "spark heated debate", "meaning": "gây ra tranh luận sôi nổi" },
-            { "phrase": "play a central role in", "meaning": "đóng vai trò trung tâm trong" },
-            { "phrase": "long-term social consequences", "meaning": "hệ quả xã hội lâu dài" }
+            { "phrase": "cause wide disagreement", "meaning": "gây ra nhiều ý kiến trái chiều" },
+            { "phrase": "play an important role in", "meaning": "đóng vai trò quan trọng trong" },
+            { "phrase": "long-term social effects", "meaning": "những tác động xã hội lâu dài" }
           ],
           "grammarPatterns": [
-            { "structure": "While some contend that + [vế A], + [quan điểm chính], which + [hệ quả]", "usage": "Mở đầu bằng câu nhượng bộ kết hợp mệnh đề quan hệ đạt GRA 8.0" }
+            { "structure": "While some people believe that + [vế A], + [quan điểm chính], which + [hệ quả]", "usage": "Mở đầu bằng câu nhượng bộ kết hợp mệnh đề quan hệ đạt GRA 8.0" }
           ]
         }
       ],
@@ -129,6 +151,7 @@ async function generateTask2Chunk(
     essayType?: string;
     promptAnalysis?: string;
     previousOutlineSummary?: any[];
+    vocabPrep?: WritingVocabPrep | null;
   },
   options: { perModelTimeoutMs: number; totalBudgetMs: number }
 ) {
@@ -153,13 +176,13 @@ async function generateTask2Chunk(
 
       const items = isPartial
         ? params.bodyIndices.map((targetIdx, pos) => {
-            const found =
-              arr.find((x: any) => Number(x?.bodyIndex) === targetIdx) ??
-              arr.find((x: any) => Number(x?.bodyIndex) === targetIdx + 1) ??
-              arr[pos] ??
-              {};
-            return normalizeOutlineBodyItem(found, TASK2_BODY_TEMPLATES[targetIdx], targetIdx);
-          })
+          const found =
+            arr.find((x: any) => Number(x?.bodyIndex) === targetIdx) ??
+            arr.find((x: any) => Number(x?.bodyIndex) === targetIdx + 1) ??
+            arr[pos] ??
+            {};
+          return normalizeOutlineBodyItem(found, TASK2_BODY_TEMPLATES[targetIdx], targetIdx);
+        })
         : normalizeOutline(arr, 'task2');
 
       return {
@@ -199,6 +222,7 @@ export async function POST(req: NextRequest) {
     const promptText: string = typeof body?.prompt === 'string' ? body.prompt.trim() : '';
     const stanceHint: string = typeof body?.stanceHint === 'string' ? body.stanceHint.trim() : '';
     const mode: string | undefined = typeof body?.mode === 'string' ? body.mode : undefined;
+    const vocabPrep: WritingVocabPrep | undefined = body?.vocabPrep;
 
     if (!promptText || promptText.length < 15) {
       return NextResponse.json(
@@ -223,11 +247,13 @@ export async function POST(req: NextRequest) {
           stanceHint,
           bodyIndices,
           includeMeta: Boolean(body.includeMeta),
-          essayType: typeof body.essayType === 'string' ? body.essayType : undefined,
-          promptAnalysis: typeof body.promptAnalysis === 'string' ? body.promptAnalysis : undefined,
+          essayType: typeof body.essayType === 'string' ? body.essayType : vocabPrep?.essayType,
+          promptAnalysis:
+            typeof body.promptAnalysis === 'string' ? body.promptAnalysis : vocabPrep?.promptAnalysis,
           previousOutlineSummary: Array.isArray(body.previousOutlineSummary)
             ? body.previousOutlineSummary
             : undefined,
+          vocabPrep,
         },
         { perModelTimeoutMs: 22_000, totalBudgetMs: 50_000 }
       );
@@ -251,6 +277,9 @@ export async function POST(req: NextRequest) {
           stanceHint,
           bodyIndices: [0, 1, 2, 3, 4],
           includeMeta: true,
+          essayType: vocabPrep?.essayType,
+          promptAnalysis: vocabPrep?.promptAnalysis,
+          vocabPrep,
         },
         { perModelTimeoutMs: 24_000, totalBudgetMs: 30_000 }
       );
@@ -276,6 +305,9 @@ export async function POST(req: NextRequest) {
             stanceHint,
             bodyIndices: [0, 1],
             includeMeta: true,
+            essayType: vocabPrep?.essayType,
+            promptAnalysis: vocabPrep?.promptAnalysis,
+            vocabPrep,
           },
           { perModelTimeoutMs: Math.min(18_000, part1Budget), totalBudgetMs: part1Budget }
         );
@@ -294,6 +326,7 @@ export async function POST(req: NextRequest) {
               role: o.role,
               viGuide: o.viGuide,
             })),
+            vocabPrep,
           },
           { perModelTimeoutMs: Math.min(20_000, part2Remaining), totalBudgetMs: part2Remaining }
         );

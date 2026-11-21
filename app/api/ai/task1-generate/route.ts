@@ -8,6 +8,7 @@ import {
   normalizeOutline,
   normalizeOutlineBodyItem,
   TASK1_BODY_TEMPLATES,
+  type WritingVocabPrep,
 } from '@/lib/writing-practice-types';
 
 export const maxDuration = 60;
@@ -168,10 +169,25 @@ const BODY_SPECS_TASK1: Record<number, string> = {
   * Chỉ rõ phép quy chiếu/chuyển ý "tàng hình" từ Body 3 đạt CC 9.0 (tránh "Secondly/Moreover" máy móc).`,
 };
 
+function buildConfirmedVocabBlock(vocabPrep?: WritingVocabPrep | null): string {
+  if (!vocabPrep) return '';
+  const hasTable = Array.isArray(vocabPrep.paraphraseTable) && vocabPrep.paraphraseTable.length > 0;
+  const hasGroups = Array.isArray(vocabPrep.collocationGroups) && vocabPrep.collocationGroups.length > 0;
+  if (!hasTable && !hasGroups) return '';
+
+  return `
+=== BẢNG PARAPHRASE & KHO TỪ VỰNG B1–B2 HỌC VIÊN ĐÃ XÁC NHẬN ===
+BẮT BUỘC ưu tiên sử dụng & phân bổ chính các biến thể paraphrase và cụm collocation bên dưới vào từng Body (mỗi Body xoay vòng một cách paraphrase khác nhau trong bảng để TRÁNH LẶP TỪ, và KHÔNG bịa thêm từ C1–C2 ngoài bộ này!):
+- Bảng Paraphrase: ${JSON.stringify(vocabPrep.paraphraseTable || [])}
+- Kho Collocation theo nhóm: ${JSON.stringify(vocabPrep.collocationGroups || [])}
+`;
+}
+
 function buildTask1OutlinePrompt(
   chartData: any,
   bodyIndices: number[],
-  previousOutlineSummary?: any[]
+  previousOutlineSummary?: any[],
+  vocabPrep?: WritingVocabPrep | null
 ): string {
   const isPartial = bodyIndices.length < 4;
   const targetSpecs = bodyIndices.map((idx) => BODY_SPECS_TASK1[idx]).filter(Boolean).join('\n');
@@ -179,27 +195,33 @@ function buildTask1OutlinePrompt(
     Array.isArray(previousOutlineSummary) && previousOutlineSummary.length > 0
       ? `\nALREADY PLANNED BODIES (keep 100% continuity & ZERO repetition with these):\n${JSON.stringify(previousOutlineSummary)}\n`
       : '';
+  const vocabBlock = buildConfirmedVocabBlock(vocabPrep);
 
   return `You are an elite IELTS Academic Writing Task 1 tutor coaching a Band 6.0 learner to reach **Overall Band 8.0** with the exact score blueprint:
-**TA >= 8.0 · CC = 9.0 · GRA >= 8.0 · LR >= 7.0 (pushing natural precision toward 8.0)**
+**TA >= 8.0 · CC = 9.0 · GRA >= 8.0 · LR = 7.0 ONLY (STRICTLY everyday B1–B2 clear collocations, NEVER fancy C1–C2 vocabulary)**
 
 Chart Data:
 ${JSON.stringify(chartData)}
-${prevBlock}
+${vocabBlock}${prevBlock}
 Generate ${isPartial ? `ONLY the requested ${bodyIndices.length} Body item(s) (bodyIndex: ${bodyIndices.join(', ')})` : 'ALL 4 Body items (bodyIndex 0..3)'}:
 ${targetSpecs}
 
 STRICT COACHING RULES (NO generic boilerplate — tailor 100% to THIS chart's exact labels, units, and numbers):
 - Write "role", "viGuide", "bandStrategy.*", "ideaGuides[].ideaLabel", "ideaGuides[].ideaVi", and "linkingTip" in sharp, insightful VIETNAMESE. Embed exact chart numbers, units, and labels inside Body 3 & 4.
 - DO NOT write full sample English sentences or paragraphs!
+- STRICT VOCABULARY CEILING = B1–B2 (LR 7.0 ONLY — CHỐNG TỪ CAO SIÊU & CHỐNG LỆCH ĐỀ):
+  * Learner ONLY needs **LR 7.0** — do NOT push vocabulary to Band 8–9 or C1–C2!
+  * Every single phrase in "vocabPhrases" MUST be plain, clear, natural **B1–B2** English that matches THIS chart's EXACT topic, categories, and unit (so the learner can drop it straight into a sentence with ZERO risk of going off-topic or misusing register).
+  * GOOD LR 7.0 Task 1 style: "rise steadily", "increase slightly", "grow sharply", "fall gradually", "drop sharply", "remain steady", "reach a peak of", "account for", "make up the largest share", "be twice as high as", "compared with", "over the period shown", "be replaced by", "be turned into", plus exact topic nouns from this chart.
+  * STRICTLY BANNED (too fancy/overkill/prone to off-topic drift): "skyrocket", "plummet", "exponentially", "unprecedented surge", "trajectory", "preponderance", "predominance", "eclipse", "dwarf", "metamorphose", "ubiquitous", "burgeoning", "stark dichotomy", "escalate dramatically", "outstrip".
 - MANDATORY "bandStrategy" OBJECT ON EVERY BODY (ultra-specific notes on how THIS exact Body achieves the target):
   * "task8Note": Lưu ý bắt buộc ở Body này để đạt **TA >= 8.0** (chỉ rõ chi tiết/đối chiếu nào thiếu là rớt Band 6-7, bẫy sai số liệu/sai phạm vi).
-  * "cc9Note": Lưu ý CỰC KỸ để Body này đạt **CC = 9.0** (cách triển khai dòng thông tin Cũ -> Mới, phép quy chiếu/thay thế cụ thể nên dùng như "this figure", "the former", "mirroring this trend", "respectively", và CHỈ RÕ từ nối máy móc nào tuyệt đối tránh).
+  * "cc9Note": Lưu ý CỰC KỸ để Body này đạt **CC = 9.0** (cách triển khai dòng thông tin Cũ -> Mới, phép quy chiếu/thay thế cụ thể nên dùng như "this figure", "the former", "similarly", "respectively", và CHỈ RÕ từ nối máy móc nào tuyệt đối tránh).
   * "gra8Note": Lưu ý bắt buộc để Body này đạt **GRA >= 8.0** (kết hợp ít nhất 2-3 cấu trúc phức hợp tự nhiên không lỗi như "While/Whereas...", ", which + V", "with + N + V-ing", phân từ rút gọn, bị động/so sánh nâng cao; nhắc bẫy thì/mạo từ/chủ-vị).
-  * "lrNote": Lưu ý CỰC KỸ cho **LR (vững 7.0 -> hướng 8.0)** ở Body này (chọn collocation B1-B2 bản xứ chính xác sắc thái dữ liệu, cách paraphrase danh từ/động từ để KHÔNG lặp từ giữa các câu, tránh dịch từng chữ tiếng Việt và không nhồi từ C2 gượng ép).
+  * "lrNote": Lưu ý CỰC KỸ để giữ vững **LR 7.0 tự nhiên, sát đề** ở Body này (chỉ cần dùng từ B1–B2 rõ nghĩa, đúng đối tượng & đơn vị của biểu đồ, paraphrase đơn giản tránh lặp 1 từ quá nhiều, KHÔNG nhồi từ C1–C2 khó dễ gây sai sắc thái hoặc lệch dữ liệu).
 - MANDATORY IDEA-BY-IDEA MAPPING ("ideaGuides"):
   For EACH Body, break it into **2–3 sequential ideas** (Body 1-2: 2 ideas; Body 3-4: 3 ideas), matching "viGuide":
-  * "vocabPhrases": **3–4 natural B1–B2/8.0 collocations per idea** tailored to THAT exact idea, with Vietnamese meaning: [{ "phrase": "...", "meaning": "..." }].
+  * "vocabPhrases": **3–4 plain, natural B1–B2 collocations per idea** strictly tied to THAT exact chart idea (ZERO C1–C2 show-off words, ZERO off-topic phrases), with clear Vietnamese meaning: [{ "phrase": "...", "meaning": "..." }].
   * "grammarPatterns": **1–2 Band 8.0 GRA complex grammar frames** tailored specifically to THAT idea, with concise Vietnamese "usage" explaining how to map THAT idea into the structure: [{ "structure": "...", "usage": "..." }].
 - "linkingTip": 1 sharp Vietnamese cohesion cue explaining the invisible CC 9.0 bridge to adjacent bodies.
 
@@ -240,9 +262,10 @@ async function generateTask1OutlineChunk(
   chartData: any,
   bodyIndices: number[],
   previousOutlineSummary: any[] | undefined,
-  options: { perModelTimeoutMs: number; totalBudgetMs: number }
+  options: { perModelTimeoutMs: number; totalBudgetMs: number },
+  vocabPrep?: WritingVocabPrep | null
 ) {
-  const prompt = buildTask1OutlinePrompt(chartData, bodyIndices, previousOutlineSummary);
+  const prompt = buildTask1OutlinePrompt(chartData, bodyIndices, previousOutlineSummary, vocabPrep);
   const key = bodyIndices.length < 4 ? 'outlineChunk' : 'outline';
   const { data } = await generateJsonWithFallback(
     prompt,
@@ -288,6 +311,7 @@ export async function POST(req: Request) {
   let existingChartData: any;
   let bodyIndices: number[] | undefined;
   let previousOutlineSummary: any[] | undefined;
+  let vocabPrep: WritingVocabPrep | undefined;
 
   try {
     const body = await req.json();
@@ -295,6 +319,7 @@ export async function POST(req: Request) {
     customTopic = body.customTopic || body.topic || body.prompt;
     mode = body.mode;
     existingChartData = body.chartData;
+    vocabPrep = body.vocabPrep;
     bodyIndices = Array.isArray(body.bodyIndices)
       ? body.bodyIndices.map((n: any) => Number(n)).filter((n: number) => Number.isInteger(n) && n >= 0 && n <= 3)
       : undefined;
@@ -312,7 +337,8 @@ export async function POST(req: Request) {
         existingChartData,
         bodyIndices,
         previousOutlineSummary,
-        { perModelTimeoutMs: 22_000, totalBudgetMs: 50_000 }
+        { perModelTimeoutMs: 22_000, totalBudgetMs: 50_000 },
+        vocabPrep
       );
       return NextResponse.json({ outlineChunk: chunk }, { status: 200 });
     } catch (error: any) {
@@ -325,10 +351,16 @@ export async function POST(req: Request) {
   if (mode === 'outline-only' && existingChartData) {
     const startTs = Date.now();
     try {
-      const data = await generateTask1OutlineChunk(existingChartData, [0, 1, 2, 3], undefined, {
-        perModelTimeoutMs: 24_000,
-        totalBudgetMs: 32_000,
-      });
+      const data = await generateTask1OutlineChunk(
+        existingChartData,
+        [0, 1, 2, 3],
+        undefined,
+        {
+          perModelTimeoutMs: 24_000,
+          totalBudgetMs: 32_000,
+        },
+        vocabPrep
+      );
       return NextResponse.json({ outline: data }, { status: 200 });
     } catch (firstErr: any) {
       const elapsed = Date.now() - startTs;
@@ -338,10 +370,16 @@ export async function POST(req: Request) {
         try {
           console.warn('[task1-outline-only] Full outline failed/too long, splitting into 2 server-side chunks...');
           const halfBudget = Math.floor(remaining / 2) - 500;
-          const part1 = await generateTask1OutlineChunk(existingChartData, [0, 1], undefined, {
-            perModelTimeoutMs: Math.min(18_000, halfBudget),
-            totalBudgetMs: halfBudget,
-          });
+          const part1 = await generateTask1OutlineChunk(
+            existingChartData,
+            [0, 1],
+            undefined,
+            {
+              perModelTimeoutMs: Math.min(18_000, halfBudget),
+              totalBudgetMs: halfBudget,
+            },
+            vocabPrep
+          );
           const part2 = await generateTask1OutlineChunk(
             existingChartData,
             [2, 3],
@@ -349,7 +387,8 @@ export async function POST(req: Request) {
             {
               perModelTimeoutMs: Math.min(18_000, remaining - (Date.now() - startTs)),
               totalBudgetMs: Math.max(8_000, 55_000 - (Date.now() - startTs)),
-            }
+            },
+            vocabPrep
           );
           return NextResponse.json({ outline: normalizeOutline([...part1, ...part2], 'task1') }, { status: 200 });
         } catch (splitErr: any) {

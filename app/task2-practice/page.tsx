@@ -20,6 +20,7 @@ import { LoadingScreen } from '@/components/LoadingScreen';
 import { appConfirm } from '@/lib/dialog';
 import {
   generateTask2OutlineResilient,
+  generateVocabPrepResilient,
   gradeBodyResilient,
 } from '@/lib/writing-ai-client';
 import {
@@ -31,6 +32,7 @@ import {
   type OutlineBodyItem,
   type PreviousAttemptSummary,
   type Task2CompletedSession,
+  type WritingVocabPrep,
 } from '@/lib/writing-practice-types';
 import { BodyProgressStepper } from '@/components/writing-practice/BodyProgressStepper';
 import { PreviousBodiesPanel } from '@/components/writing-practice/PreviousBodiesPanel';
@@ -38,6 +40,7 @@ import { BodyOutlineCard } from '@/components/writing-practice/BodyOutlineCard';
 import { BodyFeedbackPanel } from '@/components/writing-practice/BodyFeedbackPanel';
 import { CompletedEssayDetails } from '@/components/writing-practice/CompletedEssayDetails';
 import { FullEssayPracticeView } from '@/components/writing-practice/FullEssayPracticeView';
+import { VocabParaphrasePrepPanel } from '@/components/writing-practice/VocabParaphrasePrepPanel';
 
 const TOTAL_BODIES = 5;
 const LS_KEY = 'task2_sessions_v1';
@@ -87,12 +90,15 @@ export default function Task2PracticePage() {
   const [tab, setTab] = useState<'practice' | 'full-essay' | 'history'>('practice');
   const [fullEssaySourceId, setFullEssaySourceId] = useState<string | null>(null);
 
-  // Prompt & outline setup
+  // Prompt, vocab prep & outline setup
   const [promptInput, setPromptInput] = useState('');
   const [stanceHint, setStanceHint] = useState('');
   const [activePrompt, setActivePrompt] = useState('');
   const [essayType, setEssayType] = useState('');
   const [promptAnalysis, setPromptAnalysis] = useState('');
+  const [vocabPrep, setVocabPrep] = useState<WritingVocabPrep | null>(null);
+  const [vocabConfirmed, setVocabConfirmed] = useState(false);
+  const [isGeneratingVocab, setIsGeneratingVocab] = useState(false);
   const [outline, setOutline] = useState<OutlineBodyItem[]>([]);
   const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
   const [genStatus, setGenStatus] = useState('');
@@ -144,7 +150,7 @@ export default function Task2PracticePage() {
     sessionSavedRef.current = false;
   };
 
-  const generateOutline = useCallback(
+  const generateVocabPrep = useCallback(
     async (skipConfirm = false, regenerateExisting = false) => {
       const targetPrompt = (regenerateExisting ? activePrompt : promptInput).trim();
       if (targetPrompt.length < 15) {
@@ -159,7 +165,7 @@ export default function Task2PracticePage() {
 
       if (hasUnsavedWork && !skipConfirm) {
         const ok = await appConfirm(
-          'Bài viết Task 2 hiện tại chưa hoàn tất cả 5 body nên sẽ chưa được lưu vào lịch sử. Bạn có chắc muốn tạo đề/dàn ý mới?'
+          'Bài viết Task 2 hiện tại chưa hoàn tất cả 5 body nên sẽ chưa được lưu vào lịch sử. Bạn có chắc muốn tạo đề/bảng từ vựng mới?'
         );
         if (!ok) return;
       }
@@ -168,18 +174,21 @@ export default function Task2PracticePage() {
       const controller = new AbortController();
       genAbortRef.current = controller;
 
-      setIsGeneratingOutline(true);
-      setGenStatus('Đang phân tích đề & thiết kế dàn ý 5 Body chuẩn 8 TR · 9 CC · 8 GRA · 7 LR...');
+      setIsGeneratingVocab(true);
+      setGenStatus('Bước 1/2: Đang phân tích đề & lập Bảng Paraphrase + Kho Collocation B1–B2...');
       setGenError('');
       if (!regenerateExisting) {
         setActivePrompt('');
+        setVocabPrep(null);
+        setVocabConfirmed(false);
         setOutline([]);
         resetPracticeState();
       }
 
       try {
-        const data = await generateTask2OutlineResilient(
+        const prep = await generateVocabPrepResilient(
           {
+            taskType: 'task2',
             prompt: targetPrompt,
             stanceHint: stanceHint.trim(),
           },
@@ -194,13 +203,65 @@ export default function Task2PracticePage() {
           resetPracticeState();
         }
         setActivePrompt(targetPrompt);
-        setEssayType(data.essayType || 'IELTS Writing Task 2');
-        setPromptAnalysis(data.promptAnalysis || '');
-        setOutline(data.outline);
+        setEssayType(prep.essayType || 'IELTS Writing Task 2');
+        setPromptAnalysis(prep.promptAnalysis || '');
+        setVocabPrep(prep);
+        setVocabConfirmed(false);
+        setOutline([]);
         setShowPromptPanel(false);
       } catch (e: any) {
         if (controller.signal.aborted || e?.name === 'AbortError') return;
-        setGenError(e.message || 'Không thể phân tích đề bài. Vui lòng thử lại.');
+        setGenError(e.message || 'Không thể phân tích đề bài và tạo bảng từ vựng. Vui lòng thử lại.');
+      } finally {
+        if (genAbortRef.current === controller) {
+          setIsGeneratingVocab(false);
+          setGenStatus('');
+        }
+      }
+    },
+    [activePrompt, promptInput, stanceHint, completedBodies.length, inputText]
+  );
+
+  const confirmVocabAndGenerateOutline = useCallback(
+    async (curatedPrep?: WritingVocabPrep) => {
+      const targetPrompt = activePrompt.trim();
+      if (targetPrompt.length < 15) return;
+
+      const prepToUse = curatedPrep || vocabPrep;
+      if (curatedPrep) {
+        setVocabPrep(curatedPrep);
+      }
+
+      genAbortRef.current?.abort();
+      const controller = new AbortController();
+      genAbortRef.current = controller;
+
+      setIsGeneratingOutline(true);
+      setGenStatus('Bước 2/2: Đang thiết kế dàn ý 5 Body bám sát Bảng Paraphrase & Từ vựng bạn vừa xác nhận...');
+      setGenError('');
+
+      try {
+        const data = await generateTask2OutlineResilient(
+          {
+            prompt: targetPrompt,
+            stanceHint: stanceHint.trim(),
+            vocabPrep: prepToUse,
+          },
+          {
+            signal: controller.signal,
+            onStatus: setGenStatus,
+          }
+        );
+        if (controller.signal.aborted) return;
+
+        resetPracticeState();
+        setEssayType(data.essayType || prepToUse?.essayType || 'IELTS Writing Task 2');
+        setPromptAnalysis(data.promptAnalysis || prepToUse?.promptAnalysis || '');
+        setOutline(data.outline);
+        setVocabConfirmed(true);
+      } catch (e: any) {
+        if (controller.signal.aborted || e?.name === 'AbortError') return;
+        setGenError(e.message || 'Không thể tạo dàn ý 5 Body. Vui lòng thử lại.');
       } finally {
         if (genAbortRef.current === controller) {
           setIsGeneratingOutline(false);
@@ -208,7 +269,7 @@ export default function Task2PracticePage() {
         }
       }
     },
-    [activePrompt, promptInput, stanceHint, completedBodies.length, inputText]
+    [activePrompt, stanceHint, vocabPrep]
   );
 
   const gradeCurrentBody = async () => {
@@ -292,6 +353,7 @@ export default function Task2PracticePage() {
           prompt: activePrompt,
           essayType,
           promptAnalysis,
+          vocabPrep: vocabPrep || undefined,
           outline,
           bodies: allBodies,
           fullEssay: allBodies.map((b) => b.content).join('\n\n'),
@@ -519,16 +581,18 @@ export default function Task2PracticePage() {
                   />
                   <button
                     type="button"
-                    onClick={() => generateOutline(false, false)}
-                    disabled={isGeneratingOutline || promptInput.trim().length < 15}
+                    onClick={() => generateVocabPrep(false, false)}
+                    disabled={isGeneratingVocab || isGeneratingOutline || promptInput.trim().length < 15}
                     className="flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:opacity-95 text-white font-bold rounded-xl shadow-md transition-all hover:scale-[1.01] disabled:opacity-50 disabled:hover:scale-100 text-xs sm:text-sm flex-shrink-0"
                   >
-                    {isGeneratingOutline ? (
+                    {isGeneratingVocab ? (
                       <Loader2 size={16} className="animate-spin" />
                     ) : (
                       <Sparkles size={16} />
                     )}
-                    {isGeneratingOutline ? 'AI đang lập dàn ý 5 Body...' : 'Tạo dàn ý 5 Body AI'}
+                    {isGeneratingVocab
+                      ? 'Đang tạo Bảng từ vựng & Paraphrase...'
+                      : 'Tạo Bảng Từ vựng & Paraphrase'}
                   </button>
                 </div>
               </div>
@@ -561,10 +625,23 @@ export default function Task2PracticePage() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                {completedBodies.length === 0 && !gradeResult?.passed && (
+                {completedBodies.length === 0 && !gradeResult?.passed && vocabConfirmed && vocabPrep && (
                   <button
                     type="button"
-                    onClick={() => generateOutline(true, true)}
+                    onClick={() => {
+                      setVocabConfirmed(false);
+                      setOutline([]);
+                    }}
+                    disabled={isGeneratingOutline || isGeneratingVocab}
+                    className="flex items-center gap-1.5 text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded-xl transition-colors disabled:opacity-50"
+                  >
+                    Chỉnh bảng từ vựng
+                  </button>
+                )}
+                {completedBodies.length === 0 && !gradeResult?.passed && vocabConfirmed && (
+                  <button
+                    type="button"
+                    onClick={() => confirmVocabAndGenerateOutline(vocabPrep || undefined)}
                     disabled={isGeneratingOutline}
                     className="flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-xl transition-colors disabled:opacity-50"
                   >
@@ -585,15 +662,18 @@ export default function Task2PracticePage() {
             </div>
           )}
 
-          {isGeneratingOutline && (
+          {(isGeneratingVocab || (isGeneratingOutline && vocabConfirmed)) && (
             <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-emerald-200/80 p-5 flex items-center justify-center gap-3 text-emerald-700 animate-fade-in">
               <Loader2 size={18} className="animate-spin flex-shrink-0" />
               <div className="text-sm">
                 <p className="font-bold">
-                  {genStatus || 'Đang phân tích đề & thiết kế dàn ý 5 Body chuẩn 8 TR · 9 CC · 8 GRA · 7 LR...'}
+                  {genStatus ||
+                    (isGeneratingVocab
+                      ? 'Bước 1/2: Đang phân tích đề & lập Bảng Paraphrase + Kho Collocation B1–B2...'
+                      : 'Bước 2/2: Đang thiết kế dàn ý 5 Body chuẩn 8 TR · 9 CC · 8 GRA · 7 LR...')}
                 </p>
                 <p className="text-xs text-emerald-600/80 mt-0.5">
-                  Dàn ý chi tiết 5 Body — nếu phản hồi dài hệ thống sẽ tự chia nhỏ &amp; tải lần lượt cho bạn
+                  Nếu phản hồi dài hệ thống sẽ tự chia nhỏ &amp; thử lại tự động cho bạn
                 </p>
               </div>
             </div>
@@ -607,8 +687,12 @@ export default function Task2PracticePage() {
               </div>
               <button
                 type="button"
-                onClick={() => generateOutline(true, !!activePrompt)}
-                disabled={isGeneratingOutline}
+                onClick={() =>
+                  activePrompt && vocabPrep && !vocabConfirmed
+                    ? confirmVocabAndGenerateOutline(vocabPrep)
+                    : generateVocabPrep(true, !!activePrompt)
+                }
+                disabled={isGeneratingVocab || isGeneratingOutline}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-red-200 hover:bg-red-100 text-xs font-bold text-red-700 transition-colors disabled:opacity-50 flex-shrink-0"
               >
                 <RefreshCw size={12} />
@@ -617,8 +701,8 @@ export default function Task2PracticePage() {
             </div>
           )}
 
-          {/* Main Practice Workspace */}
-          {activePrompt && outline.length === TOTAL_BODIES && (
+          {/* Main Practice Workspace (Prompt + Prep Step -> 5-Body Outline & Writing) */}
+          {activePrompt && (
             <div className="flex flex-col gap-5 max-w-4xl mx-auto w-full">
               {/* Pinned Prompt & Analysis */}
               <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-[var(--border)] overflow-hidden">
@@ -626,7 +710,7 @@ export default function Task2PracticePage() {
                   <BookOpenCheck size={15} className="text-emerald-600" />
                   <span className="font-bold text-sm text-emerald-800">{essayType}</span>
                   <span className="ml-auto text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-600 text-white">
-                    IELTS Task 2 · 5 Body
+                    {vocabConfirmed ? 'IELTS Task 2 · 5 Body' : 'Bước 1/2 · Chốt Từ vựng & Paraphrase'}
                   </span>
                 </div>
                 <div className="p-4 sm:p-5 flex flex-col gap-3">
@@ -645,16 +729,44 @@ export default function Task2PracticePage() {
                 </div>
               </div>
 
-              {/* 5-Body Stepper */}
-              <BodyProgressStepper
-                outline={outline}
-                completedBodies={completedBodies}
-                currentBodyIndex={currentBodyIndex}
-                accent="emerald"
-              />
+              {/* STEP 1 WINDOW: Vocabulary & Paraphrase Table Confirmation BEFORE 5-Body Outline */}
+              {vocabPrep && !vocabConfirmed && (
+                <VocabParaphrasePrepPanel
+                  taskType="task2"
+                  vocabPrep={vocabPrep}
+                  mode="prep"
+                  accent="emerald"
+                  isConfirming={isGeneratingOutline}
+                  confirmStatus={genStatus}
+                  isRegenerating={isGeneratingVocab}
+                  onConfirm={(curated) => confirmVocabAndGenerateOutline(curated)}
+                  onRegenerate={() => generateVocabPrep(true, true)}
+                />
+              )}
 
-              {/* Previous passed bodies */}
-              <PreviousBodiesPanel completedBodies={previousBodiesForContext} />
+              {/* STEP 2 WORKSPACE: 5-Body Outline & Writing (only shown AFTER confirmation) */}
+              {vocabConfirmed && outline.length === TOTAL_BODIES && (
+                <>
+                  {/* 5-Body Stepper */}
+                  <BodyProgressStepper
+                    outline={outline}
+                    completedBodies={completedBodies}
+                    currentBodyIndex={currentBodyIndex}
+                    accent="emerald"
+                  />
+
+                  {/* Collapsible Confirmed Vocab & Paraphrase Reference */}
+                  {vocabPrep && (
+                    <VocabParaphrasePrepPanel
+                      taskType="task2"
+                      vocabPrep={vocabPrep}
+                      mode="reference"
+                      accent="emerald"
+                    />
+                  )}
+
+                  {/* Previous passed bodies */}
+                  <PreviousBodiesPanel completedBodies={previousBodiesForContext} />
 
               {/* Current Body Vietnamese Outline */}
               {currentOutline && (
@@ -747,17 +859,19 @@ export default function Task2PracticePage() {
                   onViewHistory={() => setTab('history')}
                 />
               </div>
+                </>
+              )}
             </div>
           )}
 
           {/* Idle cards (synchronized minimalist editorial numbers matching Task 1) */}
-          {!activePrompt && !isGeneratingOutline && (
+          {!activePrompt && !isGeneratingVocab && !isGeneratingOutline && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[
                 {
                   num: '01',
-                  title: 'Dàn ý 5 Body chiến lược 8/9/8/7',
-                  desc: 'Dán bất kỳ đề Task 2 nào — AI lập dàn ý 5 Body kèm lưu ý bắt buộc cho từng đoạn để đạt TR 8.0, CC 9.0, GRA 8.0 và LR 7.0→8.0.',
+                  title: 'Chốt Bảng Paraphrase & Từ vựng trước',
+                  desc: 'AI lập bảng Paraphrase từ khóa & kho Collocation B1–B2 sát đề chống lặp từ trước; bạn bấm xác nhận rồi mới mở dàn ý 5 Body.',
                 },
                 {
                   num: '02',

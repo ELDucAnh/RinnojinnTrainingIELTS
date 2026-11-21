@@ -49,8 +49,12 @@ Mục tiêu tuyệt đối: Biến feedback thành bài học 1-1 giúp người
    - "GRA" (MỤC TIÊU >= 8.0 — ĐA DẠNG & ĐỘ CHÍNH XÁC CAO):
      * Band 8.0 GRA đòi hỏi **đa số câu hoàn toàn sạch lỗi (error-free)** VÀ có **nhịp điệu câu phức linh hoạt, tự nhiên** (mệnh đề nhượng bộ While/Whereas/Although, mệnh đề quan hệ không xác định ", which + V", cụm phân từ V-ing/V-ed, cấu trúc with + N + V-ing, bị động/so sánh tinh tế cho Task 1 hoặc câu điều kiện/giả định/danh từ hóa vừa phải cho Task 2).
      * Nếu toàn câu đơn ghép "and/but/so", lặp 1 mẫu câu phức, hoặc còn lỗi mạo từ/chia động từ/giới từ/dấu phẩy -> TRẦN GRA <= 6.5–7.5 và chỉ rõ cách gộp/nâng cấp cấu trúc ngay trên câu học viên đã viết!
-   - "LR" (MỤC TIÊU >= 7.0 — TỰ NHIÊN, ĐÚNG COLLOCATION B1–B2, KHÔNG ÉP TỪ C2 HIẾM):
-     * Chấm công tâm theo chuẩn **7.0 LR**: ưu tiên **collocation B1–B2 chuẩn bản xứ viết học thuật**, dùng chính xác sắc thái (word choice & register) và ít lặp từ. KHÔNG hạ < 7.0 chỉ vì thiếu từ C1–C2 hiếm! Chỉ trừ <= 6.5 khi dịch word-by-word từ tiếng Việt, sai collocation, lặp từ đơn giản, hoặc dùng sai loại từ.
+   - "LR" (MỤC TIÊU CHỈ CẦN = 7.0 — TỪ VỰNG B1–B2 PHỔ THÔNG, RÕ NGHĨA, 100% SÁT ĐỀ, CẤM KHOE TỪ CAO SIÊU):
+     * Học viên CHỈ aim **LR 7.0** (vì 8 TA/TR + 9 CC + 8 GRA + 7 LR = 8.0 Overall). Band 7.0 LR KHÔNG CẦN từ vựng cao siêu C1–C2! Chỉ cần từ vựng **B1–B2 quen thuộc, tự nhiên, đúng collocation, đúng sắc thái với đúng đề bài** và không lặp từ sơ đẳng quá nhiều.
+     * TUYỆT ĐỐI KHÔNG hạ điểm xuống < 7.0 chỉ vì học viên dùng từ phổ thông rõ nghĩa! Chỉ trừ <= 6.5 khi: sai collocation (VD: "do a mistake", "make a solution"), dịch word-by-word từ tiếng Việt, lặp từ đơn giản liên tục, hoặc dùng từ sai nghĩa/lệch đề.
+     * **CẤM TUYỆT ĐỐI** đề xuất các từ C1–C2 đao to búa lớn, màu mè hoặc dễ gây lệch đề trong "suggestedPhrases", "improvedExample", "vocabularyTips" và "modelUpgrade" (CẤM các từ kiểu: *ubiquitous, exacerbate, ameliorate, mitigate, proliferate, paramount, deleterious, detrimental, unprecedented, multifaceted, paradigm shift, galvanize, bolster, perpetuate, unyielding, supremacy, indispensable, myriad, plethora, ramifications, repercussions, trajectory, skyrocket, plummet, eclipse, dwarf, stark dichotomy*).
+     * Thay vào đó, MỌI cụm gợi ý phải là **tiếng Anh B1–B2 đời thường học thuật, ngắn gọn, bám sát đúng đối tượng của đề bài** (VD Task 1: *rise steadily, drop sharply, account for, remain steady, reach a peak of, compared with*; Task 2: *have a negative effect on, reduce financial pressure, equal opportunities, public funding, face high costs, play an important role in, lead to serious problems*).
+     * Nếu học viên viết một cụm B1–B2 đã tự nhiên và đúng ý đề -> GIỮ NGUYÊN, không bắt ép đổi sang từ khó hơn!
 
 3. CẤM VIẾT HỘ ĐOẠN MỚI ĐỂ HỌC THUỘC KHI CHƯA ĐẠT:
    - "improvedExample" trong "mappings" CHỈ là cụm thay thế hoặc 1 khung câu sửa đúng chỗ đó — TUYỆT ĐỐI không dán nguyên đoạn văn mới thay thế.
@@ -98,7 +102,7 @@ export function buildUnifiedGradeJsonSchema(params: {
     "task": ${buildCriterionJsonShape(`${taskShort} >= 8.0: bám đề, độ sâu lập luận/số liệu, điểm thiếu cần bổ sung`, 7.5)},
     "cc": ${buildCriterionJsonShape('CC = 9.0: liên kết tàng hình Old->New, phép quy chiếu tinh tế, loại bỏ từ nối máy móc', 7.5)},
     "gra": ${buildCriterionJsonShape('GRA >= 8.0: đa dạng cấu trúc phức tự nhiên & độ chính xác cao sạch lỗi', 7.0)},
-    "lr": ${buildCriterionJsonShape('LR >= 7.0: collocation B1-B2 bản xứ tự nhiên, sắc thái chính xác, tránh lặp & dịch từng chữ', 7.0)}
+    "lr": ${buildCriterionJsonShape('LR = 7.0 ONLY: collocation B1-B2 phổ thông tự nhiên, bám sát đúng đề, CẤM gợi ý từ C1-C2 cao siêu hay làm lệch đề', 7.0)}
   },
   ${extraFieldsSchema}
   "grammarErrors": [
@@ -110,9 +114,9 @@ export function buildUnifiedGradeJsonSchema(params: {
   ],
   "vocabularyTips": [
     {
-      "studentWord": "Đúng từ/cụm thiếu tự nhiên đã nêu ở LR.mappings",
-      "betterAlternative": "Collocation B1–B2 tự nhiên chuẩn bản xứ",
-      "reason": "Vì sao tự nhiên, đúng sắc thái và khớp ý hơn"
+      "studentWord": "Đúng từ/cụm sai collocation, dịch từng chữ hoặc bị lặp đã nêu ở LR.mappings (KHÔNG bắt bẻ từ B1-B2 đã đúng)",
+      "betterAlternative": "Cụm B1–B2 phổ thông, ngắn gọn, tự nhiên & bám sát đúng chủ đề (TUYỆT ĐỐI không dùng từ hiếm C1–C2)",
+      "reason": "Vì sao tự nhiên, đúng collocation và bám sát đề bài hơn"
     }
   ],
   "generalFeedback": "Tóm tắt ngắn gọn 2 câu tiếng Việt về trạng thái đạt/chưa đạt mục tiêu (${taskShort} 8.0 · CC 9.0 · GRA 8.0 · LR 7.0 — Overall 8.0).",
@@ -138,7 +142,7 @@ export function buildGraLrPhaseSchema(): string {
   return `{
   "criteria": {
     "gra": ${buildCriterionJsonShape('GRA >= 8.0: đa dạng cấu trúc phức tự nhiên & độ chính xác cao sạch lỗi', 7.0)},
-    "lr": ${buildCriterionJsonShape('LR >= 7.0: collocation B1-B2 bản xứ tự nhiên, sắc thái chính xác, tránh lặp & dịch từng chữ', 7.0)}
+    "lr": ${buildCriterionJsonShape('LR = 7.0 ONLY: collocation B1-B2 phổ thông tự nhiên, bám sát đúng đề, CẤM gợi ý từ C1-C2 cao siêu hay lệch đề', 7.0)}
   },
   "grammarErrors": [
     {
@@ -149,9 +153,9 @@ export function buildGraLrPhaseSchema(): string {
   ],
   "vocabularyTips": [
     {
-      "studentWord": "Đúng từ/cụm thiếu tự nhiên đã nêu ở LR.mappings",
-      "betterAlternative": "Collocation B1–B2 tự nhiên chuẩn bản xứ",
-      "reason": "Vì sao tự nhiên, đúng sắc thái và khớp ý hơn"
+      "studentWord": "Đúng từ/cụm sai collocation, dịch từng chữ hoặc bị lặp đã nêu ở LR.mappings (KHÔNG bắt bẻ từ B1-B2 đã đúng)",
+      "betterAlternative": "Cụm B1–B2 phổ thông, ngắn gọn, tự nhiên & bám sát đúng chủ đề (TUYỆT ĐỐI không dùng từ hiếm C1–C2)",
+      "reason": "Vì sao tự nhiên, đúng collocation và bám sát đề bài hơn"
     }
   ]
 }`;

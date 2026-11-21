@@ -12,6 +12,32 @@ export interface SuggestedGrammarItem {
   usage: string;
 }
 
+export interface ParaphraseTableRow {
+  originalTerm: string;
+  meaningVi: string;
+  alternatives: string[];
+  usageNote?: string;
+}
+
+export interface TopicCollocationItem {
+  phrase: string;
+  meaningVi: string;
+  exampleUsage?: string;
+}
+
+export interface TopicCollocationGroup {
+  groupTitle: string;
+  items: TopicCollocationItem[];
+}
+
+export interface WritingVocabPrep {
+  essayType?: string;
+  promptAnalysis?: string;
+  paraphraseTable: ParaphraseTableRow[];
+  collocationGroups: TopicCollocationGroup[];
+  antiRepetitionTip?: string;
+}
+
 export interface IdeaLanguageGuide {
   ideaLabel: string;
   ideaVi: string;
@@ -23,7 +49,7 @@ export interface BodyBandStrategyNotes {
   task8Note: string; // Yêu cầu bắt buộc để đạt TA/TR >= 8.0
   cc9Note: string;   // Yêu cầu bắt buộc để đạt CC = 9.0 (liên kết vô hình, thematic progression, referencing)
   gra8Note: string;  // Yêu cầu bắt buộc để đạt GRA >= 8.0 (đa dạng cấu trúc phức hợp, độ chính xác cao)
-  lrNote: string;    // Chiến lược LR 7.0 -> 8.0 (collocations tự nhiên, sắc thái chính xác, tránh lặp & dịch word-by-word)
+  lrNote: string;    // Lưu ý từ vựng LR 7.0 (chỉ dùng B1–B2 phổ thông, sát đề, đúng collocation, tránh từ C1–C2 cao siêu)
 }
 
 export interface OutlineBodyItem {
@@ -174,6 +200,7 @@ export interface Task1CompletedSession {
   sourceType?: 'body-by-body' | 'full-essay';
   sourceSessionId?: string;
   chartData: ChartData;
+  vocabPrep?: WritingVocabPrep;
   outline: OutlineBodyItem[];
   bodies: CompletedBody[];
   fullEssayGrade?: FullEssayGradeResult;
@@ -203,6 +230,7 @@ export interface Task2CompletedSession {
   prompt: string;
   essayType: string;
   promptAnalysis: string;
+  vocabPrep?: WritingVocabPrep;
   outline: OutlineBodyItem[];
   bodies: CompletedBody[];
   fullEssayGrade?: FullEssayGradeResult;
@@ -400,6 +428,85 @@ function normalizeBandStrategy(raw: unknown): BodyBandStrategyNotes | undefined 
     cc9Note,
     gra8Note,
     lrNote,
+  };
+}
+
+export function normalizeVocabPrep(raw: any): WritingVocabPrep {
+  const rawTable = Array.isArray(raw?.paraphraseTable) ? raw.paraphraseTable : [];
+  const paraphraseTable: ParaphraseTableRow[] = [];
+
+  for (const row of rawTable) {
+    if (!row || typeof row !== 'object') continue;
+    const originalTerm = String(row.originalTerm ?? row.original ?? row.term ?? '').trim();
+    const meaningVi = String(row.meaningVi ?? row.meaning ?? row.viMeaning ?? '').trim();
+    const rawAlts = Array.isArray(row.alternatives)
+      ? row.alternatives
+      : Array.isArray(row.paraphrases)
+        ? row.paraphrases
+        : [];
+    const altSet = new Set<string>();
+    const alternatives: string[] = [];
+    for (const a of rawAlts) {
+      const cleaned = String(a ?? '').trim();
+      if (cleaned && !altSet.has(cleaned.toLowerCase())) {
+        altSet.add(cleaned.toLowerCase());
+        alternatives.push(cleaned);
+      }
+    }
+    const usageNote = String(row.usageNote ?? row.note ?? '').trim();
+    if (originalTerm && alternatives.length > 0) {
+      paraphraseTable.push({
+        originalTerm,
+        meaningVi,
+        alternatives,
+        usageNote: usageNote || undefined,
+      });
+    }
+  }
+
+  const rawGroups = Array.isArray(raw?.collocationGroups) ? raw.collocationGroups : [];
+  const collocationGroups: TopicCollocationGroup[] = [];
+
+  for (const g of rawGroups) {
+    if (!g || typeof g !== 'object') continue;
+    const groupTitle = String(g.groupTitle ?? g.title ?? g.name ?? '').trim();
+    const rawItems = Array.isArray(g.items) ? g.items : Array.isArray(g.phrases) ? g.phrases : [];
+    const items: TopicCollocationItem[] = [];
+    const seen = new Set<string>();
+    for (const it of rawItems) {
+      if (!it || typeof it !== 'object') continue;
+      const phrase = String(it.phrase ?? it.word ?? it.term ?? '').trim();
+      const meaningVi = String(it.meaningVi ?? it.meaning ?? it.viMeaning ?? '').trim();
+      const exampleUsage = String(it.exampleUsage ?? it.usage ?? it.context ?? '').trim();
+      if (phrase && !seen.has(phrase.toLowerCase())) {
+        seen.add(phrase.toLowerCase());
+        items.push({
+          phrase,
+          meaningVi,
+          exampleUsage: exampleUsage || undefined,
+        });
+      }
+    }
+    if (items.length > 0) {
+      collocationGroups.push({
+        groupTitle: groupTitle || `Nhóm từ vựng ${collocationGroups.length + 1}`,
+        items,
+      });
+    }
+  }
+
+  return {
+    essayType: typeof raw?.essayType === 'string' && raw.essayType.trim() ? raw.essayType.trim() : undefined,
+    promptAnalysis:
+      typeof raw?.promptAnalysis === 'string' && raw.promptAnalysis.trim()
+        ? raw.promptAnalysis.trim()
+        : undefined,
+    paraphraseTable,
+    collocationGroups,
+    antiRepetitionTip:
+      typeof raw?.antiRepetitionTip === 'string' && raw.antiRepetitionTip.trim()
+        ? raw.antiRepetitionTip.trim()
+        : 'Xoay vòng lần lượt các cách paraphrase ở cột bên phải giữa Mở bài, các Thân bài và Kết bài để giữ LR 7.0 tự nhiên mà không bị lặp từ.',
   };
 }
 

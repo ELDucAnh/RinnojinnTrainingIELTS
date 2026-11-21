@@ -14,6 +14,7 @@ import { LoadingScreen } from '@/components/LoadingScreen';
 import { appConfirm } from '@/lib/dialog';
 import {
   generateTask1OutlineResilient,
+  generateVocabPrepResilient,
   gradeBodyResilient,
   postWritingAi,
 } from '@/lib/writing-ai-client';
@@ -28,6 +29,7 @@ import {
   type OutlineBodyItem,
   type PreviousAttemptSummary,
   type Task1CompletedSession,
+  type WritingVocabPrep,
 } from '@/lib/writing-practice-types';
 import { Task1ChartRenderer } from '@/components/writing-practice/Task1ChartRenderer';
 import { BodyProgressStepper } from '@/components/writing-practice/BodyProgressStepper';
@@ -36,6 +38,7 @@ import { BodyOutlineCard } from '@/components/writing-practice/BodyOutlineCard';
 import { BodyFeedbackPanel } from '@/components/writing-practice/BodyFeedbackPanel';
 import { CompletedEssayDetails } from '@/components/writing-practice/CompletedEssayDetails';
 import { FullEssayPracticeView } from '@/components/writing-practice/FullEssayPracticeView';
+import { VocabParaphrasePrepPanel } from '@/components/writing-practice/VocabParaphrasePrepPanel';
 
 const TOTAL_BODIES = 4;
 const LS_KEY_V3 = 'task1_sessions_v3';
@@ -100,11 +103,14 @@ export default function Task1PracticePage() {
   const [tab, setTab] = useState<'practice' | 'full-essay' | 'history'>('practice');
   const [fullEssaySourceId, setFullEssaySourceId] = useState<string | null>(null);
 
-  // Chart & outline generation
+  // Chart, vocab prep & outline generation
   const [chartData, setChartData] = useState<ChartData | null>(null);
+  const [vocabPrep, setVocabPrep] = useState<WritingVocabPrep | null>(null);
+  const [vocabConfirmed, setVocabConfirmed] = useState(false);
+  const [isGeneratingVocab, setIsGeneratingVocab] = useState(false);
   const [outline, setOutline] = useState<OutlineBodyItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [genStep, setGenStep] = useState<'chart' | 'outline' | null>(null);
+  const [genStep, setGenStep] = useState<'chart' | 'vocab' | 'outline' | null>(null);
   const [genStatus, setGenStatus] = useState('');
   const [isRegenOutline, setIsRegenOutline] = useState(false);
   const [genError, setGenError] = useState('');
@@ -181,9 +187,12 @@ export default function Task1PracticePage() {
       setIsGenerating(true);
       setGenStep('chart');
       setGenStatus('Bước 1/2: Đang tạo dữ liệu biểu đồ chuẩn IELTS Academic...');
+      setIsGeneratingVocab(false);
       setIsRegenOutline(false);
       setGenError('');
       setChartData(null);
+      setVocabPrep(null);
+      setVocabConfirmed(false);
       setOutline([]);
       resetPracticeState();
 
@@ -205,24 +214,28 @@ export default function Task1PracticePage() {
 
         setChartData(chartPayload);
         setShowCustomizer(false);
-        setGenStep('outline');
-        setIsRegenOutline(true);
+        setGenStep('vocab');
+        setIsGeneratingVocab(true);
 
-        // Bước 2: Sinh dàn ý tiếng Việt 4 Body (tự động chia nhỏ & thử lại nếu phản hồi dài)
-        const nextOutline = await generateTask1OutlineResilient(chartPayload, {
-          signal: controller.signal,
-          onStatus: (msg) => setGenStatus(`Bước 2/2: ${msg}`),
-        });
+        // Bước 2: Lập Bảng Paraphrase & Kho Collocation B1–B2 trước khi người học xác nhận vào dàn ý 4 Body
+        const prep = await generateVocabPrepResilient(
+          { taskType: 'task1', chartData: chartPayload },
+          {
+            signal: controller.signal,
+            onStatus: (msg) => setGenStatus(`Bước 2/2: ${msg}`),
+          }
+        );
         if (controller.signal.aborted) return;
 
-        setOutline(nextOutline);
+        setVocabPrep(prep);
+        setVocabConfirmed(false);
       } catch (e: any) {
         if (controller.signal.aborted || e?.name === 'AbortError') return;
         setGenError(e.message || 'Không thể tạo đề bài. Vui lòng thử lại.');
       } finally {
         if (genAbortRef.current === controller) {
           setIsGenerating(false);
-          setIsRegenOutline(false);
+          setIsGeneratingVocab(false);
           setGenStep(null);
           setGenStatus('');
         }
@@ -231,24 +244,62 @@ export default function Task1PracticePage() {
     [selectedType, customTopic, chartData, completedBodies.length, inputText]
   );
 
-  const regenerateOutlineOnly = async () => {
+  const regenerateVocabPrepOnly = async () => {
     if (!chartData || completedBodies.length > 0 || gradeResult?.passed) return;
+    genAbortRef.current?.abort();
+    const controller = new AbortController();
+    genAbortRef.current = controller;
+
+    setIsGeneratingVocab(true);
+    setGenStep('vocab');
+    setGenStatus('Đang tạo lại bảng Paraphrase & kho Collocation B1–B2 sát biểu đồ...');
+    setGenError('');
+    try {
+      const prep = await generateVocabPrepResilient(
+        { taskType: 'task1', chartData },
+        { signal: controller.signal, onStatus: setGenStatus }
+      );
+      if (controller.signal.aborted) return;
+      setVocabPrep(prep);
+      setVocabConfirmed(false);
+      setOutline([]);
+    } catch (e: any) {
+      if (controller.signal.aborted || e?.name === 'AbortError') return;
+      setGenError(e.message || 'Không thể tạo lại bảng từ vựng.');
+    } finally {
+      if (genAbortRef.current === controller) {
+        setIsGeneratingVocab(false);
+        setGenStep(null);
+        setGenStatus('');
+      }
+    }
+  };
+
+  const confirmVocabAndGenerateOutline = async (curatedPrep?: WritingVocabPrep) => {
+    if (!chartData) return;
+    const prepToUse = curatedPrep || vocabPrep;
+    if (curatedPrep) {
+      setVocabPrep(curatedPrep);
+    }
+
     genAbortRef.current?.abort();
     const controller = new AbortController();
     genAbortRef.current = controller;
 
     setIsRegenOutline(true);
     setGenStep('outline');
-    setGenStatus('Đang tạo lại dàn ý 4 Body chuẩn 8 TA · 9 CC · 8 GRA · 7 LR...');
+    setGenStatus('Đang lập dàn ý 4 Body bám sát Bảng Paraphrase & Từ vựng bạn vừa xác nhận...');
     setGenError('');
     try {
       const nextOutline = await generateTask1OutlineResilient(chartData, {
         signal: controller.signal,
         onStatus: setGenStatus,
+        vocabPrep: prepToUse,
       });
       if (controller.signal.aborted) return;
 
       setOutline(nextOutline);
+      setVocabConfirmed(true);
       setGradeResult(null);
       setGradeError('');
       setAttemptCount(0);
@@ -256,7 +307,7 @@ export default function Task1PracticePage() {
       setPreviousAttempt(null);
     } catch (e: any) {
       if (controller.signal.aborted || e?.name === 'AbortError') return;
-      setGenError(e.message || 'Không thể tạo lại dàn ý.');
+      setGenError(e.message || 'Không thể tạo dàn ý 4 Body.');
     } finally {
       if (genAbortRef.current === controller) {
         setIsRegenOutline(false);
@@ -264,6 +315,11 @@ export default function Task1PracticePage() {
         setGenStatus('');
       }
     }
+  };
+
+  const regenerateOutlineOnly = async () => {
+    if (!chartData || completedBodies.length > 0 || gradeResult?.passed) return;
+    await confirmVocabAndGenerateOutline(vocabPrep || undefined);
   };
 
   const gradeCurrentBody = async () => {
@@ -344,6 +400,7 @@ export default function Task1PracticePage() {
         const completedSession: Task1CompletedSession = {
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           chartData,
+          vocabPrep: vocabPrep || undefined,
           outline,
           bodies: allBodies,
           fullEssay: allBodies.map((b) => b.content).join('\n\n'),
@@ -611,12 +668,14 @@ export default function Task1PracticePage() {
                 >
                   {isGenerating && <Loader2 size={15} className="animate-spin" />}
                   {isGenerating
-                    ? genStep === 'outline'
-                      ? 'Bước 2/2: Đang lập dàn ý...'
-                      : 'Bước 1/2: Đang tạo biểu đồ...'
+                    ? genStep === 'vocab'
+                      ? 'Bước 2/2: Đang lập bảng từ vựng...'
+                      : genStep === 'outline'
+                        ? 'Đang lập dàn ý 4 Body...'
+                        : 'Bước 1/2: Đang tạo biểu đồ...'
                     : chartData
                       ? 'Tạo đề mới'
-                      : 'Tạo đề & Dàn ý AI'}
+                      : 'Tạo đề & Bảng từ vựng AI'}
                 </button>
               </div>
 
@@ -656,7 +715,20 @@ export default function Task1PracticePage() {
               </div>
 
               <div className="flex items-center gap-2 flex-wrap">
-                {completedBodies.length === 0 && !gradeResult?.passed && outline.length === TOTAL_BODIES && (
+                {completedBodies.length === 0 && !gradeResult?.passed && vocabConfirmed && vocabPrep && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVocabConfirmed(false);
+                      setOutline([]);
+                    }}
+                    disabled={isRegenOutline || isGeneratingVocab}
+                    className="flex items-center gap-1.5 text-xs font-bold text-orange-700 bg-orange-50 hover:bg-orange-100 px-3 py-1.5 rounded-xl transition-colors disabled:opacity-50"
+                  >
+                    Chỉnh bảng từ vựng
+                  </button>
+                )}
+                {completedBodies.length === 0 && !gradeResult?.passed && vocabConfirmed && outline.length === TOTAL_BODIES && (
                   <button
                     type="button"
                     onClick={regenerateOutlineOnly}
@@ -696,15 +768,21 @@ export default function Task1PracticePage() {
               <button
                 type="button"
                 onClick={() =>
-                  chartData && outline.length < TOTAL_BODIES
-                    ? regenerateOutlineOnly()
-                    : generateChart(undefined, undefined, true)
+                  chartData && !vocabPrep
+                    ? regenerateVocabPrepOnly()
+                    : chartData && vocabPrep && outline.length < TOTAL_BODIES
+                      ? confirmVocabAndGenerateOutline(vocabPrep)
+                      : generateChart(undefined, undefined, true)
                 }
-                disabled={isGenerating || isRegenOutline}
+                disabled={isGenerating || isGeneratingVocab || isRegenOutline}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-red-200 hover:bg-red-100 text-xs font-bold text-red-700 transition-colors disabled:opacity-50 flex-shrink-0"
               >
                 <RefreshCw size={12} />
-                {chartData && outline.length < TOTAL_BODIES ? 'Thử tạo lại dàn ý' : 'Thử lại'}
+                {chartData && !vocabPrep
+                  ? 'Thử tạo lại bảng từ vựng'
+                  : chartData && vocabPrep && outline.length < TOTAL_BODIES
+                    ? 'Thử tạo lại dàn ý'
+                    : 'Thử lại'}
               </button>
             </div>
           )}
@@ -743,17 +821,43 @@ export default function Task1PracticePage() {
                 </div>
               </div>
 
-              {outline.length < TOTAL_BODIES && isRegenOutline && (
+              {/* Loading Vocab & Paraphrase Table */}
+              {!vocabPrep && isGeneratingVocab && (
                 <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-orange-200/80 p-6 flex items-center justify-center gap-3 text-orange-700">
                   <Loader2 size={20} className="animate-spin flex-shrink-0" />
                   <p className="text-sm font-semibold">
                     {genStatus ||
-                      'Bước 2/2: Đã tạo xong biểu đồ! AI đang thiết kế dàn ý 4 Body chuẩn 8 TA · 9 CC · 8 GRA · 7 LR...'}
+                      'Bước 2/2: Đã tạo xong biểu đồ! AI đang lập Bảng Paraphrase & Kho Collocation B1–B2 sát biểu đồ...'}
                   </p>
                 </div>
               )}
 
-              {outline.length === TOTAL_BODIES && (
+              {/* Pre-Outline Confirmation Window: Vocab & Paraphrase Table */}
+              {vocabPrep && !vocabConfirmed && (
+                <VocabParaphrasePrepPanel
+                  taskType="task1"
+                  vocabPrep={vocabPrep}
+                  mode="prep"
+                  accent="orange"
+                  isConfirming={isRegenOutline}
+                  confirmStatus={genStatus}
+                  isRegenerating={isGeneratingVocab}
+                  onConfirm={(curated) => confirmVocabAndGenerateOutline(curated)}
+                  onRegenerate={regenerateVocabPrepOnly}
+                />
+              )}
+
+              {vocabConfirmed && outline.length < TOTAL_BODIES && isRegenOutline && (
+                <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-orange-200/80 p-6 flex items-center justify-center gap-3 text-orange-700">
+                  <Loader2 size={20} className="animate-spin flex-shrink-0" />
+                  <p className="text-sm font-semibold">
+                    {genStatus ||
+                      'AI đang thiết kế dàn ý 4 Body bám sát Bảng Paraphrase & Từ vựng bạn vừa xác nhận...'}
+                  </p>
+                </div>
+              )}
+
+              {vocabConfirmed && outline.length === TOTAL_BODIES && (
                 <>
                   {/* Stepper */}
                   <BodyProgressStepper
@@ -762,6 +866,16 @@ export default function Task1PracticePage() {
                     currentBodyIndex={currentBodyIndex}
                     accent="orange"
                   />
+
+                  {/* Collapsible Confirmed Vocab & Paraphrase Reference */}
+                  {vocabPrep && (
+                    <VocabParaphrasePrepPanel
+                      taskType="task1"
+                      vocabPrep={vocabPrep}
+                      mode="reference"
+                      accent="orange"
+                    />
+                  )}
 
                   {/* Previous passed bodies */}
                   <PreviousBodiesPanel completedBodies={previousBodiesForContext} />
@@ -868,8 +982,8 @@ export default function Task1PracticePage() {
               {[
                 {
                   num: '01',
-                  title: 'Dàn ý chiến lược 8/9/8/7',
-                  desc: 'AI tạo biểu đồ kèm dàn ý 4 Body note rõ từng lưu ý để đạt TA 8.0, CC 9.0 (liên kết tàng hình), GRA 8.0 và LR 7.0→8.0.',
+                  title: 'Chốt Bảng Paraphrase & Từ vựng trước',
+                  desc: 'Sau khi tạo biểu đồ, AI lập bảng Paraphrase & kho Collocation B1–B2 sát biểu đồ để bạn xác nhận trước khi mở dàn ý 4 Body.',
                 },
                 {
                   num: '02',
