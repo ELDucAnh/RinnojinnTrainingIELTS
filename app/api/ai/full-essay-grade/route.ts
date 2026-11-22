@@ -150,18 +150,18 @@ export async function POST(req: NextRequest) {
   + Đoạn 1 (Intro): Paraphrase sắc gọn, đủ 100% chiều thông tin (đối tượng, đơn vị, địa điểm, mốc thời gian). Copy > 3 từ liên tiếp -> hạ TA.
   + Đoạn 2 (Overview): Bao quát đủ 2 tầng nổi bật (xu hướng/thứ bậc chính + điểm tương phản/bước ngoặt), KHÔNG đưa số liệu chi tiết.
   + Các đoạn Detail: Gom nhóm thông minh, có đối chiếu định lượng (gấp mấy lần/chênh lệch/đỉnh-đáy) và ĐÚNG 100% số liệu trong chartData.
-- "cc" — Coherence & Cohesion (CC) [SIÊU KHẮT KHE — MỤC TIÊU = 9.0]:
-  + Phân đoạn chuẩn 4 đoạn (Intro -> Overview -> Detail 1 -> Detail 2).
-  + Đạt 9.0 CHỈ KHI liên kết "tàng hình": dòng chảy Cũ -> Mới liền mạch, dùng phép quy chiếu tự nhiên ("this figure", "respectively", "the former/latter", "mirroring this trend"). Lạm dụng từ nối máy móc ("Firstly, Secondly, Moreover, In conclusion") -> TRẦN CC <= 7.5–8.0.`
+- "cc" — Coherence & Cohesion (CC) [TÂM ĐIỂM SIÊU RÕ — MỤC TIÊU = 9.0 THEO OFFICIAL IELTS BAND 9 DESCRIPTOR]:
+  + Phân đoạn chuẩn 4 đoạn (Intro -> Overview -> Detail 1 -> Detail 2) và bám chặt 4 trụ cột Band 9 CC: (1) The message can be followed effortlessly, (2) Cohesion very rarely / never attracts attention, (3) Minimal lapses, (4) Paragraphing skilfully managed.
+  + Bắt buộc soi các điểm chuyển đoạn & chuyển câu trọng yếu trong "ccFlowAudit" kèm NGUYÊN VĂN CẢ CÂU sửa đúng ngữ pháp 100%. Lạm dụng từ nối máy móc ("Firstly, Secondly, Moreover, In conclusion") -> TRẦN CC <= 7.5–8.0.`
         : `
 - "task" — Task Response (TR) [CHẤM CỰC GẮT — MỤC TIÊU >= 8.0]:
   + Độ dài: ${wordCount} từ (IELTS Task 2 yêu cầu >= 250 từ; nếu < 250 từ -> TRẦN TR <= 6.5).
   + Mở bài: Paraphrase tự nhiên + Thesis trả lời TRỰC DIỆN mọi vế câu hỏi và lộ trình lập luận rõ.
   + Các thân bài (chuẩn cấu trúc 5 đoạn): Topic sentence bám Thesis -> Cơ chế nhân-quả SÂU ("tại sao & bằng cách nào") -> Ví dụ/bối cảnh thực tế hợp lý -> Chốt luận điểm. Hời hợt, bịa thống kê ảo hoặc tự mâu thuẫn Thesis -> TRẦN TR <= 6.5–7.0.
   + Kết bài: Tổng hợp đủ các mạch ý chính và khẳng định lại Thesis, không đưa ý mới.
-- "cc" — Coherence & Cohesion (CC) [SIÊU KHẮT KHE — MỤC TIÊU = 9.0]:
-  + Bố cục chuẩn 5 đoạn mạch lạc tuyệt đối, nối tiếp ý mượt mà từ Intro -> Body 1 -> Body 2 -> Body 3 -> Conclusion.
-  + Đạt 9.0 CHỈ KHI liên kết "tàng hình" qua quy chiếu & chuỗi chủ đề tự nhiên ("such measures", "this shift", "this reluctance"). Lạm dụng "Firstly, Secondly, Thirdly, Moreover, Furthermore, In conclusion" -> TRẦN CC <= 7.5–8.0.`;
+- "cc" — Coherence & Cohesion (CC) [TÂM ĐIỂM SIÊU RÕ — MỤC TIÊU = 9.0 THEO OFFICIAL IELTS BAND 9 DESCRIPTOR]:
+  + Bố cục chuẩn 5 đoạn mạch lạc tuyệt đối và bám chặt 4 trụ cột Band 9 CC: (1) The message can be followed effortlessly, (2) Cohesion very rarely / never attracts attention, (3) Minimal lapses, (4) Paragraphing skilfully managed.
+  + Bắt buộc soi các điểm chuyển đoạn & chuyển câu trọng yếu trong "ccFlowAudit" kèm NGUYÊN VĂN CẢ CÂU sửa đúng ngữ pháp 100%. Lạm dụng "Firstly, Secondly, Thirdly, Moreover, Furthermore, In conclusion" -> TRẦN CC <= 7.5–8.0.`;
 
     const sharedContext = `
 Bạn là cựu giám khảo IELTS Academic Writing & GIA SƯ KÈM 1-1 chuyên nâng học viên từ Band 6.0 lên Band 8.0.
@@ -210,7 +210,7 @@ ${buildTaskCcPhaseSchema({
           }
           return parsed;
         },
-        { temperature: 0.3, maxOutputTokens: 3600, perModelTimeoutMs: 24_000, totalBudgetMs: 50_000 }
+        { temperature: 0.3, maxOutputTokens: 4800, perModelTimeoutMs: 24_000, totalBudgetMs: 50_000 }
       );
       return NextResponse.json(data, { status: 200 });
     }
@@ -315,7 +315,7 @@ ${buildUnifiedGradeJsonSchema({
         },
         {
           temperature: 0.35,
-          maxOutputTokens: 7800,
+          maxOutputTokens: 8192,
           perModelTimeoutMs: 26_000,
           totalBudgetMs: 42_000,
           failFastOnTooLong: true,

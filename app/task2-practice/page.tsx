@@ -768,97 +768,97 @@ export default function Task2PracticePage() {
                   {/* Previous passed bodies */}
                   <PreviousBodiesPanel completedBodies={previousBodiesForContext} />
 
-              {/* Current Body Vietnamese Outline */}
-              {currentOutline && (
-                <BodyOutlineCard
-                  currentOutline={currentOutline}
-                  fullOutline={outline}
-                  currentBodyIndex={currentBodyIndex}
-                  totalBodies={TOTAL_BODIES}
-                  accent="emerald"
-                  taskType="task2"
-                />
-              )}
+                  {/* Current Body Vietnamese Outline */}
+                  {currentOutline && (
+                    <BodyOutlineCard
+                      currentOutline={currentOutline}
+                      fullOutline={outline}
+                      currentBodyIndex={currentBodyIndex}
+                      totalBodies={TOTAL_BODIES}
+                      accent="emerald"
+                      taskType="task2"
+                    />
+                  )}
 
-              {/* Writing Editor */}
-              <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-[var(--border)] p-4 sm:p-5 flex flex-col gap-3">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-black">
-                      {currentBodyIndex + 1}
-                    </span>
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
-                        Viết tiếng Anh cho Body {currentBodyIndex + 1}/{TOTAL_BODIES}
-                      </p>
-                      <p className="text-xs font-bold text-emerald-700">{currentOutline?.role}</p>
+                  {/* Writing Editor */}
+                  <div className="bg-[var(--card)] rounded-2xl shadow-sm border border-[var(--border)] p-4 sm:p-5 flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-black">
+                          {currentBodyIndex + 1}
+                        </span>
+                        <div>
+                          <p className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
+                            Viết tiếng Anh cho Body {currentBodyIndex + 1}/{TOTAL_BODIES}
+                          </p>
+                          <p className="text-xs font-bold text-emerald-700">{currentOutline?.role}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500 font-semibold">
+                        <span>{currentWordCount} từ</span>
+                        {attemptCount > 0 && (
+                          <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                            Lần chấm: {attemptCount}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-500 font-semibold">
-                    <span>{currentWordCount} từ</span>
-                    {attemptCount > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
-                        Lần chấm: {attemptCount}
-                      </span>
+
+                    <textarea
+                      ref={textareaRef}
+                      rows={7}
+                      disabled={isCurrentBodyLocked}
+                      placeholder={`Dựa vào dàn ý & lưu ý 8 TR · 9 CC · 8 GRA · 7 LR phía trên, hãy tự viết ${currentOutline?.label || 'Body này'} bằng tiếng Anh...`}
+                      value={inputText}
+                      onChange={(e) => setInputText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isCurrentBodyLocked && inputText.trim()) {
+                          gradeCurrentBody();
+                        }
+                      }}
+                      className="w-full resize-y text-sm p-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 outline-none transition-all bg-gray-50/50 focus:bg-white placeholder:text-gray-400 text-gray-800 leading-relaxed disabled:opacity-75 disabled:bg-gray-100/70"
+                    />
+
+                    {!gradeResult?.passed && (
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <p className="text-xs text-gray-400">
+                          Nhấn <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-[11px]">Ctrl</kbd> +{' '}
+                          <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-[11px]">Enter</kbd> để gửi chấm nhanh
+                        </p>
+                        <button
+                          type="button"
+                          onClick={gradeCurrentBody}
+                          disabled={!inputText.trim() || isGrading}
+                          className="ml-auto px-5 py-2.5 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl shadow-md transition-all disabled:opacity-50 text-sm"
+                        >
+                          {isGrading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
+                          {gradeResult && !gradeResult.passed
+                            ? `Gửi Gia sư chấm lại Body ${currentBodyIndex + 1}`
+                            : `Chấm Body ${currentBodyIndex + 1} (8 TR · 9 CC · 8 GRA · 7 LR)`}
+                        </button>
+                      </div>
                     )}
                   </div>
-                </div>
 
-                <textarea
-                  ref={textareaRef}
-                  rows={7}
-                  disabled={isCurrentBodyLocked}
-                  placeholder={`Dựa vào dàn ý & lưu ý 8 TR · 9 CC · 8 GRA · 7 LR phía trên, hãy tự viết ${currentOutline?.label || 'Body này'} bằng tiếng Anh...`}
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isCurrentBodyLocked && inputText.trim()) {
-                      gradeCurrentBody();
-                    }
-                  }}
-                  className="w-full resize-y text-sm p-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 outline-none transition-all bg-gray-50/50 focus:bg-white placeholder:text-gray-400 text-gray-800 leading-relaxed disabled:opacity-75 disabled:bg-gray-100/70"
-                />
-
-                {!gradeResult?.passed && (
-                  <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <p className="text-xs text-gray-400">
-                      Nhấn <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-[11px]">Ctrl</kbd> +{' '}
-                      <kbd className="px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-[11px]">Enter</kbd> để gửi chấm nhanh
-                    </p>
-                    <button
-                      type="button"
-                      onClick={gradeCurrentBody}
-                      disabled={!inputText.trim() || isGrading}
-                      className="ml-auto px-5 py-2.5 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl shadow-md transition-all disabled:opacity-50 text-sm"
-                    >
-                      {isGrading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
-                      {gradeResult && !gradeResult.passed
-                        ? `Gửi Gia sư chấm lại Body ${currentBodyIndex + 1}`
-                        : `Chấm Body ${currentBodyIndex + 1} (8 TR · 9 CC · 8 GRA · 7 LR)`}
-                    </button>
+                  {/* Feedback Panel */}
+                  <div ref={feedbackRef}>
+                    <BodyFeedbackPanel
+                      taskType="task2"
+                      bodyIndex={currentBodyIndex}
+                      totalBodies={TOTAL_BODIES}
+                      isGrading={isGrading}
+                      gradingStatus={gradingStatus}
+                      gradeError={gradeError}
+                      gradeResult={gradeResult}
+                      accent="emerald"
+                      onFocusEditor={() => {
+                        textareaRef.current?.focus();
+                        textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }}
+                      onNextBody={handleNextBody}
+                      onViewHistory={() => setTab('history')}
+                    />
                   </div>
-                )}
-              </div>
-
-              {/* Feedback Panel */}
-              <div ref={feedbackRef}>
-                <BodyFeedbackPanel
-                  taskType="task2"
-                  bodyIndex={currentBodyIndex}
-                  totalBodies={TOTAL_BODIES}
-                  isGrading={isGrading}
-                  gradingStatus={gradingStatus}
-                  gradeError={gradeError}
-                  gradeResult={gradeResult}
-                  accent="emerald"
-                  onFocusEditor={() => {
-                    textareaRef.current?.focus();
-                    textareaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }}
-                  onNextBody={handleNextBody}
-                  onViewHistory={() => setTab('history')}
-                />
-              </div>
                 </>
               )}
             </div>

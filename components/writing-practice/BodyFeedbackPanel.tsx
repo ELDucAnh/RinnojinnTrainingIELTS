@@ -26,6 +26,7 @@ import {
   CriteriaBreakdownGrid,
   type CriterionGridItem,
 } from '@/components/writing-practice/CriteriaBreakdownGrid';
+import { CcFlowAuditPanel } from '@/components/writing-practice/CcFlowAuditPanel';
 
 interface BodyFeedbackPanelProps {
   taskType: 'task1' | 'task2';
@@ -156,6 +157,13 @@ export function BodyFeedbackPanel({
           accent={accent}
         />
 
+        {/* CC 9.0 Spotlight: Transition-by-transition cohesion & full-sentence fixes */}
+        <CcFlowAuditPanel
+          ccFlowAudit={gradeResult.ccFlowAudit}
+          ccBand={gradeResult.criteria.cc.band}
+          accent={accent}
+        />
+
         {/* Cross-body Coherence */}
         <div
           className={`p-3.5 rounded-xl border flex items-start gap-2.5 ${isOrange
@@ -183,18 +191,21 @@ export function BodyFeedbackPanel({
             </div>
             <div className="flex flex-col gap-2">
               {gradeResult.grammarErrors.map((err, i) => (
-                <div key={i} className="text-xs bg-white/85 rounded-lg p-2.5 border border-red-100">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded font-mono line-through">
-                      {err.original}
+                <div key={i} className="text-xs bg-white/90 rounded-lg p-2.5 border border-red-100 flex flex-col gap-1.5">
+                  <div className="rounded-md bg-rose-50/90 border border-rose-200/80 px-2.5 py-1.5 text-rose-900">
+                    <span className="block text-[9.5px] font-extrabold uppercase tracking-wider text-rose-600 mb-0.5">
+                      Câu gốc có lỗi
                     </span>
-                    <span className="text-gray-400">→</span>
-                    <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 rounded font-mono font-semibold">
-                      {err.correction}
+                    <span className="leading-relaxed">{err.original}</span>
+                  </div>
+                  <div className="rounded-md bg-emerald-50/90 border border-emerald-200/80 px-2.5 py-1.5 text-emerald-950">
+                    <span className="block text-[9.5px] font-extrabold uppercase tracking-wider text-emerald-700 mb-0.5">
+                      Câu hoàn chỉnh đã sửa (đúng ngữ pháp cả câu)
                     </span>
+                    <span className="font-semibold leading-relaxed">{err.correction}</span>
                   </div>
                   {err.explanation && (
-                    <p className="text-gray-600 mt-1 leading-relaxed">{err.explanation}</p>
+                    <p className="text-gray-700 leading-relaxed">{err.explanation}</p>
                   )}
                 </div>
               ))}

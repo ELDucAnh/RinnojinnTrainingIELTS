@@ -122,9 +122,10 @@ ${cleanContent}
    - Body 1 (Intro): Paraphrase trôi chảy và đủ 100% chiều thông tin (loại biểu đồ, đối tượng, đơn vị đo, địa điểm/nhóm, mốc thời gian). Thiếu 1 chiều hoặc copy > 3 từ liên tiếp -> TRẦN TA <= 6.5–7.0.
    - Body 2 (Overview): Đủ 2 tầng tổng quan (xu hướng/thứ bậc chính + điểm tương phản/bước ngoặt/ngoại lệ nổi bật nhất), TUYỆT ĐỐI không chèn số liệu chi tiết -> thiếu tầng 2 hoặc chèn số liệu -> TRẦN TA <= 7.0.
    - Body 3 & Body 4 (Detail 1 & 2): Gom nhóm thông minh, đối chiếu định lượng sắc bén (gấp mấy lần, chênh lệch, đỉnh/đáy) và ĐÚNG 100% số liệu chartData. Liệt kê rời rạc, sai con số/nhãn hoặc lặp ý Body trước -> TRẦN TA <= 6.5–7.0.
-2. "cc" — Coherence and Cohesion (CC) [MỤC TIÊU = 9.0 — SIÊU KHẮT KHE]:
-   - Đạt 9.0 CHỈ KHI liên kết hoàn toàn "tàng hình" (attracts no attention): chuỗi thông tin Cũ -> Mới liền mạch tuyệt đối, quy chiếu chuẩn xác ("this figure", "respectively", "the former/latter", "mirroring this trend"), hòa quyện mượt với previousBodies.
-   - Còn dùng từ nối máy móc đầu câu ("Firstly, Secondly, Moreover, Furthermore, In addition, In conclusion") hoặc chuyển ý đột ngột -> TRẦN CC <= 7.5–8.0 (chưa đạt 9.0!).
+2. "cc" — Coherence and Cohesion (CC) [TÂM ĐIỂM SIÊU RÕ — MỤC TIÊU = 9.0 THEO OFFICIAL IELTS BAND 9 DESCRIPTOR]:
+   - Chấm và bóc tách bám chặt 4 trụ cột Band 9.0 CC: (1) The message can be followed effortlessly, (2) Cohesion is used in such a way that it very rarely / never attracts attention, (3) Any lapses in coherence or cohesion are minimal, (4) Paragraphing is skilfully managed.
+   - Bắt buộc phân tích TỪNG chuyển câu trong "ccFlowAudit" (Body trước → Câu 1, Câu 1 → Câu 2, Câu 2 → Câu 3...) kèm NGUYÊN VĂN CẢ CÂU sửa đúng ngữ pháp 100%.
+   - Còn dùng từ nối máy móc đầu câu ("Firstly, Secondly, Moreover, Furthermore, In addition, In conclusion") hoặc chuyển ý đột ngột / đại từ quy chiếu mơ hồ -> TRẦN CC <= 7.5–8.0 (chưa đạt 9.0!).
 3. "gra" — Grammatical Range and Accuracy (GRA) [MỤC TIÊU >= 8.0]:
    - Đòi hỏi đa số câu hoàn toàn sạch lỗi (error-free) VÀ sử dụng linh hoạt nhiều cấu trúc phức tự nhiên (While/Whereas, mệnh đề quan hệ không xác định ", which + V", cụm phân từ, "with + N + V-ing", bị động, so sánh định lượng nâng cao), chia thì chuẩn xác 100% nhất quán với previousBodies.
    - Chỉ dùng câu đơn/câu ghép cơ bản hoặc còn lỗi mạo từ/giới từ/chủ-vị/thì -> TRẦN GRA <= 6.5–7.5.
@@ -154,7 +155,7 @@ ${buildTaskCcPhaseSchema({
           }
           return parsed;
         },
-        { temperature: 0.3, maxOutputTokens: 3200, perModelTimeoutMs: 22_000, totalBudgetMs: 48_000 }
+        { temperature: 0.3, maxOutputTokens: 4400, perModelTimeoutMs: 22_000, totalBudgetMs: 48_000 }
       );
       return NextResponse.json(data, { status: 200 });
     }
@@ -235,7 +236,7 @@ ${buildUnifiedGradeJsonSchema({
         },
         {
           temperature: 0.35,
-          maxOutputTokens: 6600,
+          maxOutputTokens: 8000,
           perModelTimeoutMs: 25_000,
           totalBudgetMs: 40_000,
           failFastOnTooLong: true,

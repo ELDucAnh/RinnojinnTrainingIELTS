@@ -155,18 +155,18 @@ function resolveChartType(reqType?: string, topic?: string): ValidType {
 }
 
 const BODY_SPECS_TASK1: Record<number, string> = {
-  0: `- bodyIndex 0 — Body 1 (Introduction — Mở bài chuẩn xác TA 8.0+):
-  * Liệt kê đủ mọi chiều thông tin bắt buộc từ biểu đồ để paraphrase KHÔNG sót chi tiết nào: loại biểu đồ, đối tượng đo, đơn vị đo, địa điểm/nhóm, đầy đủ mốc thời gian.
-  * Chỉ rõ cách đổi cấu trúc diễn đạt để tuyệt đối KHÔNG chép lại nguyên cụm đề bài.`,
-  1: `- bodyIndex 1 — Body 2 (Overview — Tổng quan ăn điểm TA 8.5 & CC 9.0):
-  * Tổng hợp đúng 2 tầng nhận định vĩ mô sắc bén: (1) xu hướng/thứ bậc chi phối toàn cục VÀ (2) điểm đối lập nổi bật / bước ngoặt / ngoại lệ đáng chú ý nhất (hoặc cấu trúc giai đoạn đầu-cuối với Process, chuyển biến cốt lõi với Map).
-  * Nhấn mạnh TUYỆT ĐỐI KHÔNG chèn số liệu chi tiết vào Overview.`,
-  2: `- bodyIndex 2 — Body 3 (Detail Paragraph 1 — Nhóm phân tích chiến lược 1):
-  * Gom nhóm thông minh theo logic dữ liệu (KHÔNG liệt kê máy móc rời rạc): chỉ rõ tiêu chí gom nhóm (VD: nhóm dẫn đầu / xu hướng tăng / nửa đầu quy trình / khu vực phía Bắc).
-  * Trích CHÍNH XÁC từng con số/tỉ lệ/mốc đối chiếu (gấp bao nhiêu lần, chênh lệch bao nhiêu, đạt đỉnh/đáy ở đâu) + câu mở nối tự nhiên từ Overview.`,
-  3: `- bodyIndex 3 — Body 4 (Detail Paragraph 2 — Nhóm đối chiếu & hoàn tất bức tranh dữ liệu):
-  * Xử lý nhóm dữ liệu còn lại theo logic tương phản/bổ sung, chỉ rõ điểm giao cắt, hội tụ, phân kỳ hoặc ngoại lệ đối chiếu NGƯỢC LẠI với Body 3 kèm số liệu chính xác 100%.
-  * Chỉ rõ phép quy chiếu/chuyển ý "tàng hình" từ Body 3 đạt CC 9.0 (tránh "Secondly/Moreover" máy móc).`,
+  0: `- bodyIndex 0 — Body 1 (Introduction — Mở bài chuẩn xác TA 8.0+, targetSentenceCount: 1 hoặc 2 câu):
+  * Paraphrase đủ 100% chiều thông tin (loại biểu đồ, đối tượng, đơn vị đo, địa điểm/nhóm, đầy đủ mốc thời gian) mà KHÔNG chép nguyên cụm đề bài.
+  * Nêu rõ dùng 1 câu phức gọn hay 2 câu (Câu 1 nêu đối tượng/mốc thời gian + Câu 2 nêu đơn vị đo/phạm vi).`,
+  1: `- bodyIndex 1 — Body 2 (Overview — Tổng quan ăn điểm TA 8.5 & CC 9.0, targetSentenceCount: ĐÚNG 2 câu):
+  * Câu 1 (Câu phức — Complex): Xu hướng/thứ bậc chi phối toàn cục nhất (tầng 1).
+  * Câu 2 (Câu phức hoặc Câu đơn sắc gọn — nối trực tiếp Câu 1): Điểm đối lập nổi bật / bước ngoặt / ngoại lệ đáng chú ý nhất (tầng 2). TUYỆT ĐỐI KHÔNG chèn số liệu chi tiết.`,
+  2: `- bodyIndex 2 — Body 3 (Detail Paragraph 1 — Nhóm phân tích chiến lược 1, targetSentenceCount: 3–4 câu):
+  * Gom nhóm thông minh theo logic dữ liệu (KHÔNG liệt kê rời rạc từng mục). Phối hợp rõ Câu đơn (mở nhóm / chốt chênh lệch) + Câu phức (so sánh & miêu tả biến động kèm số liệu chính xác 100% từ chartData).
+  * Thiết kế chuỗi CC 9.0 nối khớp từng câu: Overview → Câu 1 → Câu 2 → Câu 3 (→ Câu 4).`,
+  3: `- bodyIndex 3 — Body 4 (Detail Paragraph 2 — Nhóm đối chiếu & hoàn tất bức tranh dữ liệu, targetSentenceCount: 3–4 câu):
+  * Xử lý nhóm dữ liệu còn lại theo logic tương phản/bổ sung, đối chiếu NGƯỢC LẠI với Body 3 kèm số liệu 100% chính xác.
+  * Thiết kế chuỗi CC 9.0 nối "tàng hình" từ Body 3 → Câu 1 → Câu 2 → Câu 3 (→ Câu 4), tuyệt đối không dùng "Secondly/Moreover".`,
 };
 
 function buildConfirmedVocabBlock(vocabPrep?: WritingVocabPrep | null): string {
@@ -219,11 +219,22 @@ STRICT COACHING RULES (NO generic boilerplate — tailor 100% to THIS chart's ex
   * "cc9Note": Lưu ý CỰC KỸ để Body này đạt **CC = 9.0** (cách triển khai dòng thông tin Cũ -> Mới, phép quy chiếu/thay thế cụ thể nên dùng như "this figure", "the former", "similarly", "respectively", và CHỈ RÕ từ nối máy móc nào tuyệt đối tránh).
   * "gra8Note": Lưu ý bắt buộc để Body này đạt **GRA >= 8.0** (kết hợp ít nhất 2-3 cấu trúc phức hợp tự nhiên không lỗi như "While/Whereas...", ", which + V", "with + N + V-ing", phân từ rút gọn, bị động/so sánh nâng cao; nhắc bẫy thì/mạo từ/chủ-vị).
   * "lrNote": Lưu ý CỰC KỸ để giữ vững **LR 7.0 tự nhiên, sát đề** ở Body này (chỉ cần dùng từ B1–B2 rõ nghĩa, đúng đối tượng & đơn vị của biểu đồ, paraphrase đơn giản tránh lặp 1 từ quá nhiều, KHÔNG nhồi từ C1–C2 khó dễ gây sai sắc thái hoặc lệch dữ liệu).
-- MANDATORY IDEA-BY-IDEA MAPPING ("ideaGuides"):
-  For EACH Body, break it into **2–3 sequential ideas** (Body 1-2: 2 ideas; Body 3-4: 3 ideas), matching "viGuide":
-  * "vocabPhrases": **3–4 plain, natural B1–B2 collocations per idea** strictly tied to THAT exact chart idea (ZERO C1–C2 show-off words, ZERO off-topic phrases), with clear Vietnamese meaning: [{ "phrase": "...", "meaning": "..." }].
-  * "grammarPatterns": **1–2 Band 8.0 GRA complex grammar frames** tailored specifically to THAT idea, with concise Vietnamese "usage" explaining how to map THAT idea into the structure: [{ "structure": "...", "usage": "..." }].
-- "linkingTip": 1 sharp Vietnamese cohesion cue explaining the invisible CC 9.0 bridge to adjacent bodies.
+- MANDATORY SENTENCE-BY-SENTENCE INTERLOCKING BLUEPRINT ("targetSentenceCount", "sentenceMixSummary", "ideaGuides" — CẤM GỢI Ý LẺ TẺ):
+  For EACH Body, design an EXACT **Sentence-by-Sentence Blueprint** (so "ideaGuides.length === targetSentenceCount" — EVERY object in "ideaGuides" is ONE specific sentence in exact order: Câu 1, Câu 2, Câu 3, Câu 4!):
+  * "targetSentenceCount": Exact integer count of sentences to write in this Body (Body 1: 1–2, Body 2: 2, Body 3: 3–4, Body 4: 3–4).
+  * "sentenceMixSummary": Crisp Vietnamese summary showing the exact simple/complex rhythm, e.g. "3 câu: Câu 1 (Câu đơn) → Câu 2 (Câu phức) → Câu 3 (Câu phức)".
+  * Inside EACH sentence item of "ideaGuides":
+    - "sentenceNumber": 1, 2, 3, ...
+    - "sentenceType": EXACTLY one of "simple" | "compound" | "complex" | "compound-complex" (deliberately mix Simple + Complex across the Body for natural Band 8.0 GRA rhythm & effortless Band 9.0 CC readability — do NOT make every sentence bloated!).
+    - "sentenceTypeLabel": Vietnamese + English label, e.g. "Câu đơn (Simple)", "Câu phức (Complex)", "Câu ghép (Compound)".
+    - "ideaLabel": Exact role of this sentence, e.g. "Câu 1 — Câu mở nhóm dữ liệu dẫn đầu".
+    - "ideaVi": Spell out EXACTLY what goes inside THIS sentence (clause by clause if complex/compound, with exact chart numbers & units for Body 3 & 4!).
+    - "ccLinkFromPrev": **INTERLOCKING CC 9.0 GUIDE FOR THIS EXACT SENTENCE** (grounded in Official Band 9 CC: "effortless to follow" & "cohesion very rarely attracts attention"): explain concretely HOW Câu N hooks directly into Câu N-1 (or previous Body for Câu 1) — WHICH exact concept/figure from the previous sentence is picked up as Old Info at the start of Câu N, and how linking flows invisibly! NEVER vague/scattered tips!
+    - "ccLinkPhrases": 2–3 specific natural referencing/linking phrases tailored to THIS exact sentence transition (e.g. ["Looking first at ...", "this figure", "by contrast", "followed closely by", "respectively"]).
+    - "ccAvoid": 1 concise note naming mechanical/clunky linkers or cohesion mistakes to AVOID in this exact sentence (e.g. "Tránh 'Firstly,' hoặc liệt kê rời rạc lặp chủ ngữ 'In 2000... In 2010...'").
+    - "vocabPhrases": **3–4 plain, natural B1–B2 collocations** strictly tied to THIS sentence (ZERO C1–C2 show-off words, prioritized from confirmed vocabPrep if provided): [{ "phrase": "...", "meaning": "..." }].
+    - "grammarPatterns": **1–2 grammar frames MATCHING "sentenceType"** of THIS sentence (Simple frame for "simple"; Complex GRA 8.0 frame for "complex"): [{ "structure": "...", "usage": "..." }].
+- "linkingTip": 1 concise summary of how this Body's sentence chain connects smoothly from previous Body to next Body.
 
 Return ONLY valid JSON:
 {
@@ -231,24 +242,32 @@ Return ONLY valid JSON:
     {
       "bodyIndex": ${bodyIndices[0]},
       "role": "...",
+      "targetSentenceCount": 3,
+      "sentenceMixSummary": "3 câu: Câu 1 (Câu đơn) → Câu 2 (Câu phức) → Câu 3 (Câu phức)",
       "bandStrategy": {
         "task8Note": "...",
         "cc9Note": "...",
         "gra8Note": "...",
         "lrNote": "..."
       },
-      "viGuide": ["Ý 1...", "Ý 2..."],
+      "viGuide": ["Câu 1: ...", "Câu 2: ...", "Câu 3: ..."],
       "ideaGuides": [
         {
-          "ideaLabel": "Ý 1 — ...",
-          "ideaVi": "...",
+          "sentenceNumber": 1,
+          "sentenceType": "simple",
+          "sentenceTypeLabel": "Câu đơn (Simple)",
+          "ideaLabel": "Câu 1 — ...",
+          "ideaVi": "Viết chính xác nội dung từng vế của Câu 1 (kèm số liệu chính xác nếu là Detail)...",
+          "ccLinkFromPrev": "Cách nối trực tiếp từ Body trước / Câu trước để mạch đọc tàng hình chuẩn 9.0 CC...",
+          "ccLinkPhrases": ["Looking first at ...", "this figure"],
+          "ccAvoid": "Tránh 'Firstly,' hoặc mở câu máy móc",
           "vocabPhrases": [
             { "phrase": "account for the largest share of", "meaning": "chiếm tỷ trọng lớn nhất trong" },
             { "phrase": "illustrate the proportion of", "meaning": "minh họa tỷ lệ của" },
             { "phrase": "compare ... across categories", "meaning": "so sánh ... giữa các nhóm" }
           ],
           "grammarPatterns": [
-            { "structure": "While [S1] + V1, [S2] + V2, with + N + V-ing", "usage": "Gộp 2 vế đối lập và bổ sung số liệu mượt đạt GRA 8.0" }
+            { "structure": "[Subject chính] + accounted for + [số liệu], making it the largest category", "usage": "Khung câu rõ gọn khớp đúng Câu 1" }
           ]
         }
       ],
@@ -294,8 +313,8 @@ async function generateTask1OutlineChunk(
       });
     },
     {
-      temperature: 0.5,
-      maxOutputTokens: bodyIndices.length === 4 ? 6800 : bodyIndices.length === 2 ? 3600 : 2200,
+      temperature: 0.45,
+      maxOutputTokens: bodyIndices.length === 4 ? 8192 : bodyIndices.length === 2 ? 4600 : 2800,
       perModelTimeoutMs: options.perModelTimeoutMs,
       totalBudgetMs: options.totalBudgetMs,
       failFastOnTooLong: bodyIndices.length >= 4,

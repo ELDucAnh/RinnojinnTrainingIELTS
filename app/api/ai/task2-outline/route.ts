@@ -14,17 +14,26 @@ import {
 } from '@/lib/writing-practice-types';
 
 const BODY_SPECS_TASK2: Record<number, string> = {
-  0: `- bodyIndex 0 — "Body 1 — Mở bài (Introduction & Thesis Roadmap)":
-  * Dẫn bối cảnh chạm đúng xung đột cốt lõi của đề (KHÔNG sáo rỗng kiểu "Nowadays this topic is debated").
-  * Thiết kế Thesis Statement sắc bén, trả lời TRỰC DIỆN mọi vế câu hỏi và hé lộ lộ trình lập luận 3 tầng của Body 2–4 để đảm bảo TR >= 8.0 & CC = 9.0.`,
-  1: `- bodyIndex 1 — "Body 2 — Thân bài 1 (Luận điểm trụ cột 1 — Chiều sâu nhân-quả)":
-  * 1 luận điểm sắc bén, không hiển nhiên, đủ 4 mắt xích Band 8.0+: Topic Claim -> Cơ chế vận hành sâu (tại sao xảy ra ở tầng tâm lý/kinh tế/chính sách) -> Bối cảnh minh họa thực tế (KHÔNG bịa số liệu ảo) -> Chốt gắn lại Thesis.`,
-  2: `- bodyIndex 2 — "Body 3 — Thân bài 2 (Luận điểm trụ cột 2 — Tầng phân tích tách biệt)":
-  * Triển khai góc độ/vế HOÀN TOÀN KHÁC với Body 2 (ZERO trùng ý), đủ 4 mắt xích Claim -> Cơ chế sâu -> Minh họa thực tế -> Chốt luận điểm.`,
-  3: `- bodyIndex 3 — "Body 4 — Thân bài 3 (Đòn quyết định Band 8.0+: Nhượng bộ & Phản biện / Điều kiện biên)":
-  * Đưa ra phản biện mạnh nhất của phe đối lập rồi chỉ rõ giới hạn/lật ngược bảo vệ Thesis (hoặc giải pháp/tác động tầng vĩ mô cho đề Problem-Solution / Two-Part) để bài đạt độ chín Band 8.0+.`,
-  4: `- bodyIndex 4 — "Body 5 — Kết bài (Conclusion — Tổng hợp tam giác lập luận)":
-  * Tổng hợp súc tích mạch Body 2–4 + tái khẳng định Thesis sắc gọn + 1 hàm ý định hướng tinh tế (TUYỆT ĐỐI không đưa ý mới).`,
+  0: `- bodyIndex 0 — "Body 1 — Mở bài (Introduction & Thesis Roadmap)" [targetSentenceCount: ĐÚNG 2 câu]:
+  * Câu 1 (Câu phức — Complex): Paraphrase bối cảnh tranh luận cốt lõi của đề (KHÔNG sáo rỗng kiểu "Nowadays this topic is debated").
+  * Câu 2 (Câu phức — Complex, nối mượt Câu 1 bằng "While/Although" hoặc quy chiếu): Thesis Statement sắc bén trả lời TRỰC DIỆN mọi vế câu hỏi và hé lộ đúng lộ trình 3 thân bài.`,
+  1: `- bodyIndex 1 — "Body 2 — Thân bài 1 (Luận điểm trụ cột 1 — Chiều sâu nhân-quả)" [targetSentenceCount: ĐÚNG 4 câu]:
+  * Câu 1 (Câu đơn — Simple): Topic Sentence sắc gọn chốt thẳng luận điểm 1 (gắn lộ trình Thesis).
+  * Câu 2 (Câu phức — Complex, nối bằng Old->New từ Câu 1): Giải thích cơ chế vận hành sâu ("tại sao & bằng cách nào thực sự xảy ra").
+  * Câu 3 (Câu phức — Complex, nối bằng quy chiếu từ Câu 2): Minh họa bối cảnh thực tế & hệ quả cụ thể (KHÔNG bịa số liệu ảo).
+  * Câu 4 (Câu đơn hoặc Câu ghép gọn — nối từ Câu 3): Chốt luận điểm quay về bảo vệ Thesis.`,
+  2: `- bodyIndex 2 — "Body 3 — Thân bài 2 (Luận điểm trụ cột 2 — Tầng phân tích tách biệt)" [targetSentenceCount: ĐÚNG 4 câu]:
+  * Triển khai góc độ HOÀN TOÀN KHÁC với Body 2 (ZERO trùng ý).
+  * Câu 1 (Câu đơn — Simple, chuyển mạch mượt từ Body 2 bằng cụm chủ đề như "Beyond [khía cạnh Body 2], ..." — CẤM "Secondly,"): Topic Sentence chốt luận điểm 2.
+  * Câu 2 (Câu phức — Complex) -> Câu 3 (Câu phức — Complex) -> Câu 4 (Câu đơn/ghép gọn): Cơ chế sâu -> Minh họa thực tế -> Chốt luận điểm, nối khớp CC 9.0 từng câu.`,
+  3: `- bodyIndex 3 — "Body 4 — Thân bài 3 (Nhượng bộ & Phản biện / Điều kiện biên chuẩn 8.0+)" [targetSentenceCount: ĐÚNG 4 câu]:
+  * Câu 1 (Câu phức — Complex): Thừa nhận sòng phẳng lập luận mạnh nhất của phe đối lập (hoặc nguyên nhân/vấn đề chính với đề Solution).
+  * Câu 2 (Câu phức — Complex, lật mạch mượt không dùng "However," máy móc hoặc đặt "however" giữa câu): Chỉ rõ giới hạn thực tế / phản biện sắc bén bảo vệ Thesis (hoặc đề xuất giải pháp thực tế).
+  * Câu 3 (Câu phức — Complex): Minh họa tác động thực tế của lập luận phản biện/giải pháp.
+  * Câu 4 (Câu đơn — Simple): Chốt khẳng định góc nhìn toàn diện bảo vệ Thesis.`,
+  4: `- bodyIndex 4 — "Body 5 — Kết bài (Conclusion — Tổng hợp tam giác lập luận)" [targetSentenceCount: ĐÚNG 2 câu]:
+  * Câu 1 (Câu phức — Complex): Tổng hợp trọn vẹn mạch Body 2–4 & tái khẳng định Thesis sắc gọn (TUYỆT ĐỐI không đưa ý mới).
+  * Câu 2 (Câu đơn — Simple hoặc Câu phức gọn): 1 hàm ý định hướng/lời chốt tự nhiên khép bài hoàn chỉnh.`,
 };
 
 function buildConfirmedVocabBlock(vocabPrep?: WritingVocabPrep | null): string {
@@ -98,11 +107,22 @@ STRICT COACHING RULES (tailor 100% to THIS exact prompt — NEVER generic rote t
   * "cc9Note": Lưu ý CỰC KỸ để Body này đạt **CC = 9.0** (cách nối ý "tàng hình" bằng chuỗi thông tin Cũ -> Mới, phép quy chiếu danh từ khái quát như "this trend", "such policies", "this problem", cách neo ngược vào Thesis ở Body 1, và CHỈ RÕ từ nối máy móc nào phải loại bỏ).
   * "gra8Note": Yêu cầu bắt buộc để Body này đạt **GRA >= 8.0** (những cấu trúc phức hợp tự nhiên cần phối hợp trong đoạn này như mệnh đề nhượng bộ While/Whereas, mệnh đề quan hệ không xác định ", which + V", cụm phân từ, câu điều kiện/giả định, và các bẫy mạo từ/chia động từ hay gặp).
   * "lrNote": Lưu ý CỰC KỸ để giữ vững **LR 7.0 tự nhiên, sát đề** ở Body này (chỉ cần dùng từ B1–B2 quen thuộc, đúng collocation và bám sát chủ đề đề bài, biết paraphrase đơn giản để tránh lặp từ, TUYỆT ĐỐI không cố nhồi từ C1–C2 cao siêu gây lệch ý đề).
-- MANDATORY IDEA-BY-IDEA MAPPING ("ideaGuides"):
-  For EACH Body, break it into **2–3 concrete, sequential ideas** (Body 1 & 5: 2 ideas; Body 2, 3, 4: 3 ideas covering Claim -> Deep Mechanism -> Concrete Illustration & Thesis Anchor), matching "viGuide":
-  * "vocabPhrases": **3–4 plain, everyday B1–B2 written collocations** strictly tied to THAT exact idea and prompt topic (ZERO fancy C1–C2 words, ZERO off-topic buzzwords), with concise Vietnamese meaning: [{ "phrase": "...", "meaning": "..." }].
-  * "grammarPatterns": **1–2 practical Band 8.0 GRA complex grammar structures** fitted specifically for THAT idea, with concise Vietnamese "usage" explaining how to map THAT idea into the frame: [{ "structure": "...", "usage": "..." }].
-- "linkingTip": 1 specific CC 9.0 semantic/referential cohesion cue connecting this Body to adjacent bodies.
+- MANDATORY SENTENCE-BY-SENTENCE INTERLOCKING BLUEPRINT ("targetSentenceCount", "sentenceMixSummary", "ideaGuides" — CẤM GỢI Ý LẺ TẺ):
+  For EACH Body, design an EXACT **Sentence-by-Sentence Blueprint** ("ideaGuides.length === targetSentenceCount" — EVERY object in "ideaGuides" maps 1-to-1 to ONE numbered sentence: Câu 1, Câu 2, Câu 3, Câu 4!):
+  * "targetSentenceCount": Exact integer count (Body 1: 2, Body 2: 4, Body 3: 4, Body 4: 4, Body 5: 2).
+  * "sentenceMixSummary": Crisp Vietnamese summary showing the exact simple/complex rhythm, e.g. "4 câu: Câu 1 (Câu đơn) → Câu 2 (Câu phức) → Câu 3 (Câu phức) → Câu 4 (Câu đơn)".
+  * Inside EACH sentence item of "ideaGuides":
+    - "sentenceNumber": 1, 2, 3, 4...
+    - "sentenceType": EXACTLY one of "simple" | "compound" | "complex" | "compound-complex" (deliberately mix Simple + Complex across the Body so Topic/Closing sentences are punchy Simple and Explanation/Example sentences are smooth Complex — essential for GRA 8.0 & effortless CC 9.0!).
+    - "sentenceTypeLabel": e.g. "Câu đơn (Simple)", "Câu phức (Complex)", "Câu ghép (Compound)".
+    - "ideaLabel": Exact role of THIS sentence, e.g. "Câu 1 — Topic Sentence (Chốt luận điểm 1)".
+    - "ideaVi": Spell out EXACTLY what goes inside THIS sentence (clause 1 -> clause 2 if complex/compound).
+    - "ccLinkFromPrev": **INTERLOCKING CC 9.0 GUIDE FOR THIS EXACT SENTENCE** (grounded in Official Band 9 CC: "The message can be followed effortlessly" & "Cohesion very rarely attracts attention"): state EXPLICITLY how Câu N connects straight out of Câu N-1 (or previous Body for Câu 1) — WHICH exact concept at the end of Câu N-1 becomes the Old-Info anchor/referencing subject of Câu N so the whole paragraph locks together like gears! CẤM nói chung chung!
+    - "ccLinkPhrases": 2–3 exact natural referencing/cohesion phrases for THIS specific sentence transition (e.g. ["this financial burden", "such policies", "doing so", "in practice, ..."]).
+    - "ccAvoid": 1 sharp warning naming the mechanical linker or CC error to AVOID at THIS exact sentence (e.g. "Cấm mở câu bằng 'Moreover,' hoặc 'Furthermore,' — dùng danh từ quy chiếu để mạch đọc tàng hình").
+    - "vocabPhrases": **3–4 plain, everyday B1–B2 written collocations** strictly tied to THIS sentence & prompt topic (prioritized from confirmed vocabPrep if provided; ZERO fancy C1–C2 words): [{ "phrase": "...", "meaning": "..." }].
+    - "grammarPatterns": **1–2 grammar frames MATCHING "sentenceType"** of THIS sentence (Simple crisp frame for "simple"; Band 8.0 Complex frame for "complex"): [{ "structure": "...", "usage": "..." }].
+- "linkingTip": 1 sharp summary of how this Body's full sentence chain bridges from previous Body to next Body.
 
 Return ONLY valid JSON:
 {
@@ -115,24 +135,32 @@ Return ONLY valid JSON:
     {
       "bodyIndex": ${bodyIndices[0]},
       "role": "...",
+      "targetSentenceCount": 4,
+      "sentenceMixSummary": "4 câu: Câu 1 (Câu đơn) → Câu 2 (Câu phức) → Câu 3 (Câu phức) → Câu 4 (Câu đơn)",
       "bandStrategy": {
         "task8Note": "...",
         "cc9Note": "...",
         "gra8Note": "...",
         "lrNote": "..."
       },
-      "viGuide": ["Ý 1...", "Ý 2..."],
+      "viGuide": ["Câu 1: ...", "Câu 2: ...", "Câu 3: ...", "Câu 4: ..."],
       "ideaGuides": [
         {
-          "ideaLabel": "Ý 1 — ...",
-          "ideaVi": "...",
+          "sentenceNumber": 1,
+          "sentenceType": "simple",
+          "sentenceTypeLabel": "Câu đơn (Simple)",
+          "ideaLabel": "Câu 1 — Topic Sentence",
+          "ideaVi": "Nêu rõ chính xác vế/ý cần viết trong Câu 1...",
+          "ccLinkFromPrev": "Nối trực tiếp từ Thesis/Body trước bằng cụm quy chiếu chủ đề để mạch đọc tự nhiên chuẩn 9.0 CC...",
+          "ccLinkPhrases": ["One major reason is ...", "this policy"],
+          "ccAvoid": "Tránh 'Firstly,' máy móc đầu đoạn",
           "vocabPhrases": [
             { "phrase": "cause wide disagreement", "meaning": "gây ra nhiều ý kiến trái chiều" },
             { "phrase": "play an important role in", "meaning": "đóng vai trò quan trọng trong" },
             { "phrase": "long-term social effects", "meaning": "những tác động xã hội lâu dài" }
           ],
           "grammarPatterns": [
-            { "structure": "While some people believe that + [vế A], + [quan điểm chính], which + [hệ quả]", "usage": "Mở đầu bằng câu nhượng bộ kết hợp mệnh đề quan hệ đạt GRA 8.0" }
+            { "structure": "[Main noun phrase] + plays a key role in + [V-ing/N]", "usage": "Khung câu đơn sắc gọn chốt thẳng Topic Claim ở Câu 1" }
           ]
         }
       ],
@@ -198,18 +226,18 @@ async function generateTask2Chunk(
       };
     },
     {
-      temperature: 0.5,
+      temperature: 0.45,
       maxOutputTokens:
         params.bodyIndices.length === 5
-          ? 7600
+          ? 8192
           : params.bodyIndices.length >= 3
-            ? 4800
+            ? 5600
             : params.bodyIndices.length === 2
-              ? 3600
-              : 2400,
+              ? 4400
+              : 2800,
       perModelTimeoutMs: options.perModelTimeoutMs,
       totalBudgetMs: options.totalBudgetMs,
-      failFastOnTooLong: params.bodyIndices.length >= 5,
+      failFastOnTooLong: params.bodyIndices.length >= 4,
     }
   );
 

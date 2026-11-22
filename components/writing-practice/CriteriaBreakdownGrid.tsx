@@ -139,19 +139,22 @@ export function CriteriaBreakdownGrid({
                         </div>
 
                         {(m.currentText || m.improvedExample) && (
-                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] bg-gray-50/90 rounded-md px-2 py-1.5 border border-gray-100">
+                          <div className="flex flex-col gap-1.5 text-[11.5px]">
                             {m.currentText && (
-                              <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200/80 line-through">
-                                {m.currentText}
-                              </span>
-                            )}
-                            {m.currentText && m.improvedExample && (
-                              <span className="text-gray-400 font-bold">→</span>
+                              <div className="rounded-md px-2.5 py-1.5 bg-rose-50/90 border border-rose-200/80 text-rose-900">
+                                <span className="block text-[9.5px] font-extrabold uppercase tracking-wider text-rose-600 mb-0.5">
+                                  Câu gốc của bạn
+                                </span>
+                                <span className="leading-relaxed">{m.currentText}</span>
+                              </div>
                             )}
                             {m.improvedExample && (
-                              <span className="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200/80 font-semibold">
-                                {m.improvedExample}
-                              </span>
+                              <div className="rounded-md px-2.5 py-1.5 bg-emerald-50/90 border border-emerald-200/80 text-emerald-950">
+                                <span className="block text-[9.5px] font-extrabold uppercase tracking-wider text-emerald-700 mb-0.5">
+                                  Câu hoàn chỉnh sau khi sửa (đã khớp ngữ pháp cả câu)
+                                </span>
+                                <span className="font-semibold leading-relaxed">{m.improvedExample}</span>
+                              </div>
                             )}
                           </div>
                         )}

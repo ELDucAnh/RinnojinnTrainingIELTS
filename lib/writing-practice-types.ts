@@ -38,9 +38,17 @@ export interface WritingVocabPrep {
   antiRepetitionTip?: string;
 }
 
+export type SentenceComplexityType = 'simple' | 'compound' | 'complex' | 'compound-complex';
+
 export interface IdeaLanguageGuide {
+  sentenceNumber?: number;
+  sentenceType?: SentenceComplexityType;
+  sentenceTypeLabel?: string; // VD: "Câu đơn (Simple)", "Câu phức (Complex)"
   ideaLabel: string;
   ideaVi: string;
+  ccLinkFromPrev?: string;    // Cách nối khớp từ câu trước (hoặc Body trước) để đạt CC 9.0
+  ccLinkPhrases?: string[];   // Từ nối / phép quy chiếu B1-B2 cụ thể nên dùng ở câu này
+  ccAvoid?: string;           // Từ nối máy móc / lỗi CC tuyệt đối tránh ở câu này
   vocabPhrases: SuggestedVocabItem[];
   grammarPatterns: SuggestedGrammarItem[];
 }
@@ -56,6 +64,8 @@ export interface OutlineBodyItem {
   bodyIndex: number;
   label: string;
   role: string;
+  targetSentenceCount?: number; // Số câu chuẩn cần viết cho Body này (VD: 2, 3, 4)
+  sentenceMixSummary?: string;  // Tóm tắt nhịp câu: VD "4 câu: Câu 1 (Đơn) → Câu 2 (Phức) → Câu 3 (Phức) → Câu 4 (Đơn)"
   viGuide: string[];
   keyPoints: string[];
   bandStrategy?: BodyBandStrategyNotes;
@@ -139,6 +149,17 @@ export interface PreviousAttemptSummary {
   keyIssues: string[];
 }
 
+export type CcTransitionStatus = 'seamless' | 'mechanical' | 'abrupt' | 'unclear_ref';
+
+export interface CcSentenceLinkAudit {
+  transition: string;        // VD: "Body trước → Câu 1", "Câu 1 → Câu 2"
+  status: CcTransitionStatus;
+  currentSentence: string;   // Nguyên văn CẢ CÂU hiện tại của học viên
+  diagnosis: string;         // Chẩn đoán chi tiết theo 4 tiêu chí Official IELTS Band 9 CC
+  howToFix: string;          // Cách sửa phép nối / quy chiếu / mạch Cũ -> Mới cụ thể
+  fixedFullSentence: string; // Nguyên văn CẢ CÂU HOÀN CHỈNH sau khi sửa nối (đảm bảo 100% đúng ngữ pháp)
+}
+
 export interface BodyGradeResult {
   overallBand: number;
   passed: boolean;
@@ -148,6 +169,7 @@ export interface BodyGradeResult {
     gra: CriterionFeedback;  // Grammatical Range & Accuracy >= 8.0
     lr: CriterionFeedback;   // Lexical Resource >= 7.0
   };
+  ccFlowAudit?: CcSentenceLinkAudit[]; // Mổ xẻ chi tiết từng chuyển câu theo chuẩn CC 9.0
   crossBodyFeedback: string;
   grammarErrors: BodyGrammarError[];
   vocabularyTips: BodyVocabularyTip[];
@@ -185,6 +207,7 @@ export interface FullEssayGradeResult {
     gra: CriterionFeedback;  // Grammatical Range & Accuracy >= 8.0
     lr: CriterionFeedback;   // Lexical Resource >= 7.0
   };
+  ccFlowAudit?: CcSentenceLinkAudit[]; // Mổ xẻ chi tiết từng chuyển đoạn & chuyển câu theo chuẩn CC 9.0
   wholeEssayStructureFeedback: string;
   paragraphBreakdown: FullEssayParagraphFeedback[];
   repetitionAlerts: string[];
@@ -385,27 +408,63 @@ function normalizeGrammarSuggestions(raw: unknown): SuggestedGrammarItem[] {
   return results;
 }
 
+function normalizeSentenceType(raw: unknown): {
+  sentenceType?: SentenceComplexityType;
+  sentenceTypeLabel?: string;
+} {
+  const s = String(raw ?? '').toLowerCase().trim();
+  if (!s) return {};
+  if (s.includes('compound-complex') || s.includes('compound complex') || s.includes('phức-ghép') || s.includes('phức ghép')) {
+    return { sentenceType: 'compound-complex', sentenceTypeLabel: 'Câu phức-ghép (Compound-Complex)' };
+  }
+  if (s.includes('complex') || s.includes('phức')) {
+    return { sentenceType: 'complex', sentenceTypeLabel: 'Câu phức (Complex)' };
+  }
+  if (s.includes('compound') || s.includes('ghép')) {
+    return { sentenceType: 'compound', sentenceTypeLabel: 'Câu ghép (Compound)' };
+  }
+  if (s.includes('simple') || s.includes('đơn')) {
+    return { sentenceType: 'simple', sentenceTypeLabel: 'Câu đơn (Simple)' };
+  }
+  return {};
+}
+
 function normalizeIdeaGuides(raw: unknown): IdeaLanguageGuide[] {
   if (!Array.isArray(raw)) return [];
   const results: IdeaLanguageGuide[] = [];
   for (const item of raw) {
     if (!item || typeof item !== 'object') continue;
-    const ideaLabel = String(
-      (item as any).ideaLabel ?? (item as any).label ?? (item as any).title ?? ''
+    const obj = item as any;
+    const ideaLabel = String(obj.ideaLabel ?? obj.label ?? obj.title ?? '').trim();
+    const ideaVi = String(obj.ideaVi ?? obj.whatToWrite ?? obj.idea ?? obj.description ?? '').trim();
+    const vocabPhrases = normalizeVocabSuggestions(obj.vocabPhrases ?? obj.vocab ?? obj.vocabs);
+    const grammarPatterns = normalizeGrammarSuggestions(obj.grammarPatterns ?? obj.grammar ?? obj.grammars);
+
+    const parsedType = normalizeSentenceType(obj.sentenceType ?? obj.sentenceTypeLabel);
+    const rawTypeLabel = String(obj.sentenceTypeLabel ?? '').trim();
+    const sentenceNumber =
+      Number.isFinite(Number(obj.sentenceNumber)) && Number(obj.sentenceNumber) > 0
+        ? Math.round(Number(obj.sentenceNumber))
+        : results.length + 1;
+
+    const ccLinkFromPrev = String(
+      obj.ccLinkFromPrev ?? obj.ccTip ?? obj.ccGuide ?? obj.cohesionGuide ?? ''
     ).trim();
-    const ideaVi = String(
-      (item as any).ideaVi ?? (item as any).idea ?? (item as any).description ?? ''
-    ).trim();
-    const vocabPhrases = normalizeVocabSuggestions(
-      (item as any).vocabPhrases ?? (item as any).vocab ?? (item as any).vocabs
-    );
-    const grammarPatterns = normalizeGrammarSuggestions(
-      (item as any).grammarPatterns ?? (item as any).grammar ?? (item as any).grammars
-    );
+    const ccLinkPhrases = Array.isArray(obj.ccLinkPhrases)
+      ? obj.ccLinkPhrases.map((p: any) => String(p).trim()).filter(Boolean)
+      : [];
+    const ccAvoid = String(obj.ccAvoid ?? '').trim();
+
     if (ideaVi || ideaLabel || vocabPhrases.length > 0 || grammarPatterns.length > 0) {
       results.push({
-        ideaLabel: ideaLabel || `Ý ${results.length + 1}`,
+        sentenceNumber,
+        sentenceType: parsedType.sentenceType,
+        sentenceTypeLabel: rawTypeLabel || parsedType.sentenceTypeLabel,
+        ideaLabel: ideaLabel || `Câu ${sentenceNumber}`,
         ideaVi: ideaVi || ideaLabel,
+        ccLinkFromPrev: ccLinkFromPrev || undefined,
+        ccLinkPhrases: ccLinkPhrases.length > 0 ? ccLinkPhrases : undefined,
+        ccAvoid: ccAvoid || undefined,
         vocabPhrases,
         grammarPatterns,
       });
@@ -563,10 +622,29 @@ export function normalizeOutlineBodyItem(
         ? 'Mở đầu tự nhiên, xác lập khung thông tin rõ ràng để tạo điểm neo quy chiếu (CC 9.0) cho các body sau.'
         : 'Liên kết "tàng hình" với body trước bằng phép quy chiếu danh từ (this shift / such measures / the former) thay cho từ nối máy móc.';
 
+  const rawSentenceCount = Number(safeFound.targetSentenceCount ?? safeFound.sentenceCount);
+  const targetSentenceCount =
+    Number.isFinite(rawSentenceCount) && rawSentenceCount > 0
+      ? Math.round(rawSentenceCount)
+      : ideaGuides.length > 0
+        ? ideaGuides.length
+        : undefined;
+
+  const sentenceMixSummary =
+    typeof safeFound.sentenceMixSummary === 'string' && safeFound.sentenceMixSummary.trim()
+      ? safeFound.sentenceMixSummary.trim()
+      : ideaGuides.some((g) => g.sentenceTypeLabel)
+        ? `${ideaGuides.length} câu: ${ideaGuides
+            .map((g, i) => `Câu ${g.sentenceNumber || i + 1} (${(g.sentenceTypeLabel || 'Linh hoạt').split('(')[0].trim()})`)
+            .join(' → ')}`
+        : undefined;
+
   return {
     bodyIndex: idx,
     label: tpl.label,
     role: typeof safeFound.role === 'string' && safeFound.role.trim() ? safeFound.role.trim() : tpl.role,
+    targetSentenceCount,
+    sentenceMixSummary,
     viGuide,
     keyPoints,
     bandStrategy,
@@ -682,6 +760,47 @@ export function normalizeSingleCriterion(
   };
 }
 
+function normalizeCcFlowAudit(raw: unknown): CcSentenceLinkAudit[] {
+  if (!Array.isArray(raw)) return [];
+  const results: CcSentenceLinkAudit[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const obj = item as any;
+    const rawStatus = String(obj.status ?? '').toLowerCase().trim();
+    const status: CcTransitionStatus =
+      rawStatus === 'seamless' ||
+      rawStatus === 'mechanical' ||
+      rawStatus === 'abrupt' ||
+      rawStatus === 'unclear_ref'
+        ? (rawStatus as CcTransitionStatus)
+        : rawStatus.includes('seam') || rawStatus.includes('good') || rawStatus.includes('mượt')
+          ? 'seamless'
+          : rawStatus.includes('ref') || rawStatus.includes('quy chiếu')
+            ? 'unclear_ref'
+            : rawStatus.includes('abrupt') || rawStatus.includes('khựng') || rawStatus.includes('nhảy')
+              ? 'abrupt'
+              : 'mechanical';
+
+    const transition = String(obj.transition ?? obj.location ?? '').trim();
+    const currentSentence = String(obj.currentSentence ?? obj.originalSentence ?? '').trim();
+    const diagnosis = String(obj.diagnosis ?? obj.issue ?? '').trim();
+    const howToFix = String(obj.howToFix ?? obj.fixGuide ?? '').trim();
+    const fixedFullSentence = String(obj.fixedFullSentence ?? obj.improvedSentence ?? '').trim();
+
+    if (transition || diagnosis || howToFix || fixedFullSentence) {
+      results.push({
+        transition: transition || `Chuyển câu #${results.length + 1}`,
+        status,
+        currentSentence,
+        diagnosis,
+        howToFix,
+        fixedFullSentence,
+      });
+    }
+  }
+  return results;
+}
+
 export function normalizeGradeResult(raw: any): BodyGradeResult {
   const rawCriteria = raw?.criteria || {};
 
@@ -733,6 +852,8 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
       }))
     : [];
 
+  const ccFlowAudit = normalizeCcFlowAudit(raw?.ccFlowAudit);
+
   const tutorClosingNote =
     typeof raw?.tutorClosingNote === 'string' && raw.tutorClosingNote.trim()
       ? raw.tutorClosingNote.trim()
@@ -753,6 +874,7 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
       gra: graCrit,
       lr: lrCrit,
     },
+    ccFlowAudit: ccFlowAudit.length > 0 ? ccFlowAudit : undefined,
     crossBodyFeedback:
       typeof raw?.crossBodyFeedback === 'string' && raw.crossBodyFeedback.trim()
         ? raw.crossBodyFeedback.trim()
@@ -795,6 +917,7 @@ export function normalizeFullEssayGradeResult(raw: any): FullEssayGradeResult {
     overallBand: base.overallBand,
     passed: base.passed,
     criteria: base.criteria,
+    ccFlowAudit: base.ccFlowAudit,
     wholeEssayStructureFeedback:
       typeof raw?.wholeEssayStructureFeedback === 'string' && raw.wholeEssayStructureFeedback.trim()
         ? raw.wholeEssayStructureFeedback.trim()
