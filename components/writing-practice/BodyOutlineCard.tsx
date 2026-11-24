@@ -162,9 +162,8 @@ export function BodyOutlineCard({
                 return (
                   <div key={idx} className="inline-flex items-center gap-1.5">
                     <span
-                      className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border ${
-                        stStyle ? stStyle.badge : 'bg-gray-100 text-gray-700 border-gray-200'
-                      }`}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border ${stStyle ? stStyle.badge : 'bg-gray-100 text-gray-700 border-gray-200'
+                        }`}
                     >
                       Câu {g.sentenceNumber || idx + 1}: {stStyle ? stStyle.short : 'Linh hoạt'}
                     </span>
@@ -206,24 +205,21 @@ export function BodyOutlineCard({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
             {bandStrategy.cc9Note && (
               <div
-                className={`rounded-xl p-3 border text-xs leading-relaxed ${
-                  accent === 'orange'
-                    ? 'bg-orange-50/75 border-orange-200/90 text-orange-950'
-                    : 'bg-emerald-50/75 border-emerald-200/90 text-emerald-950'
-                }`}
+                className={`rounded-xl p-3 border text-xs leading-relaxed ${accent === 'orange'
+                  ? 'bg-orange-50/75 border-orange-200/90 text-orange-950'
+                  : 'bg-emerald-50/75 border-emerald-200/90 text-emerald-950'
+                  }`}
               >
                 <div className="flex items-center justify-between gap-1.5 mb-1">
                   <span
-                    className={`font-black text-[11px] uppercase tracking-wider ${
-                      accent === 'orange' ? 'text-orange-800' : 'text-emerald-800'
-                    }`}
+                    className={`font-black text-[11px] uppercase tracking-wider ${accent === 'orange' ? 'text-orange-800' : 'text-emerald-800'
+                      }`}
                   >
                     Đạt CC 8.5 (5 quy luật cố định R1–R5)
                   </span>
                   <span
-                    className={`text-[10px] font-black px-1.5 py-0.5 rounded text-white ${
-                      accent === 'orange' ? 'bg-orange-500' : 'bg-emerald-600'
-                    }`}
+                    className={`text-[10px] font-black px-1.5 py-0.5 rounded text-white ${accent === 'orange' ? 'bg-orange-500' : 'bg-emerald-600'
+                      }`}
                   >
                     8.5 CC
                   </span>
@@ -319,11 +315,10 @@ export function BodyOutlineCard({
                         )}
                         {typeLabel && (
                           <span
-                            className={`text-[10.5px] font-black px-2 py-0.5 rounded-full border ${
-                              typeMeta
-                                ? typeMeta.badge
-                                : 'bg-gray-100 text-gray-700 border-gray-200'
-                            }`}
+                            className={`text-[10.5px] font-black px-2 py-0.5 rounded-full border ${typeMeta
+                              ? typeMeta.badge
+                              : 'bg-gray-100 text-gray-700 border-gray-200'
+                              }`}
                           >
                             {typeLabel}
                           </span>
@@ -338,11 +333,10 @@ export function BodyOutlineCard({
                   {/* Interlocking CC 9.0 box for THIS exact sentence */}
                   {(guide.ccLinkFromPrev || (guide.ccLinkPhrases && guide.ccLinkPhrases.length > 0) || guide.ccAvoid) && (
                     <div
-                      className={`rounded-xl border p-3 text-xs flex flex-col gap-1.5 ${
-                        accent === 'orange'
-                          ? 'bg-orange-50/70 border-orange-200/80 text-orange-950'
-                          : 'bg-teal-50/70 border-teal-200/80 text-teal-950'
-                      }`}
+                      className={`rounded-xl border p-3 text-xs flex flex-col gap-1.5 ${accent === 'orange'
+                        ? 'bg-orange-50/70 border-orange-200/80 text-orange-950'
+                        : 'bg-teal-50/70 border-teal-200/80 text-teal-950'
+                        }`}
                     >
                       <div className="flex items-center gap-1.5 font-extrabold text-[11px] uppercase tracking-wider">
                         <GitMerge
@@ -540,11 +534,10 @@ export function BodyOutlineCard({
             {fullOutline.map((o) => (
               <div
                 key={o.bodyIndex}
-                className={`p-2.5 rounded-lg border text-xs ${
-                  o.bodyIndex === currentBodyIndex
-                    ? activeOverviewRowStyle
-                    : 'bg-gray-50/70 border-gray-100'
-                }`}
+                className={`p-2.5 rounded-lg border text-xs ${o.bodyIndex === currentBodyIndex
+                  ? activeOverviewRowStyle
+                  : 'bg-gray-50/70 border-gray-100'
+                  }`}
               >
                 <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
                   <p className="font-bold text-gray-800">

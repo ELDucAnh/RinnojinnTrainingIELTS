@@ -84,18 +84,18 @@ export async function POST(req: NextRequest) {
 
     const fullOutlineSummary = Array.isArray(outline)
       ? outline
-          .map((o, idx) => `- Body ${idx + 1} (${o.role}): ${(o.viGuide || []).join(' | ')}`)
-          .join('\n')
+        .map((o, idx) => `- Body ${idx + 1} (${o.role}): ${(o.viGuide || []).join(' | ')}`)
+        .join('\n')
       : 'Không có dàn ý đính kèm.';
 
     const previousBodiesText =
       Array.isArray(previousBodies) && previousBodies.length > 0
         ? previousBodies
-            .map(
-              (pb) =>
-                `[Body ${pb.bodyIndex + 1} — ${pb.role || TASK2_BODY_TEMPLATES[pb.bodyIndex]?.role || ''}]:\n"${pb.content}"`
-            )
-            .join('\n\n')
+          .map(
+            (pb) =>
+              `[Body ${pb.bodyIndex + 1} — ${pb.role || TASK2_BODY_TEMPLATES[pb.bodyIndex]?.role || ''}]:\n"${pb.content}"`
+          )
+          .join('\n\n')
         : 'Chưa có body nào trước đó (đây là Body 1 — phần mở bài).';
 
     const previousAttemptBlock = buildPreviousAttemptBlock(previousAttempt);
@@ -148,9 +148,9 @@ ${buildAlignedCriteriaDirectives({ taskType: 'task2', isFullEssay: false })}
 NHIỆM VỤ BƯỚC 1/3: Chấm & bóc tách SIÊU CHI TIẾT 2 tiêu chí **TR (>= 8.0)** và **CC (>= 8.5)** kèm "ccChecklist" (5 quy luật R1..R5), "ccFlowAudit" và "crossBodyFeedback".
 Trả về DUY NHẤT JSON hợp lệ:
 ${buildTaskCcPhaseSchema({
-  taskShort: 'TR',
-  extraFieldsSchema: `"crossBodyFeedback": "Nhận xét chi tiết bằng tiếng Việt về liên kết của Body này với các Body trước đó (khớp lộ trình Thesis Body 1, nối mạch lập luận chưa)."`,
-})}`;
+        taskShort: 'TR',
+        extraFieldsSchema: `"crossBodyFeedback": "Nhận xét chi tiết bằng tiếng Việt về liên kết của Body này với các Body trước đó (khớp lộ trình Thesis Body 1, nối mạch lập luận chưa)."`,
+      })}`;
 
       const { data } = await generateJsonWithFallback(
         p1Prompt,
@@ -198,10 +198,10 @@ ${JSON.stringify(criteriaContext || {})}
 NHIỆM VỤ BƯỚC 3/3: Đóng vai GIA SƯ IELTS WRITING THỰC THỤ kèm 1-1, viết "generalFeedback", đoạn chốt bóc tách chuyên sâu bằng tiếng Việt "tutorClosingNote" (160–240 từ, 3–4 đoạn tách bằng \\n\\n: chẩn đoán Band & điểm sáng, nêu rõ kết quả X/5 quy luật CC & độ chính xác LR 7.5, lộ trình ưu tiên sửa 1->2->3 ngay lần tới${previousAttempt ? ', ĐỐI CHIẾU RÕ tiến bộ và điểm còn sót so với bản nháp lần trước' : ''}), và "modelUpgrade" chuẩn TR 8.0+ / CC 8.5+ / GRA 8.0+ / LR 7.5+ tự nhiên.
 Trả về DUY NHẤT JSON hợp lệ:
 ${buildTutorClosingPhaseSchema({
-  taskShort: 'TR',
-  modelUpgradeInstruction:
-    'Phiên bản tham khảo chuẩn TR 8.0+ · CC 8.5+ · GRA 8.0+ · LR 7.5+ tự nhiên (hệ thống chỉ mở cho học viên xem sau khi đạt chuẩn Overall >= 8.0).',
-})}`;
+        taskShort: 'TR',
+        modelUpgradeInstruction:
+          'Phiên bản tham khảo chuẩn TR 8.0+ · CC 8.5+ · GRA 8.0+ · LR 7.5+ tự nhiên (hệ thống chỉ mở cho học viên xem sau khi đạt chuẩn Overall >= 8.0).',
+      })}`;
 
       const { data } = await generateJsonWithFallback(
         p3Prompt,
@@ -223,11 +223,11 @@ ${buildAlignedCriteriaDirectives({ taskType: 'task2', isFullEssay: false })}
 
 YÊU CẦU ĐẦU RA JSON (BẮT BUỘC CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG MARKDOWN):
 ${buildUnifiedGradeJsonSchema({
-  taskShort: 'TR',
-  extraFieldsSchema: `"crossBodyFeedback": "Nhận xét chi tiết bằng tiếng Việt về liên kết của Body này với các Body trước đó (khớp lộ trình Thesis Body 1, nối mạch lập luận chưa).",`,
-  modelUpgradeInstruction:
-    'Phiên bản tham khảo chuẩn TR 8.0+ · CC 8.5+ · GRA 8.0+ · LR 7.5+ tự nhiên (hệ thống chỉ mở cho học viên xem sau khi đạt chuẩn Overall >= 8.0).',
-})}
+      taskShort: 'TR',
+      extraFieldsSchema: `"crossBodyFeedback": "Nhận xét chi tiết bằng tiếng Việt về liên kết của Body này với các Body trước đó (khớp lộ trình Thesis Body 1, nối mạch lập luận chưa).",`,
+      modelUpgradeInstruction:
+        'Phiên bản tham khảo chuẩn TR 8.0+ · CC 8.5+ · GRA 8.0+ · LR 7.5+ tự nhiên (hệ thống chỉ mở cho học viên xem sau khi đạt chuẩn Overall >= 8.0).',
+    })}
 `;
 
     try {
