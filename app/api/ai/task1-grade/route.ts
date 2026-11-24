@@ -152,7 +152,13 @@ ${buildTaskCcPhaseSchema({
           }
           return parsed;
         },
-        { temperature: 0.1, maxOutputTokens: 4600, perModelTimeoutMs: 22_000, totalBudgetMs: 48_000 }
+        {
+          temperature: 0.1,
+          maxOutputTokens: 4600,
+          perModelTimeoutMs: 22_000,
+          totalBudgetMs: 48_000,
+          modelProfile: 'grading',
+        }
       );
       return NextResponse.json(data, { status: 200 });
     }
@@ -176,7 +182,13 @@ ${buildGraLrPhaseSchema()}`;
           }
           return parsed;
         },
-        { temperature: 0.1, maxOutputTokens: 3600, perModelTimeoutMs: 22_000, totalBudgetMs: 48_000 }
+        {
+          temperature: 0.1,
+          maxOutputTokens: 3600,
+          perModelTimeoutMs: 22_000,
+          totalBudgetMs: 48_000,
+          modelProfile: 'grading',
+        }
       );
       return NextResponse.json(data, { status: 200 });
     }
@@ -203,7 +215,13 @@ ${buildTutorClosingPhaseSchema({
           }
           return parsed;
         },
-        { temperature: 0.15, maxOutputTokens: 2400, perModelTimeoutMs: 20_000, totalBudgetMs: 46_000 }
+        {
+          temperature: 0.15,
+          maxOutputTokens: 2400,
+          perModelTimeoutMs: 20_000,
+          totalBudgetMs: 46_000,
+          modelProfile: 'fast',
+        }
       );
       return NextResponse.json(data, { status: 200 });
     }
@@ -236,6 +254,7 @@ ${buildUnifiedGradeJsonSchema({
           maxOutputTokens: 8192,
           perModelTimeoutMs: 25_000,
           totalBudgetMs: 40_000,
+          modelProfile: 'grading',
           failFastOnTooLong: true,
         }
       );

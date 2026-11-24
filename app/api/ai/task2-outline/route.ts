@@ -241,6 +241,7 @@ async function generateTask2Chunk(
               : 2800,
       perModelTimeoutMs: options.perModelTimeoutMs,
       totalBudgetMs: options.totalBudgetMs,
+      modelProfile: 'fast',
       failFastOnTooLong: params.bodyIndices.length >= 4,
     }
   );

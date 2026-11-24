@@ -31,14 +31,14 @@ export default function HomePage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayTime = today.getTime();
-    
+
     const pastDecks = new Set(
       sessions.filter(s => s.startedAt < todayTime).map(s => s.deckId)
     );
 
     const seenToday = new Set<string>();
     let total = 0;
-    
+
     sessions
       .filter(s => s.startedAt >= todayTime)
       .sort((a, b) => a.startedAt - b.startedAt)
@@ -55,13 +55,13 @@ export default function HomePage() {
 
   // Last 7 days vocab progress
   const today = new Date();
-  today.setHours(0,0,0,0);
-  const last7Days = Array.from({length: 7}).map((_, i) => {
+  today.setHours(0, 0, 0, 0);
+  const last7Days = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() - (6 - i));
     return d.getTime();
   });
-  
+
   const vocabChartData = last7Days.map(timestamp => {
     const endOfDay = timestamp + 86400000;
     const studiedCount = sessions.filter(s => s.startedAt >= timestamp && s.startedAt < endOfDay).reduce((acc, curr) => acc + (curr.correctCount || 0), 0);
@@ -203,7 +203,7 @@ export default function HomePage() {
               return (
                 <div key={idx} className="flex flex-col items-center flex-1 group">
                   <div className="w-full relative flex items-end justify-center h-24 rounded-t-sm hover:bg-[var(--bg)] transition-colors">
-                    <div 
+                    <div
                       className="w-full max-w-[24px] bg-[var(--primary)] rounded-t-sm transition-all duration-500 group-hover:bg-[var(--primary-hover)]"
                       style={{ height: `${hPct}%` }}
                     />
@@ -254,7 +254,7 @@ export default function HomePage() {
               <Clock size={14} className="text-orange-500" />
             </div>
             <div className="flex items-end gap-1 mb-2">
-              <span className="text-2xl font-black text-[var(--text)]">{(totalStudyMinutes/60).toFixed(1)}</span>
+              <span className="text-2xl font-black text-[var(--text)]">{(totalStudyMinutes / 60).toFixed(1)}</span>
               <span className="text-xs font-semibold text-[var(--text-muted)] mb-1">/ {totalTargetHours}h</span>
             </div>
             <div className="h-2 w-full bg-[var(--bg)] rounded-full overflow-hidden">

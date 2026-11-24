@@ -321,6 +321,7 @@ async function generateTask1OutlineChunk(
       maxOutputTokens: bodyIndices.length === 4 ? 8192 : bodyIndices.length === 2 ? 4600 : 2800,
       perModelTimeoutMs: options.perModelTimeoutMs,
       totalBudgetMs: options.totalBudgetMs,
+      modelProfile: 'fast',
       failFastOnTooLong: bodyIndices.length >= 4,
     }
   );
@@ -463,6 +464,7 @@ ${chartSchema}`;
         maxOutputTokens: 1600,
         perModelTimeoutMs: 16_000,
         totalBudgetMs: 45_000,
+        modelProfile: 'fast',
       }
     );
 

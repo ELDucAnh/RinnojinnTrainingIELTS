@@ -224,7 +224,13 @@ export async function POST(req: NextRequest) {
           }
           return parsed;
         },
-        { temperature: 0.45, maxOutputTokens: 2600, perModelTimeoutMs: 20_000, totalBudgetMs: 46_000 }
+        {
+          temperature: 0.45,
+          maxOutputTokens: 2600,
+          perModelTimeoutMs: 20_000,
+          totalBudgetMs: 46_000,
+          modelProfile: 'fast',
+        }
       );
 
       return NextResponse.json(data, { status: 200 });
@@ -250,6 +256,7 @@ export async function POST(req: NextRequest) {
           maxOutputTokens: 4200,
           perModelTimeoutMs: 22_000,
           totalBudgetMs: 32_000,
+          modelProfile: 'fast',
           failFastOnTooLong: true,
         }
       );
@@ -263,7 +270,13 @@ export async function POST(req: NextRequest) {
           buildPhasePrompt({ phase: 'paraphrase', taskType, chartData, promptText, stanceHint }),
           `writing-vocab-prep:${taskType}:split-p1`,
           (p) => p,
-          { temperature: 0.45, maxOutputTokens: 2400, perModelTimeoutMs: Math.min(18_000, half), totalBudgetMs: half }
+          {
+            temperature: 0.45,
+            maxOutputTokens: 2400,
+            perModelTimeoutMs: Math.min(18_000, half),
+            totalBudgetMs: half,
+            modelProfile: 'fast',
+          }
         );
         const rem2 = Math.max(8_000, 55_000 - (Date.now() - startTs));
         const p2 = await generateJsonWithFallback(
@@ -277,7 +290,13 @@ export async function POST(req: NextRequest) {
           }),
           `writing-vocab-prep:${taskType}:split-p2`,
           (p) => p,
-          { temperature: 0.45, maxOutputTokens: 2400, perModelTimeoutMs: Math.min(18_000, rem2), totalBudgetMs: rem2 }
+          {
+            temperature: 0.45,
+            maxOutputTokens: 2400,
+            perModelTimeoutMs: Math.min(18_000, rem2),
+            totalBudgetMs: rem2,
+            modelProfile: 'fast',
+          }
         );
 
         return NextResponse.json(
