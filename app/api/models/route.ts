@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import {
   GEMINI_FREE_TIER_FAST_MODELS,

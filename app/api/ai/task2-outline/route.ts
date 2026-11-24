@@ -42,11 +42,18 @@ function buildConfirmedVocabBlock(vocabPrep?: WritingVocabPrep | null): string {
   const hasGroups = Array.isArray(vocabPrep.collocationGroups) && vocabPrep.collocationGroups.length > 0;
   if (!hasTable && !hasGroups) return '';
 
+  const compactTable = (vocabPrep.paraphraseTable || [])
+    .map((r) => `${r.originalTerm} => ${(r.alternatives || []).join(' | ')}`)
+    .join('; ');
+  const compactCollocations = (vocabPrep.collocationGroups || [])
+    .map((g) => `${g.groupTitle}: ${(g.items || []).map((i) => `${i.phrase} (${i.meaningVi})`).join(', ')}`)
+    .join(' | ');
+
   return `
-=== BẢNG PARAPHRASE & KHO TỪ VỰNG B1–B2 HỌC VIÊN ĐÃ XÁC NHẬN ===
-BẮT BUỘC phân bổ và xoay vòng chính các biến thể paraphrase & cụm collocation B1–B2 đã xác nhận bên dưới vào 5 Body (mỗi Body dùng một biến thể paraphrase khác nhau trong bảng để TRÁNH LẶP TỪ, KHÔNG thêm từ C1–C2 cao siêu ngoài bảng này!):
-- Bảng Paraphrase: ${JSON.stringify(vocabPrep.paraphraseTable || [])}
-- Kho Collocation theo nhóm: ${JSON.stringify(vocabPrep.collocationGroups || [])}
+=== BẢNG PARAPHRASE & COLLOCATION HỌC VIÊN ĐÃ XÁC NHẬN ===
+Ưu tiên phân bổ xoay vòng các cụm dưới đây vào 5 Body để tránh lặp từ (KHÔNG bịa thêm từ C2 cao siêu ngoài bảng này):
+- Paraphrase: ${compactTable}
+- Collocation: ${compactCollocations}
 `;
 }
 
@@ -378,7 +385,10 @@ export async function POST(req: NextRequest) {
     }
   } catch (error: any) {
     console.error('[task2-outline] Error:', error);
-    const { message, status } = formatGeminiError(error, 'Lỗi tạo dàn ý Task 2: ');
-    return NextResponse.json({ error: message }, { status });
+    const { message, status, retryAfterSeconds } = formatGeminiError(
+      error,
+      'Lỗi tạo dàn ý Task 2: '
+    );
+    return NextResponse.json({ error: message, retryAfterSeconds }, { status });
   }
 }

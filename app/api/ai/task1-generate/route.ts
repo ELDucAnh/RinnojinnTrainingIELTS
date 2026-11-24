@@ -175,11 +175,18 @@ function buildConfirmedVocabBlock(vocabPrep?: WritingVocabPrep | null): string {
   const hasGroups = Array.isArray(vocabPrep.collocationGroups) && vocabPrep.collocationGroups.length > 0;
   if (!hasTable && !hasGroups) return '';
 
+  const compactTable = (vocabPrep.paraphraseTable || [])
+    .map((r) => `${r.originalTerm} => ${(r.alternatives || []).join(' | ')}`)
+    .join('; ');
+  const compactCollocations = (vocabPrep.collocationGroups || [])
+    .map((g) => `${g.groupTitle}: ${(g.items || []).map((i) => `${i.phrase} (${i.meaningVi})`).join(', ')}`)
+    .join(' | ');
+
   return `
-=== BẢNG PARAPHRASE & KHO TỪ VỰNG B1–B2 HỌC VIÊN ĐÃ XÁC NHẬN ===
-BẮT BUỘC ưu tiên sử dụng & phân bổ chính các biến thể paraphrase và cụm collocation bên dưới vào từng Body (mỗi Body xoay vòng một cách paraphrase khác nhau trong bảng để TRÁNH LẶP TỪ, và KHÔNG bịa thêm từ C1–C2 ngoài bộ này!):
-- Bảng Paraphrase: ${JSON.stringify(vocabPrep.paraphraseTable || [])}
-- Kho Collocation theo nhóm: ${JSON.stringify(vocabPrep.collocationGroups || [])}
+=== BẢNG PARAPHRASE & COLLOCATION HỌC VIÊN ĐÃ XÁC NHẬN ===
+Ưu tiên phân bổ xoay vòng các cụm dưới đây vào từng Body để tránh lặp từ (KHÔNG bịa thêm từ C2 ngoài phạm vi):
+- Paraphrase: ${compactTable}
+- Collocation: ${compactCollocations}
 `;
 }
 
@@ -366,8 +373,11 @@ export async function POST(req: Request) {
       );
       return NextResponse.json({ outlineChunk: chunk }, { status: 200 });
     } catch (error: any) {
-      const { message, status } = formatGeminiError(error, 'Lỗi tạo phần dàn ý Task 1: ');
-      return NextResponse.json({ error: message }, { status });
+      const { message, status, retryAfterSeconds } = formatGeminiError(
+        error,
+        'Lỗi tạo phần dàn ý Task 1: '
+      );
+      return NextResponse.json({ error: message, retryAfterSeconds }, { status });
     }
   }
 
@@ -482,7 +492,7 @@ ${chartSchema}`;
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {
     console.error('Lỗi khi tạo đề Task 1:', error);
-    const { message, status } = formatGeminiError(error, 'Lỗi AI: ');
-    return NextResponse.json({ error: message }, { status });
+    const { message, status, retryAfterSeconds } = formatGeminiError(error, 'Lỗi AI: ');
+    return NextResponse.json({ error: message, retryAfterSeconds }, { status });
   }
 }

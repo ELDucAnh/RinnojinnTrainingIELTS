@@ -1,64 +1,73 @@
 // lib/ai-models.ts
-// Danh sách & phân tầng model Google Gemini API (AI Studio Free Tier — cập nhật cuối 2026).
-// Tài liệu tham chiếu:
-// - https://ai.google.dev/gemini-api/docs/models
-// - https://ai.google.dev/gemini-api/docs/pricing (chỉ chọn các model có mục "Free of charge")
-// - https://ai.google.dev/gemini-api/docs/deprecations (đã loại bỏ hoàn toàn dòng gemini-2.5-* bị khóa 404 với tài khoản mới/free)
+// Cấu hình model Google AI Studio tối ưu riêng cho TÀI KHOẢN MIỄN PHÍ (Free Tier — cuối 2026).
+//
+// Nguyên tắc sống còn trên Free Tier (đã kiểm chứng từ tài liệu & telemetry Google AI Studio):
+// 1. Dòng Flash nặng / Frontier (`gemini-3.8-flash`, `gemini-4-hydrogen`) bị siết rất gắt trên Free Tier
+//    (thường chỉ ~5 RPM và ~20 RPD/ngày) -> nếu đặt ở đầu chuỗi sẽ cạn sạch quota chỉ sau 2–3 bài!
+// 2. Dòng nhẹ `Flash-Lite` (`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`) và họ Open-Weights
+//    `Gemma 4 / Gemma 3` (`gemma-4-26b-a4b-it`, `gemma-3-27b-it`, `gemma-3-12b-it`, `gemma-4-31b-it`)
+//    có hạn mức Free Tier cực kỳ rộng rãi (~15–30 RPM, 500 -> 14.400 RPD/ngày!), miễn là mỗi request
+//    được CHIA NHỎ GỌN để không vượt trần 15.000 TPM (Tokens Per Minute).
+// 3. Không dùng các alias trùng lặp (`gemini-flash-lite-latest`, `gemini-flash-latest`) vì dùng chung
+//    bucket quota với model gốc gây lãng phí lượt thử khi gặp 429.
 
 export type GeminiModelProfile = 'fast' | 'grading';
 
 /**
- * Nhóm "fast" (Mặc định cho Tạo bảng từ vựng & Paraphrase, Tạo đề/Dàn ý Task 1 & Task 2, Reading, Listening...):
- * - Ưu tiên số 1: `gemini-3.5-flash-lite` (model được Google khuyến nghị trực tiếp thay thế `gemini-2.5-flash-lite`,
- *   GA từ 07/2026, tốc độ phản hồi cực nhanh và hạn mức RPM/RPD Free Tier rộng rãi nhất).
- * - Tiếp theo xoay vòng qua các bucket Free Tier độc lập: `gemini-3.8-flash` -> `gemini-3.6-flash` ->
- *   `gemini-3.1-flash-lite` -> `gemini-4-hydrogen` (model Gemini 4 duy nhất miễn phí trên Free Tier) ->
- *   alias động chính thức của Google (`gemini-flash-lite-latest`, `gemini-flash-latest`).
+ * Chuỗi model NHẸ - QUOTA CAO cho Tạo bảng từ vựng, Tạo đề & Dàn ý Task 1 / Task 2, Nhận xét Gia sư:
+ * - Tầng 1 (Native JSON, nhanh, ~15 RPM / ~500 RPD mỗi model): `gemini-3.5-flash-lite` -> `gemini-3.1-flash-lite`
+ * - Tầng 2 (Open-weights Free Tier siêu rộng: 30 RPM / 14.400 RPD!):
+ *   `gemma-4-26b-a4b-it` (MoE 4B active siêu nhẹ) -> `gemma-3-27b-it` -> `gemma-3-12b-it` -> `gemma-4-31b-it`
+ * - Tầng 3 (Dự phòng cuối cùng nếu cả 2 tầng trên bận): `gemini-3.6-flash`
  */
 export const GEMINI_FREE_TIER_FAST_MODELS: readonly string[] = [
   'gemini-3.5-flash-lite',
-  'gemini-3.8-flash',
-  'gemini-3.6-flash',
   'gemini-3.1-flash-lite',
-  'gemini-4-hydrogen',
-  'gemini-flash-lite-latest',
-  'gemini-flash-latest',
+  'gemma-4-26b-a4b-it',
+  'gemma-3-27b-it',
+  'gemma-3-12b-it',
+  'gemma-4-31b-it',
+  'gemini-3.6-flash',
 ];
 
 /**
- * Nhóm "grading" (Dành riêng cho Chấm điểm chi tiết Task 1, Task 2 & Toàn bài theo chuẩn IELTS May 2023):
- * - Ưu tiên `gemini-3.8-flash` (model Flash thông minh nhất trên Free Tier) để chấm chuẩn xác 5 quy luật CC cố định,
- *   nhưng lập tức chuyển sang `gemini-3.5-flash-lite` và `gemini-4-hydrogen` ngay khi chạm trần RPM mỗi phút.
+ * Chuỗi model NHẸ - CHẤM BÀI CHUẨN cho Task 1, Task 2 & Toàn bài:
+ * (Do hệ thống đã khóa cứng 5 quy luật CC đếm được R1–R5 + công thức quy đổi điểm trong TypeScript ở temperature 0.1,
+ * các model nhẹ `flash-lite` & `gemma-4-31b/26b` chấm hoàn toàn chính xác mà KHÔNG làm cháy quota 20 RPD/ngày của dòng nặng!)
  */
 export const GEMINI_FREE_TIER_GRADING_MODELS: readonly string[] = [
-  'gemini-3.8-flash',
   'gemini-3.5-flash-lite',
-  'gemini-4-hydrogen',
-  'gemini-3.6-flash',
   'gemini-3.1-flash-lite',
-  'gemini-flash-latest',
-  'gemini-flash-lite-latest',
+  'gemma-4-31b-it',
+  'gemma-4-26b-a4b-it',
+  'gemma-3-27b-it',
+  'gemma-3-12b-it',
+  'gemini-3.6-flash',
 ];
 
 /**
- * Nhóm cứu hộ cuối cùng (Open-weights Free Tier trên Google AI Studio `v1beta/models`, ~15 RPM riêng biệt).
- * Lưu ý: Gemma chạy ở chế độ text thường (không bật `responseMimeType: "application/json"`).
+ * Danh sách model mở rộng dự phòng dùng để hiển thị trong `/api/models`.
  */
 export const GEMINI_OPEN_WEIGHTS_FREE_FALLBACKS: readonly string[] = [
-  'gemma-4-31b-it',
+  'gemma-4-26b-a4b-it',
   'gemma-3-27b-it',
+  'gemma-3-12b-it',
+  'gemma-4-31b-it',
 ];
 
 /**
- * Danh sách mặc định tương thích ngược cho toàn bộ các route AI khác trong ứng dụng
- * (Reading, Listening, Translation, Dialogue, Conversation...).
- * Chỉ chứa các model Gemini Free Tier hỗ trợ native JSON (`responseMimeType: "application/json"`).
+ * Danh sách mặc định tương thích ngược cho các route AI khác trong ứng dụng
+ * (Reading, Listening, Translation, Dialogue, Conversation... — chỉ chứa model hỗ trợ native `responseMimeType: "application/json"`).
  */
-export const GEMINI_FALLBACK_MODELS: string[] = [...GEMINI_FREE_TIER_FAST_MODELS];
+export const GEMINI_FALLBACK_MODELS: string[] = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-3.6-flash',
+];
 
 /**
  * Kiểm tra xem một mã model có thuộc diện:
- * 1) Đã bị Google ngừng hỗ trợ / khóa 404 với tài khoản Free mới (`gemini-1.x`, `gemini-2.0`, `gemini-2.5`, `gemini-3.5-flash` bản cũ, preview đã đóng),
+ * 1) Đã bị Google ngừng hỗ trợ / khóa 404 với tài khoản Free mới (`gemini-1.x`, `gemini-2.0`, `gemini-2.5`, `gemini-3.5-flash` bản cũ),
  * 2) Chỉ dành cho tài khoản trả phí Billing (`-pro`, `gemini-4-carbon`, `gemini-4-argon`, `gemini-4-neon`), hoặc
  * 3) Không phải model sinh văn bản (`embedding`, `imagen`, `veo`, `tts`, `audio`, `live`, `robotics`, `computer-use`, `aqa`).
  */
@@ -66,7 +75,6 @@ export function isBlockedOrPaidOnlyGeminiModel(rawModelId: string): boolean {
   const id = rawModelId.trim().toLowerCase().replace(/^models\//, '');
   if (!id) return true;
 
-  // Các dòng cũ đã ngừng hoặc bị khóa 404 với user mới
   if (
     id.startsWith('gemini-1.') ||
     id.startsWith('gemini-1-') ||
@@ -80,7 +88,6 @@ export function isBlockedOrPaidOnlyGeminiModel(rawModelId: string): boolean {
     return true;
   }
 
-  // Các dòng yêu cầu tài khoản trả phí (Paid Tier only — không có Free Tier)
   if (
     id.includes('-pro') ||
     id.includes('carbon') ||
@@ -91,7 +98,6 @@ export function isBlockedOrPaidOnlyGeminiModel(rawModelId: string): boolean {
     return true;
   }
 
-  // Các model chuyên biệt không dùng cho sinh JSON văn bản thông thường
   if (
     id.includes('embedding') ||
     id.includes('imagen') ||
@@ -112,12 +118,9 @@ export function isBlockedOrPaidOnlyGeminiModel(rawModelId: string): boolean {
 }
 
 /**
- * Trả về danh sách ứng viên model hoàn chỉnh theo profile (kèm hỗ trợ biến môi trường `GEMINI_MODELS_OVERRIDE` nếu có).
+ * Trả về danh sách ứng viên model nhẹ Free Tier theo profile (hỗ trợ `GEMINI_MODELS_OVERRIDE` nếu cấu hình).
  */
-export function getGeminiCandidateModels(
-  profile: GeminiModelProfile = 'fast',
-  includeOpenWeightsBackup = true
-): string[] {
+export function getGeminiCandidateModels(profile: GeminiModelProfile = 'fast'): string[] {
   const envOverride = (process.env.GEMINI_MODELS_OVERRIDE || '')
     .split(',')
     .map((m) => m.trim().replace(/^models\//, ''))
@@ -126,11 +129,5 @@ export function getGeminiCandidateModels(
   const base =
     profile === 'grading' ? GEMINI_FREE_TIER_GRADING_MODELS : GEMINI_FREE_TIER_FAST_MODELS;
 
-  const combined = [
-    ...envOverride,
-    ...base,
-    ...(includeOpenWeightsBackup ? GEMINI_OPEN_WEIGHTS_FREE_FALLBACKS : []),
-  ];
-
-  return Array.from(new Set(combined));
+  return Array.from(new Set([...envOverride, ...base]));
 }

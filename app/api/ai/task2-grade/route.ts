@@ -271,14 +271,20 @@ ${buildUnifiedGradeJsonSchema({
       return NextResponse.json(data, { status: 200 });
     } catch (err: any) {
       if (isLengthOrTransientError(err)) {
-        const { message, status } = formatGeminiError(err, 'Lỗi chấm điểm Task 2: ');
-        return NextResponse.json({ error: message }, { status });
+        const { message, status, retryAfterSeconds } = formatGeminiError(
+          err,
+          'Lỗi chấm điểm Task 2: '
+        );
+        return NextResponse.json({ error: message, retryAfterSeconds }, { status });
       }
       throw err;
     }
   } catch (error: any) {
     console.error('[task2-grade] Error:', error);
-    const { message, status } = formatGeminiError(error, 'Lỗi chấm điểm Task 2: ');
-    return NextResponse.json({ error: message }, { status });
+    const { message, status, retryAfterSeconds } = formatGeminiError(
+      error,
+      'Lỗi chấm điểm Task 2: '
+    );
+    return NextResponse.json({ error: message, retryAfterSeconds }, { status });
   }
 }

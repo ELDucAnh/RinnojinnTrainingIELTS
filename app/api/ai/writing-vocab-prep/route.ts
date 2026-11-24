@@ -312,7 +312,10 @@ export async function POST(req: NextRequest) {
     }
   } catch (error: any) {
     console.error('[writing-vocab-prep] Error:', error);
-    const { message, status } = formatGeminiError(error, 'Lỗi tạo bảng từ vựng & paraphrase: ');
-    return NextResponse.json({ error: message }, { status });
+    const { message, status, retryAfterSeconds } = formatGeminiError(
+      error,
+      'Lỗi tạo bảng từ vựng & paraphrase: '
+    );
+    return NextResponse.json({ error: message, retryAfterSeconds }, { status });
   }
 }

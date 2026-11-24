@@ -9,15 +9,15 @@ import {
 const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
 // Bộ nhớ đệm trạng thái sức khỏe từng model trong vòng đời tiến trình server:
-// - Model trả về 404 / "no longer available" / deprecated -> khóa tạm 6 tiếng để không tốn thời gian thử lại vô ích.
-// - Model trả về 429 (chạm trần RPM/TPM/RPD của Free Tier) -> hạ độ ưu tiên trong 25–60s để lượt gọi kế tiếp nhảy thẳng sang bucket model khác.
+// - Model trả về 404 / "no longer available" -> khóa 6 tiếng.
+// - Model trả về 429 -> hạ độ ưu tiên tạm thời để request kế tiếp tự xoay sang model nhẹ khác.
 const deadModelsUntil = new Map<string, number>();
 const rateLimitedUntil = new Map<string, number>();
 
-const DEAD_MODEL_TTL_MS = 6 * 60 * 60 * 1000; // 6 giờ
-const RPM_COOLDOWN_MS = 25 * 1000; // 25 giây cho giới hạn theo phút (RPM/TPM)
-const RPD_COOLDOWN_MS = 10 * 60 * 1000; // 10 phút nếu chạm giới hạn ngày (RPD)
-const DISCOVERED_MODELS_TTL_MS = 30 * 60 * 1000; // Cache ListModels 30 phút
+const DEAD_MODEL_TTL_MS = 6 * 60 * 60 * 1000;
+const RPM_COOLDOWN_MS = 32 * 1000;
+const RPD_COOLDOWN_MS = 15 * 60 * 1000;
+const DISCOVERED_MODELS_TTL_MS = 30 * 60 * 1000;
 
 let cachedDiscoveredModels: { models: string[]; expiresAt: number } | null = null;
 let cachedSdkKey = '';
@@ -31,22 +31,21 @@ function getGenAIClient(apiKey: string): GoogleGenerativeAI {
   return cachedGenAI;
 }
 
+function delayMs(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export interface GeminiGenerateOptions {
   temperature?: number;
   maxOutputTokens?: number;
   perModelTimeoutMs?: number;
   totalBudgetMs?: number;
-  /**
-   * Chọn chuỗi model tối ưu cho tài khoản Free Tier:
-   * - 'fast' (mặc định): ưu tiên `gemini-3.5-flash-lite` (nhanh, quota Free Tier dồi dào nhất) -> `gemini-3.8-flash` -> `gemini-3.6-flash`...
-   * - 'grading': ưu tiên `gemini-3.8-flash` (suy luận chấm bài sâu nhất) -> `gemini-3.5-flash-lite` -> `gemini-4-hydrogen`...
-   */
   modelProfile?: GeminiModelProfile;
   /**
-   * When true, if the primary model truncates output (MAX_TOKENS / incomplete JSON),
-   * throw GeminiResponseTooLongError immediately so the caller can split into smaller chunks
-   * instead of burning the entire Vercel budget retrying other models with the same oversized prompt.
+   * Giới hạn số lượng model tối đa thử trong 1 lần gọi HTTP để tránh tạo bão request (request storm)
+   * đốt sạch nhiều bucket Free Tier cùng lúc khi mạng hoặc TPM đang nghẽn. Mặc định: 4 model nhẹ.
    */
+  maxModelsToTry?: number;
   failFastOnTooLong?: boolean;
 }
 
@@ -117,7 +116,6 @@ function sanitizeRelaxedJson(jsonStr: string): string {
     }
   }
 
-  // Strip trailing commas before } or ]
   return result.replace(/,\s*([}\]])/g, '$1');
 }
 
@@ -169,6 +167,22 @@ function isRateLimitError(error: unknown): boolean {
     msg.includes('RESOURCE_EXHAUSTED') ||
     /rate limit/i.test(msg)
   );
+}
+
+/**
+ * Đọc gợi ý thời gian chờ (`Please retry in 14.5s` / `"retryDelay":"15s"`) trực tiếp từ thông báo 429 của Google.
+ */
+export function parseRetryAfterSeconds(error: unknown): number | undefined {
+  const msg = String((error as any)?.message || error || '');
+  const retryInMatch = msg.match(/retry in\s+(\d+(?:\.\d+)?)s/i);
+  if (retryInMatch) {
+    return Math.min(45, Math.max(8, Math.ceil(parseFloat(retryInMatch[1])) + 1));
+  }
+  const delayFieldMatch = msg.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/i);
+  if (delayFieldMatch) {
+    return Math.min(45, Math.max(8, Math.ceil(parseFloat(delayFieldMatch[1])) + 1));
+  }
+  return undefined;
 }
 
 function isOverloadedError(error: unknown): boolean {
@@ -296,11 +310,6 @@ async function generateWithTimeout(
   }
 }
 
-/**
- * Hỗ trợ gọi trực tiếp Google Interactions API (`POST /v1beta/interactions`) —
- * giao thức mới được Google khuyến nghị trên AI Studio (https://aistudio.google.com/docs/get-started)
- * khi một model thế hệ mới chỉ mở qua `/v1beta/interactions`.
- */
 export async function generateViaInteractionsApi(params: {
   apiKey: string;
   modelName: string;
@@ -347,9 +356,7 @@ export async function generateViaInteractionsApi(params: {
 
     const rawBody = await res.text();
     if (!res.ok) {
-      throw new Error(
-        `[Interactions API ${res.status}] ${modelName}: ${rawBody.slice(0, 500)}`
-      );
+      throw new Error(`[Interactions API ${res.status}] ${modelName}: ${rawBody.slice(0, 500)}`);
     }
 
     const parsed = JSON.parse(rawBody);
@@ -396,14 +403,9 @@ export async function generateViaInteractionsApi(params: {
   }
 }
 
-/**
- * Tự động khám phá danh sách model khả dụng thực tế trên tài khoản Google AI Studio của người dùng
- * thông qua `GET /v1beta/models` khi Google đổi tên hoặc ngừng các model cố định.
- */
 async function discoverLiveFreeTierModels(
   apiKey: string,
-  profile: GeminiModelProfile,
-  timeoutMs = 4000
+  timeoutMs = 3500
 ): Promise<string[]> {
   const now = Date.now();
   if (cachedDiscoveredModels && cachedDiscoveredModels.expiresAt > now) {
@@ -431,34 +433,28 @@ async function discoverLiveFreeTierModels(
           : [];
         if (!methods.includes('generateContent')) return false;
         const name = String(m?.name || '').replace(/^models\//, '');
-        if (!name || isBlockedOrPaidOnlyGeminiModel(name) || isModelMarkedDead(name, now)) {
+        if (
+          !name ||
+          name.includes('latest') ||
+          isBlockedOrPaidOnlyGeminiModel(name) ||
+          isModelMarkedDead(name, now)
+        ) {
           return false;
         }
         return name.startsWith('gemini-') || name.startsWith('gemma-');
       })
       .map((m) => String(m.name).replace(/^models\//, ''));
 
-    const scoreModel = (id: string): number => {
-      let score = 0;
-      const verMatch = id.match(/gemini-(\d+(?:\.\d+)?)/);
-      if (verMatch) {
-        score += parseFloat(verMatch[1]) * 100;
-      }
-      if (profile === 'fast') {
-        if (id.includes('flash-lite')) score += 45;
-        else if (id.includes('flash')) score += 30;
-        else if (id.includes('hydrogen')) score += 20;
-      } else {
-        if (id.includes('flash') && !id.includes('lite')) score += 45;
-        else if (id.includes('hydrogen')) score += 35;
-        else if (id.includes('flash-lite')) score += 30;
-      }
-      if (!id.includes('preview') && !id.includes('exp')) score += 10;
-      if (id.startsWith('gemma-')) score -= 150;
-      return score;
+    // Ưu tiên tuyệt đối các model nhẹ (flash-lite & gemma-it) có hạn mức Free Tier cao
+    const scoreLightweight = (id: string): number => {
+      if (id.includes('flash-lite')) return 1000;
+      if (id.startsWith('gemma-4') && id.endsWith('-it')) return 900;
+      if (id.startsWith('gemma-3') && (id.includes('27b') || id.includes('12b'))) return 850;
+      if (id.includes('flash')) return 500;
+      return 100;
     };
 
-    validIds.sort((a, b) => scoreModel(b) - scoreModel(a));
+    validIds.sort((a, b) => scoreLightweight(b) - scoreLightweight(a));
     const unique = Array.from(new Set(validIds));
 
     if (unique.length > 0) {
@@ -495,25 +491,27 @@ async function runModelAttempt(params: {
     attemptTimeoutMs,
   } = params;
 
-  const preferPlainText = modelName.startsWith('gemma-');
+  const isGemma = modelName.startsWith('gemma-');
+  const effectivePrompt = isGemma
+    ? `${prompt}\n\nCRITICAL: Output RAW valid JSON only, starting immediately with { and ending with }. Do NOT output markdown code blocks or extra text.`
+    : prompt;
 
   try {
     const model = genAI.getGenerativeModel({
       model: modelName,
       generationConfig: {
-        ...(preferPlainText ? {} : { responseMimeType: 'application/json' }),
+        ...(isGemma ? {} : { responseMimeType: 'application/json' }),
         temperature,
         maxOutputTokens,
       },
     });
 
-    const result = await generateWithTimeout(model, prompt, attemptTimeoutMs);
+    const result = await generateWithTimeout(model, effectivePrompt, attemptTimeoutMs);
     const finishReason = result.response.candidates?.[0]?.finishReason;
     const rawText = result.response.text();
     return { rawText, finishReason };
   } catch (err: any) {
-    // Nếu model không hỗ trợ JSON MIME mode (VD: một số bản Gemma/Preview), tự động gọi lại ở chế độ text thường
-    if (!preferPlainText && isJsonMimeUnsupportedError(err)) {
+    if (!isGemma && isJsonMimeUnsupportedError(err)) {
       const plainModel = genAI.getGenerativeModel({
         model: modelName,
         generationConfig: {
@@ -521,23 +519,26 @@ async function runModelAttempt(params: {
           maxOutputTokens,
         },
       });
-      const retryRes = await generateWithTimeout(plainModel, prompt, attemptTimeoutMs);
+      const retryRes = await generateWithTimeout(
+        plainModel,
+        `${prompt}\n\nCRITICAL: Output RAW valid JSON only, starting with { and ending with }.`,
+        attemptTimeoutMs
+      );
       return {
         rawText: retryRes.response.text(),
         finishReason: retryRes.response.candidates?.[0]?.finishReason,
       };
     }
 
-    // Nếu model mới yêu cầu gọi qua Interactions API (`/v1beta/interactions`), tự động chuyển giao thức
     if (shouldTryInteractionsEndpoint(err)) {
       const inter = await generateViaInteractionsApi({
         apiKey,
         modelName,
-        prompt,
+        prompt: effectivePrompt,
         temperature,
         maxOutputTokens,
         timeoutMs: attemptTimeoutMs,
-        jsonMode: !preferPlainText,
+        jsonMode: !isGemma,
       });
       return { rawText: inter.text, finishReason: inter.finishReason };
     }
@@ -546,11 +547,6 @@ async function runModelAttempt(params: {
   }
 }
 
-/**
- * Chọn lỗi phản ánh đúng bản chất nhất để trả về cho tầng gọi:
- * Tránh lỗi 404 của model dự phòng cuối danh sách che khuất lỗi 429 (Rate Limit), 503 (Quá tải),
- * hoặc RESPONSE_TOO_LONG của các model chính ở đầu danh sách!
- */
 function pickMostActionableError(
   capturedErrors: Array<{ model: string; error: any }>,
   summaryText: string
@@ -598,11 +594,12 @@ export async function generateJsonWithFallback<T = any>(
   }
 
   const {
-    temperature = 0.65,
-    maxOutputTokens = 3600,
-    perModelTimeoutMs = 20_000,
-    totalBudgetMs = 50_000,
+    temperature = 0.5,
+    maxOutputTokens = 3000,
+    perModelTimeoutMs = 19_000,
+    totalBudgetMs = 46_000,
     modelProfile = 'fast',
+    maxModelsToTry = 4,
     failFastOnTooLong = false,
   } = options;
 
@@ -618,7 +615,7 @@ export async function generateJsonWithFallback<T = any>(
     candidates: string[]
   ): Promise<{ data: T; modelUsed: string } | null> => {
     for (const modelName of candidates) {
-      if (triedModels.has(modelName)) continue;
+      if (triedModels.has(modelName) || triedModels.size >= maxModelsToTry) continue;
 
       const remainingMs = deadline - Date.now();
       if (remainingMs < 3500) {
@@ -651,14 +648,13 @@ export async function generateJsonWithFallback<T = any>(
         const parsed = tryParseJsonRelaxed(rawText, finishReason);
         const validated = validate ? validate(parsed) : (parsed as T);
 
-        // Xóa trạng thái cooldown nếu model vừa gọi thành công
         rateLimitedUntil.delete(modelName);
-        console.log(`[${tag}] Thành công với model: ${modelName}`);
+        console.log(`[${tag}] Thành công với model nhẹ: ${modelName}`);
         return { data: validated, modelUsed: modelName };
       } catch (e: any) {
         const msg = e?.message || String(e);
         capturedErrors.push({ model: modelName, error: e });
-        errorSummaries.push(`[${modelName}]: ${msg.slice(0, 180)}`);
+        errorSummaries.push(`[${modelName}]: ${msg.slice(0, 160)}`);
         console.warn(`[${tag}] Model ${modelName} lỗi hoặc quá tải: ${msg}`);
 
         if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
@@ -668,18 +664,25 @@ export async function generateJsonWithFallback<T = any>(
         if (isModelRetiredOrNotFoundError(e)) {
           sawModelNotFound = true;
           deadModelsUntil.set(modelName, Date.now() + DEAD_MODEL_TTL_MS);
-          console.warn(
-            `[${tag}] Đánh dấu bỏ qua model ${modelName} trong 6h do đã ngừng hỗ trợ / 404.`
-          );
+          // Nếu 1 model bị 404 (chưa từng thực thi), không tính vào giới hạn maxModelsToTry
+          triedModels.delete(modelName);
           continue;
         }
 
         if (isRateLimitError(e)) {
           const isDailyQuota = /perday|per_day|daily/i.test(msg);
-          rateLimitedUntil.set(
-            modelName,
-            Date.now() + (isDailyQuota ? RPD_COOLDOWN_MS : RPM_COOLDOWN_MS)
-          );
+          const suggestedSec = parseRetryAfterSeconds(e);
+          const cooldownMs = isDailyQuota
+            ? RPD_COOLDOWN_MS
+            : suggestedSec
+              ? suggestedSec * 1000
+              : RPM_COOLDOWN_MS;
+          rateLimitedUntil.set(modelName, Date.now() + cooldownMs);
+
+          // Nghỉ nhịp ngắn 650ms trước khi nhảy sang họ model nhẹ kế tiếp để tránh dồn burst 429
+          if (deadline - Date.now() > 4500) {
+            await delayMs(650);
+          }
           continue;
         }
 
@@ -695,29 +698,22 @@ export async function generateJsonWithFallback<T = any>(
     return null;
   };
 
-  // Tầng 1: Chạy danh sách Free Tier chuẩn (đã lọc bỏ model chết & đẩy model đang dính 429 xuống cuối)
-  const staticCandidates = orderHealthyCandidates(getGeminiCandidateModels(modelProfile, true));
+  const staticCandidates = orderHealthyCandidates(getGeminiCandidateModels(modelProfile));
   const primarySuccess = await tryCandidateList(staticCandidates);
   if (primarySuccess) {
     return primarySuccess;
   }
 
-  // Tầng 2 (Tự phục hồi — Self-Healing): Nếu gặp 404 do Google vừa đổi mã model mới,
-  // tự động gọi `GET /v1beta/models` để lấy các model Free Tier đang mở thực tế trên tài khoản và thử tiếp!
   const remainingAfterStatic = deadline - Date.now();
   if (sawModelNotFound && remainingAfterStatic >= 5500) {
     const discovered = await discoverLiveFreeTierModels(
       apiKey,
-      modelProfile,
       Math.min(3500, remainingAfterStatic - 2000)
     );
     const freshDiscovered = orderHealthyCandidates(
-      discovered.filter((m) => !triedModels.has(m))
+      discovered.filter((m) => !triedModels.has(m) && !isModelMarkedDead(m))
     );
     if (freshDiscovered.length > 0) {
-      console.log(
-        `[${tag}] Tự động khám phá thêm ${freshDiscovered.length} model từ ListModels: ${freshDiscovered.join(', ')}`
-      );
       const rescued = await tryCandidateList(freshDiscovered);
       if (rescued) {
         return rescued;
@@ -731,14 +727,15 @@ export async function generateJsonWithFallback<T = any>(
 export function formatGeminiError(
   error: any,
   fallbackPrefix = 'Lỗi AI: '
-): { message: string; status: number } {
+): { message: string; status: number; retryAfterSeconds?: number } {
   const msg = error?.message || String(error);
   if (msg.includes('Chưa cấu hình GEMINI_API_KEY')) {
     return { message: msg, status: 500 };
   }
   if (msg.includes('API_KEY_INVALID') || msg.includes('API key not valid')) {
     return {
-      message: 'GEMINI_API_KEY không hợp lệ hoặc đã bị thu hồi. Vui lòng kiểm tra lại cấu hình API Key.',
+      message:
+        'GEMINI_API_KEY không hợp lệ hoặc đã bị thu hồi. Vui lòng kiểm tra lại cấu hình API Key.',
       status: 401,
     };
   }
@@ -756,10 +753,11 @@ export function formatGeminiError(
     };
   }
   if (isRateLimitError(error)) {
+    const retryAfterSeconds = parseRetryAfterSeconds(error) || 16;
     return {
-      message:
-        'Tài khoản Google AI Studio (Free Tier) đang tạm chạm giới hạn lượt gọi mỗi phút/ngày trên tất cả model dự phòng. Vui lòng đợi khoảng 20–30 giây rồi thử lại.',
+      message: `Tài khoản Google AI Studio (Free Tier) đang tạm chạm giới hạn phút (RPM/TPM). Vui lòng đợi khoảng ${retryAfterSeconds} giây rồi thử lại.`,
       status: 429,
+      retryAfterSeconds,
     };
   }
   if (isOverloadedError(error)) {

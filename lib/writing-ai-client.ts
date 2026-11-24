@@ -23,12 +23,19 @@ export interface WritingAiFetchOptions {
 class WritingAiHttpError extends Error {
   public readonly status: number;
   public readonly retriable: boolean;
+  public readonly retryAfterSeconds?: number;
 
-  constructor(message: string, status: number, retriable: boolean) {
+  constructor(
+    message: string,
+    status: number,
+    retriable: boolean,
+    retryAfterSeconds?: number
+  ) {
     super(message);
     this.name = 'WritingAiHttpError';
     this.status = status;
     this.retriable = retriable;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -50,12 +57,74 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
+/**
+ * Khi tài khoản Free Tier tạm chạm trần RPM/TPM theo cửa sổ 60 giây của Google,
+ * tự động đếm ngược chờ đủ thời gian hồi quota rồi tiếp tục (thay vì retry dồn dập sau 2s gây sập 429 liên hoàn!).
+ */
+async function sleepWithRateLimitCountdown(
+  seconds: number,
+  onStatus?: (msg: string) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  const totalSec = Math.max(2, Math.round(seconds));
+  for (let remaining = totalSec; remaining > 0; remaining--) {
+    onStatus?.(
+      `Tài khoản Free Tier đang hồi hạn mức phút — tự động tiếp tục sau ${remaining}s (không mất dữ liệu)...`
+    );
+    await sleep(1000, signal);
+  }
+}
+
+/**
+ * Rút gọn dữ liệu `vocabPrep` khi đính kèm vào các request lập dàn ý để giảm ~85% dung lượng input token (tránh chạm trần 15.000 TPM Free Tier).
+ */
+function compactVocabPrepForPrompt(vocabPrep?: WritingVocabPrep | null): WritingVocabPrep | undefined {
+  if (!vocabPrep) return undefined;
+  return {
+    essayType: vocabPrep.essayType,
+    promptAnalysis: vocabPrep.promptAnalysis,
+    paraphraseTable: (vocabPrep.paraphraseTable || []).map((row) => ({
+      originalTerm: row.originalTerm,
+      meaningVi: row.meaningVi,
+      alternatives: (row.alternatives || []).slice(0, 4),
+    })),
+    collocationGroups: (vocabPrep.collocationGroups || []).map((g) => ({
+      groupTitle: g.groupTitle,
+      items: (g.items || []).slice(0, 5).map((it) => ({
+        phrase: it.phrase,
+        meaningVi: it.meaningVi,
+      })),
+    })),
+  };
+}
+
+/**
+ * Rút gọn `outline` khi gửi lên API chấm bài lẻ / chấm toàn bài để tiết kiệm hàng nghìn input tokens mỗi pha.
+ */
+function compactOutlineForGrade(outline?: OutlineBodyItem[]): any[] | undefined {
+  if (!Array.isArray(outline) || outline.length === 0) return undefined;
+  return outline.map((item) => ({
+    bodyIndex: item.bodyIndex,
+    role: item.role,
+    targetSentenceCount: item.targetSentenceCount,
+    sentenceMixSummary: item.sentenceMixSummary,
+    viGuide: item.viGuide,
+    bandStrategy: item.bandStrategy,
+    ideaGuides: (item.ideaGuides || []).map((ig) => ({
+      sentenceNumber: ig.sentenceNumber,
+      sentenceType: ig.sentenceType,
+      ideaLabel: ig.ideaLabel,
+      ccLinkPhrases: ig.ccLinkPhrases,
+      vocabPhrases: (ig.vocabPhrases || []).map((v) => ({ phrase: v.phrase, meaning: v.meaning })),
+    })),
+  }));
+}
+
 function isRetriableError(err: any): boolean {
   if (err?.name === 'AbortError') return false;
   if (err instanceof WritingAiHttpError) return err.retriable;
   const msg = String(err?.message || err || '');
-  // Never retry 400 validation or missing API key
-  if (msg.includes('Chưa cấu hình GEMINI_API_KEY')) return false;
+  if (msg.includes('Chưa cấu hình GEMINI_API_KEY') || msg.includes('không hợp lệ')) return false;
   if (msg.includes('quá ngắn') || msg.includes('tối thiểu') || msg.includes('Thiếu dữ liệu')) return false;
   return true;
 }
@@ -65,7 +134,7 @@ async function postWritingAiOnce<T = any>(
   payload: unknown,
   options: { timeoutMs?: number; signal?: AbortSignal } = {}
 ): Promise<T> {
-  const { timeoutMs = 62_000, signal: externalSignal } = options;
+  const { timeoutMs = 56_000, signal: externalSignal } = options;
   const controller = new AbortController();
   let timedOut = false;
 
@@ -102,8 +171,10 @@ async function postWritingAiOnce<T = any>(
 
     if (!res.ok) {
       const retriable = res.status >= 500 || res.status === 429 || res.status === 408;
+      const retryAfterSec =
+        typeof parsed?.retryAfterSeconds === 'number' ? parsed.retryAfterSeconds : undefined;
       if (parsed?.error) {
-        throw new WritingAiHttpError(parsed.error, res.status, retriable);
+        throw new WritingAiHttpError(parsed.error, res.status, retriable, retryAfterSec);
       }
       if (res.status === 504) {
         throw new WritingAiHttpError(
@@ -119,7 +190,7 @@ async function postWritingAiOnce<T = any>(
           true
         );
       }
-      throw new WritingAiHttpError(`Lỗi máy chủ (${res.status}).`, res.status, retriable);
+      throw new WritingAiHttpError(`Lỗi máy chủ (${res.status}).`, res.status, retriable, retryAfterSec);
     }
 
     if (!parsed) {
@@ -140,11 +211,7 @@ async function postWritingAiOnce<T = any>(
     if (err instanceof WritingAiHttpError) {
       throw err;
     }
-    throw new WritingAiHttpError(
-      err?.message || 'Lỗi kết nối tới server AI.',
-      503,
-      true
-    );
+    throw new WritingAiHttpError(err?.message || 'Lỗi kết nối tới server AI.', 503, true);
   } finally {
     clearTimeout(timer);
     if (externalSignal) {
@@ -155,14 +222,14 @@ async function postWritingAiOnce<T = any>(
 
 /**
  * Shared client helper for Writing Task 1 / Task 2 AI endpoints.
- * Automatically retries transient / timeout / rate-limit errors before failing.
+ * Tự động chờ hồi cửa sổ 60s Free Tier nếu gặp 429 (14s -> 22s -> 28s = tổng 64s vượt trọn 1 phút của Google!).
  */
 export async function postWritingAi<T = any>(
   url: string,
   payload: unknown,
   options: WritingAiFetchOptions = {}
 ): Promise<T> {
-  const { timeoutMs = 62_000, signal, maxRetries = 2, onStatus } = options;
+  const { timeoutMs = 54_000, signal, maxRetries = 3, onStatus } = options;
   let lastError: any;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -173,23 +240,33 @@ export async function postWritingAi<T = any>(
       if (!isRetriableError(err) || attempt >= maxRetries) {
         throw err;
       }
-      const delayMs = err instanceof WritingAiHttpError && err.status === 429
-        ? 2500 * (attempt + 1)
-        : 900 * (attempt + 1);
-      onStatus?.(`AI phản hồi chậm hoặc đang bận — tự động thử lại lần ${attempt + 2}/${maxRetries + 1}...`);
-      await sleep(delayMs, signal);
+
+      if (err instanceof WritingAiHttpError && err.status === 429) {
+        const defaultBackoffs = [14, 22, 28];
+        const waitSec = err.retryAfterSeconds
+          ? Math.max(err.retryAfterSeconds, defaultBackoffs[attempt] || 20)
+          : defaultBackoffs[attempt] || 22;
+        await sleepWithRateLimitCountdown(waitSec, onStatus, signal);
+      } else {
+        const delayMs = 1500 * (attempt + 1);
+        onStatus?.(`AI phản hồi chậm — tự động thử lại lần ${attempt + 2}/${maxRetries + 1}...`);
+        await sleep(delayMs, signal);
+      }
     }
   }
 
   throw lastError;
 }
 
-// ─── Resilient Chunked Orchestrators (Auto-split when response is too long / times out) ───
+// ─── Micro-Chunked Paced Orchestrators (Chia nhỏ ngay từ đầu để bảo vệ tuyệt đối TPM/RPM Free Tier!) ───
+
+const INTER_CHUNK_PACE_MS = 1300; // Nghỉ nhẹ 1.3s giữa các mảnh nhỏ để giãn đều TPM/RPM
 
 /**
- * Pre-outline Vocabulary & Paraphrase Table generator (Task 1 & Task 2):
- * 1) Try full single-shot call.
- * 2) If response is too long / fails -> split into 2 small calls: 'paraphrase' then 'collocations'.
+ * Bảng Từ vựng & Paraphrase (Task 1 & Task 2):
+ * Chia sẵn thành 2 bước gọn nhẹ thay vì nhồi 1 request khổng lồ:
+ * - Bước 1/2: Phân tích đề & Bảng Paraphrase từ khóa
+ * - Bước 2/2: Kho cụm Collocation LR 7.5 sát đề
  */
 export async function generateVocabPrepResilient(
   payload:
@@ -200,33 +277,27 @@ export async function generateVocabPrepResilient(
   const { signal, onStatus } = options;
   const endpoint = '/api/ai/writing-vocab-prep';
 
-  try {
-    onStatus?.('Đang tổng hợp bảng Paraphrase & kho Collocation B1–B2 sát đề...');
-    const full = await postWritingAiOnce<WritingVocabPrep>(endpoint, payload, {
-      timeoutMs: 52_000,
-      signal,
-    });
-    const normalized = normalizeVocabPrep(full);
-    if (normalized.paraphraseTable.length > 0 || normalized.collocationGroups.length > 0) {
-      return normalized;
-    }
-  } catch (err: any) {
-    if (err?.name === 'AbortError' || !isRetriableError(err)) throw err;
-    console.warn('[writing-vocab-prep] Full request failed, switching to 2-part fallback:', err?.message);
-  }
-
-  onStatus?.('Đang tự chia nhỏ bước 1/2: Lập bảng Paraphrase từ khóa tránh lặp từ...');
+  onStatus?.('Bước 1/2: Đang lập bảng Paraphrase từ khóa tránh lặp từ (model nhẹ Free Tier)...');
   const p1 = await postWritingAi<any>(
     endpoint,
     { ...payload, phase: 'paraphrase' },
-    { timeoutMs: 40_000, signal, maxRetries: 2, onStatus }
+    { timeoutMs: 42_000, signal, maxRetries: 3, onStatus }
   );
 
-  onStatus?.('Đang tự chia nhỏ bước 2/2: Tổng hợp kho cụm Collocation B1–B2 sát đề...');
+  await sleep(INTER_CHUNK_PACE_MS, signal);
+
+  onStatus?.('Bước 2/2: Đang tổng hợp kho cụm Collocation chuẩn LR 7.5 sát đề...');
+  const compactSummary = Array.isArray(p1?.paraphraseTable)
+    ? p1.paraphraseTable.map((r: any) => ({
+      originalTerm: r.originalTerm,
+      alternatives: (r.alternatives || []).slice(0, 3),
+    }))
+    : [];
+
   const p2 = await postWritingAi<any>(
     endpoint,
-    { ...payload, phase: 'collocations', paraphraseSummary: p1?.paraphraseTable || [] },
-    { timeoutMs: 40_000, signal, maxRetries: 2, onStatus }
+    { ...payload, phase: 'collocations', paraphraseSummary: compactSummary },
+    { timeoutMs: 42_000, signal, maxRetries: 3, onStatus }
   );
 
   return normalizeVocabPrep({
@@ -236,32 +307,20 @@ export async function generateVocabPrepResilient(
 }
 
 /**
- * Task 1 Outline:
- * 1) Try full 4-body outline in 1 call.
- * 2) If response is too long / fails -> auto-split into 2 chunks ([0,1] then [2,3]).
- * 3) If a 2-body chunk fails -> auto-split down to single body ([0], [1], [2], [3]) with retries!
+ * Dàn ý Task 1 (4 Body):
+ * Chia nhỏ trực tiếp thành 2 chặng gọn nhẹ ([Body 1 & 2] -> [Body 3 & 4]) để không bao giờ vượt trần TPM Free Tier!
+ * Nếu một chặng 2 Body quá dài, tự động tách xuống từng Body đơn lẻ.
  */
 export async function generateTask1OutlineResilient(
   chartData: ChartData,
-  options: { signal?: AbortSignal; onStatus?: (msg: string) => void; vocabPrep?: WritingVocabPrep | null } = {}
+  options: {
+    signal?: AbortSignal;
+    onStatus?: (msg: string) => void;
+    vocabPrep?: WritingVocabPrep | null;
+  } = {}
 ): Promise<OutlineBodyItem[]> {
   const { signal, onStatus, vocabPrep } = options;
-
-  try {
-    onStatus?.('Đang thiết kế dàn ý 4 Body chuẩn 8.0 TA · 8.5 CC · 8.0 GRA · 7.5 LR...');
-    const full = await postWritingAiOnce<{ outline: OutlineBodyItem[] }>(
-      '/api/ai/task1-generate',
-      { mode: 'outline-only', chartData, vocabPrep: vocabPrep || undefined },
-      { timeoutMs: 58_000, signal }
-    );
-    if (Array.isArray(full?.outline) && full.outline.length >= 4) {
-      return normalizeOutline(full.outline, 'task1');
-    }
-  } catch (err: any) {
-    if (err?.name === 'AbortError' || !isRetriableError(err)) throw err;
-    console.warn('[task1-outline] Full request failed, switching to chunked fallback:', err?.message);
-  }
-
+  const slimVocab = compactVocabPrepForPrompt(vocabPrep);
   const collected: any[] = [];
   const chunkGroups: number[][] = [
     [0, 1],
@@ -269,9 +328,13 @@ export async function generateTask1OutlineResilient(
   ];
 
   for (let gIdx = 0; gIdx < chunkGroups.length; gIdx++) {
+    if (gIdx > 0) {
+      await sleep(INTER_CHUNK_PACE_MS, signal);
+    }
+
     const group = chunkGroups[gIdx];
     onStatus?.(
-      `Dàn ý chi tiết khá dài — hệ thống đang tự chia nhỏ tải Body ${group.map((i) => i + 1).join(' & ')}/4...`
+      `Chặng ${gIdx + 1}/${chunkGroups.length}: Đang thiết kế chi tiết Body ${group.map((i) => i + 1).join(' & ')}/4...`
     );
 
     try {
@@ -280,7 +343,7 @@ export async function generateTask1OutlineResilient(
         {
           mode: 'outline-chunk',
           chartData,
-          vocabPrep: vocabPrep || undefined,
+          vocabPrep: slimVocab,
           bodyIndices: group,
           previousOutlineSummary: collected.map((o) => ({
             bodyIndex: o.bodyIndex,
@@ -288,7 +351,7 @@ export async function generateTask1OutlineResilient(
             viGuide: o.viGuide,
           })),
         },
-        { timeoutMs: 45_000, signal, maxRetries: 1, onStatus }
+        { timeoutMs: 44_000, signal, maxRetries: 2, onStatus }
       );
       if (Array.isArray(chunkRes?.outlineChunk) && chunkRes.outlineChunk.length > 0) {
         collected.push(...chunkRes.outlineChunk);
@@ -297,15 +360,15 @@ export async function generateTask1OutlineResilient(
       throw new Error('Chunk dàn ý trả về rỗng');
     } catch (chunkErr: any) {
       if (chunkErr?.name === 'AbortError' || !isRetriableError(chunkErr)) throw chunkErr;
-      // Drop down to 1 body at a time!
       for (const singleIdx of group) {
-        onStatus?.(`Đang tự động chia siêu nhỏ — tải riêng Body ${singleIdx + 1}/4...`);
+        await sleep(INTER_CHUNK_PACE_MS, signal);
+        onStatus?.(`Đang chia siêu nhỏ — thiết kế riêng Body ${singleIdx + 1}/4...`);
         const singleRes = await postWritingAi<{ outlineChunk: any[] }>(
           '/api/ai/task1-generate',
           {
             mode: 'outline-chunk',
             chartData,
-            vocabPrep: vocabPrep || undefined,
+            vocabPrep: slimVocab,
             bodyIndices: [singleIdx],
             previousOutlineSummary: collected.map((o) => ({
               bodyIndex: o.bodyIndex,
@@ -313,7 +376,7 @@ export async function generateTask1OutlineResilient(
               viGuide: o.viGuide,
             })),
           },
-          { timeoutMs: 40_000, signal, maxRetries: 2, onStatus }
+          { timeoutMs: 40_000, signal, maxRetries: 3, onStatus }
         );
         if (Array.isArray(singleRes?.outlineChunk)) {
           collected.push(...singleRes.outlineChunk);
@@ -330,39 +393,16 @@ export async function generateTask1OutlineResilient(
 }
 
 /**
- * Task 2 Outline:
- * 1) Try full 5-body outline in 1 call.
- * 2) If response is too long / fails -> auto-split into [0,1] (+ meta), [2,3], [4].
- * 3) If any 2-body chunk fails -> auto-split down to 1 body at a time with retries!
+ * Dàn ý Task 2 (5 Body):
+ * Chia nhỏ trực tiếp thành 3 chặng gọn nhẹ ([Body 1 & 2] -> [Body 3 & 4] -> [Body 5]) kèm nén gọn bảng từ vựng,
+ * giúp mỗi lượt gọi chỉ tốn ~2.000–2.800 tokens (thấp hơn 5 lần so với trần 15.000 TPM Free Tier!).
  */
 export async function generateTask2OutlineResilient(
   params: { prompt: string; stanceHint?: string; vocabPrep?: WritingVocabPrep | null },
   options: { signal?: AbortSignal; onStatus?: (msg: string) => void } = {}
 ): Promise<Task2OutlineResponse> {
   const { signal, onStatus } = options;
-
-  try {
-    onStatus?.('Đang lập dàn ý 5 Body bám sát bảng Paraphrase & Từ vựng bạn đã xác nhận...');
-    const full = await postWritingAiOnce<Task2OutlineResponse>(
-      '/api/ai/task2-outline',
-      {
-        prompt: params.prompt,
-        stanceHint: params.stanceHint || '',
-        vocabPrep: params.vocabPrep || undefined,
-      },
-      { timeoutMs: 58_000, signal }
-    );
-    if (Array.isArray(full?.outline) && full.outline.length >= 5) {
-      return {
-        essayType: full.essayType || params.vocabPrep?.essayType || 'IELTS Writing Task 2',
-        promptAnalysis: full.promptAnalysis || params.vocabPrep?.promptAnalysis || '',
-        outline: normalizeOutline(full.outline, 'task2'),
-      };
-    }
-  } catch (err: any) {
-    if (err?.name === 'AbortError' || !isRetriableError(err)) throw err;
-    console.warn('[task2-outline] Full request failed, switching to chunked fallback:', err?.message);
-  }
+  const slimVocab = compactVocabPrepForPrompt(params.vocabPrep);
 
   let essayType = params.vocabPrep?.essayType || 'IELTS Writing Task 2';
   let promptAnalysis = params.vocabPrep?.promptAnalysis || '';
@@ -374,16 +414,20 @@ export async function generateTask2OutlineResilient(
   ];
 
   for (let gIdx = 0; gIdx < chunkGroups.length; gIdx++) {
+    if (gIdx > 0) {
+      await sleep(INTER_CHUNK_PACE_MS, signal);
+    }
+
     const group = chunkGroups[gIdx];
     onStatus?.(
-      `Dàn ý 5 Body khá dài — hệ thống đang tự chia nhỏ tải Body ${group.map((i) => i + 1).join(' & ')}/5...`
+      `Chặng ${gIdx + 1}/${chunkGroups.length}: Đang lập dàn ý chi tiết Body ${group.map((i) => i + 1).join(' & ')}/5...`
     );
 
     const requestBodyFor = (indices: number[]) => ({
       mode: 'chunk' as const,
       prompt: params.prompt,
       stanceHint: params.stanceHint || '',
-      vocabPrep: params.vocabPrep || undefined,
+      vocabPrep: slimVocab,
       bodyIndices: indices,
       includeMeta: gIdx === 0 && !promptAnalysis,
       essayType: essayType !== 'IELTS Writing Task 2' ? essayType : undefined,
@@ -401,9 +445,9 @@ export async function generateTask2OutlineResilient(
         promptAnalysis?: string;
         outlineChunk: any[];
       }>('/api/ai/task2-outline', requestBodyFor(group), {
-        timeoutMs: 45_000,
+        timeoutMs: 44_000,
         signal,
-        maxRetries: 1,
+        maxRetries: 2,
         onStatus,
       });
 
@@ -416,9 +460,9 @@ export async function generateTask2OutlineResilient(
       throw new Error('Chunk dàn ý Task 2 rỗng');
     } catch (chunkErr: any) {
       if (chunkErr?.name === 'AbortError' || !isRetriableError(chunkErr)) throw chunkErr;
-      // Drop down to 1 body at a time
       for (const singleIdx of group) {
-        onStatus?.(`Đang tự động chia siêu nhỏ — tải riêng Body ${singleIdx + 1}/5...`);
+        await sleep(INTER_CHUNK_PACE_MS, signal);
+        onStatus?.(`Đang chia siêu nhỏ — thiết kế riêng Body ${singleIdx + 1}/5...`);
         const singleRes = await postWritingAi<{
           essayType?: string;
           promptAnalysis?: string;
@@ -426,7 +470,7 @@ export async function generateTask2OutlineResilient(
         }>('/api/ai/task2-outline', requestBodyFor([singleIdx]), {
           timeoutMs: 40_000,
           signal,
-          maxRetries: 2,
+          maxRetries: 3,
           onStatus,
         });
         if (singleRes.essayType) essayType = singleRes.essayType;
@@ -450,12 +494,11 @@ export async function generateTask2OutlineResilient(
 }
 
 /**
- * Per-body Grading (Task 1 & Task 2):
- * 1) Try full single-shot grading.
- * 2) If response is too long / fails -> automatically run 3 small coherent phases:
- *    - Phase 1: TA/TR (8.0) + CC (9.0) + crossBodyFeedback
- *    - Phase 2: GRA (8.0) + LR (7.0) + grammarErrors + vocabularyTips (synced with Phase 1)
- *    - Phase 3: tutorClosingNote + generalFeedback + modelUpgrade (synced with all 4 criteria)
+ * Chấm từng Body (Task 1 & Task 2):
+ * Chạy thẳng theo 3 bước nhỏ tuần tự (tránh gửi 1 request 8.192 tokens dễ gãy JSON & nổ TPM trên Free Tier!):
+ * - Bước 1/3: Chấm TA/TR (8.0) & 5 quy luật CC (8.5) + ccFlowAudit
+ * - Bước 2/3: Chấm GRA (8.0) & LR (7.5) + grammarErrors + vocabularyTips
+ * - Bước 3/3: Gia sư tổng hợp lời chốt tiếng Việt + modelUpgrade
  */
 export async function gradeBodyResilient(
   endpoint: '/api/ai/task1-grade' | '/api/ai/task2-grade',
@@ -463,35 +506,27 @@ export async function gradeBodyResilient(
   options: { signal?: AbortSignal; onStatus?: (msg: string) => void } = {}
 ): Promise<BodyGradeResult> {
   const { signal, onStatus } = options;
+  const slimPayload = {
+    ...basePayload,
+    outline: compactOutlineForGrade(basePayload.outline),
+  };
 
-  try {
-    onStatus?.('Gia sư AI đang chấm & kiểm tra 5 quy luật CC (8.0 TA/TR · 8.5 CC · 8.0 GRA · 7.5 LR)...');
-    const full = await postWritingAiOnce<BodyGradeResult>(endpoint, basePayload, {
-      timeoutMs: 58_000,
-      signal,
-    });
-    if (full?.criteria?.task && full?.criteria?.cc && full?.criteria?.gra && full?.criteria?.lr) {
-      return normalizeGradeResult(full);
-    }
-  } catch (err: any) {
-    if (err?.name === 'AbortError' || !isRetriableError(err)) throw err;
-    console.warn(`[${endpoint}] Full grade failed, switching to 3-phase chunked fallback:`, err?.message);
-  }
-
-  // Phase 1: Task + CC
-  onStatus?.('Phản hồi siêu chi tiết khá dài — tự động chia nhỏ bước 1/3: Chấm TA/TR (8.0) & 5 quy luật CC (8.5)...');
+  // Bước 1/3: Task + CC
+  onStatus?.('Bước 1/3: Đang chấm TA/TR (8.0) & kiểm tra 5 quy luật CC cố định (8.5)...');
   const phase1 = await postWritingAi<any>(
     endpoint,
-    { ...basePayload, phase: 'task-cc' },
-    { timeoutMs: 42_000, signal, maxRetries: 2, onStatus }
+    { ...slimPayload, phase: 'task-cc' },
+    { timeoutMs: 44_000, signal, maxRetries: 3, onStatus }
   );
 
-  // Phase 2: GRA + LR (aligned with Phase 1)
-  onStatus?.('Đang xử lý bước 2/3: Chấm GRA (8.0) & LR (7.5) đồng bộ với TA/TR & CC...');
+  await sleep(INTER_CHUNK_PACE_MS, signal);
+
+  // Bước 2/3: GRA + LR (đồng bộ với Bước 1)
+  onStatus?.('Bước 2/3: Đang chấm GRA (8.0) & LR (7.5) đồng bộ với mạch sửa câu...');
   const phase2 = await postWritingAi<any>(
     endpoint,
     {
-      ...basePayload,
+      ...slimPayload,
       phase: 'gra-lr',
       phase1Context: {
         taskBand: phase1?.criteria?.task?.band,
@@ -503,15 +538,18 @@ export async function gradeBodyResilient(
         ccMappings: phase1?.criteria?.cc?.mappings,
       },
     },
-    { timeoutMs: 42_000, signal, maxRetries: 2, onStatus }
+    { timeoutMs: 44_000, signal, maxRetries: 3, onStatus }
   );
 
-  // Phase 3: Tutor Closing Verdict + generalFeedback + modelUpgrade
-  onStatus?.('Đang xử lý bước 3/3: Gia sư tổng hợp lời chốt nhận xét chi tiết bằng tiếng Việt...');
+  await sleep(INTER_CHUNK_PACE_MS, signal);
+
+  // Bước 3/3: Tutor Closing Verdict + generalFeedback + modelUpgrade (bỏ outline nặng vì đã có đủ 4 tiêu chí)
+  onStatus?.('Bước 3/3: Gia sư Writing đang tổng hợp nhận xét chi tiết bằng tiếng Việt...');
   const phase3 = await postWritingAi<any>(
     endpoint,
     {
-      ...basePayload,
+      ...slimPayload,
+      outline: undefined,
       phase: 'tutor-closing',
       criteriaContext: {
         task: phase1?.criteria?.task,
@@ -522,7 +560,7 @@ export async function gradeBodyResilient(
         crossBodyFeedback: phase1?.crossBodyFeedback,
       },
     },
-    { timeoutMs: 42_000, signal, maxRetries: 2, onStatus }
+    { timeoutMs: 42_000, signal, maxRetries: 3, onStatus }
   );
 
   return normalizeGradeResult({
@@ -544,12 +582,11 @@ export async function gradeBodyResilient(
 }
 
 /**
- * Full-Essay Grading (Task 1 & Task 2):
- * 1) Try full single-shot whole-essay grading.
- * 2) If response is too long / times out -> automatically split into 3 focused phases:
- *    - Phase 1: TA/TR (8.0) + CC (8.5) + ccChecklist + wholeEssayStructureFeedback + repetitionAlerts
- *    - Phase 2: GRA (8.0) + LR (7.5) + grammarErrors + vocabularyTips
- *    - Phase 3: paragraphBreakdown + tutorClosingNote + generalFeedback + modelUpgrade
+ * Chấm chữa Toàn bài (Full Essay — Task 1 & Task 2):
+ * Chạy thẳng theo 3 bước nhỏ tuần tự để giữ mỗi lượt gọi gọn nhẹ trên tài khoản Free Tier:
+ * - Bước 1/3: TA/TR (8.0) + 5 quy luật CC (8.5) + ccFlowAudit + repetitionAlerts
+ * - Bước 2/3: GRA (8.0) + LR (7.5) + grammarErrors + vocabularyTips
+ * - Bước 3/3: Mổ xẻ từng đoạn + Lời chốt Gia sư + Bài nâng cấp tham khảo
  */
 export async function gradeFullEssayResilient(
   basePayload: Record<string, any> & { previousAttempt?: PreviousAttemptSummary | null },
@@ -557,33 +594,25 @@ export async function gradeFullEssayResilient(
 ): Promise<FullEssayGradeResult> {
   const { signal, onStatus } = options;
   const endpoint = '/api/ai/full-essay-grade';
+  const slimPayload = {
+    ...basePayload,
+    outline: compactOutlineForGrade(basePayload.outline),
+  };
 
-  try {
-    onStatus?.('Gia sư AI đang chấm chữa chuyên sâu toàn bài (8.0 TA/TR · 8.5 CC · 8.0 GRA · 7.5 LR)...');
-    const full = await postWritingAiOnce<FullEssayGradeResult>(endpoint, basePayload, {
-      timeoutMs: 58_000,
-      signal,
-    });
-    if (full?.criteria?.task && full?.criteria?.cc && full?.criteria?.gra && full?.criteria?.lr) {
-      return normalizeFullEssayGradeResult(full);
-    }
-  } catch (err: any) {
-    if (err?.name === 'AbortError' || !isRetriableError(err)) throw err;
-    console.warn('[full-essay-grade] Full grade failed, switching to 3-phase chunked fallback:', err?.message);
-  }
-
-  onStatus?.('Bài viết & nhận xét toàn bài dài — tự động chia nhỏ bước 1/3: Chấm TA/TR (8.0) & 5 quy luật CC (8.5)...');
+  onStatus?.('Bước 1/3: Đang chấm TA/TR (8.0) & kiểm tra 5 quy luật CC (8.5) toàn bài...');
   const phase1 = await postWritingAi<any>(
     endpoint,
-    { ...basePayload, phase: 'task-cc' },
-    { timeoutMs: 45_000, signal, maxRetries: 2, onStatus }
+    { ...slimPayload, phase: 'task-cc' },
+    { timeoutMs: 46_000, signal, maxRetries: 3, onStatus }
   );
 
-  onStatus?.('Đang xử lý bước 2/3: Soi GRA (8.0), LR (7.5), lỗi ngữ pháp & collocation toàn bài...');
+  await sleep(INTER_CHUNK_PACE_MS, signal);
+
+  onStatus?.('Bước 2/3: Đang soi chi tiết GRA (8.0), LR (7.5), ngữ pháp & collocation toàn bài...');
   const phase2 = await postWritingAi<any>(
     endpoint,
     {
-      ...basePayload,
+      ...slimPayload,
       phase: 'gra-lr',
       phase1Context: {
         taskBand: phase1?.criteria?.task?.band,
@@ -596,14 +625,17 @@ export async function gradeFullEssayResilient(
         repetitionAlerts: phase1?.repetitionAlerts,
       },
     },
-    { timeoutMs: 45_000, signal, maxRetries: 2, onStatus }
+    { timeoutMs: 46_000, signal, maxRetries: 3, onStatus }
   );
 
-  onStatus?.('Đang xử lý bước 3/3: Mổ xẻ từng đoạn & viết lời chốt nhận xét của Gia sư Writing...');
+  await sleep(INTER_CHUNK_PACE_MS, signal);
+
+  onStatus?.('Bước 3/3: Đang mổ xẻ từng đoạn & viết lời chốt nhận xét của Gia sư Writing...');
   const phase3 = await postWritingAi<any>(
     endpoint,
     {
-      ...basePayload,
+      ...slimPayload,
+      outline: undefined,
       phase: 'paragraphs-tutor',
       criteriaContext: {
         task: phase1?.criteria?.task,
@@ -615,7 +647,7 @@ export async function gradeFullEssayResilient(
         repetitionAlerts: phase1?.repetitionAlerts,
       },
     },
-    { timeoutMs: 45_000, signal, maxRetries: 2, onStatus }
+    { timeoutMs: 46_000, signal, maxRetries: 3, onStatus }
   );
 
   return normalizeFullEssayGradeResult({

@@ -263,14 +263,20 @@ ${buildUnifiedGradeJsonSchema({
     } catch (err: any) {
       if (isLengthOrTransientError(err)) {
         // Return 502/504 immediately so client orchestrator cleanly runs the 3-phase chunked pipeline
-        const { message, status } = formatGeminiError(err, 'Lỗi chấm điểm Task 1: ');
-        return NextResponse.json({ error: message }, { status });
+        const { message, status, retryAfterSeconds } = formatGeminiError(
+          err,
+          'Lỗi chấm điểm Task 1: '
+        );
+        return NextResponse.json({ error: message, retryAfterSeconds }, { status });
       }
       throw err;
     }
   } catch (error: any) {
     console.error('[task1-grade] Error:', error);
-    const { message, status } = formatGeminiError(error, 'Lỗi chấm điểm Task 1: ');
-    return NextResponse.json({ error: message }, { status });
+    const { message, status, retryAfterSeconds } = formatGeminiError(
+      error,
+      'Lỗi chấm điểm Task 1: '
+    );
+    return NextResponse.json({ error: message, retryAfterSeconds }, { status });
   }
 }
