@@ -56,7 +56,7 @@ export function FullEssayFeedbackPanel({
   const isOrange = accent === 'orange';
   const taskShort = taskType === 'task1' ? 'TA' : 'TR';
   const taskLabel = taskType === 'task1' ? 'Task Achievement (TA)' : 'Task Response (TR)';
-  const targetLabel = `${taskShort} 8.0 • CC 9.0 • GRA 8.0 • LR 7.0`;
+  const targetLabel = `${taskShort} 8.0 • CC 8.5 • GRA 8.0 • LR 7.5`;
 
   if (isGrading) {
     return (
@@ -146,8 +146,9 @@ export function FullEssayFeedbackPanel({
           heading={`Chấm & bóc tách siêu chi tiết 4 tiêu chí toàn bài (${targetLabel})`}
         />
 
-        {/* CC 9.0 Spotlight: Transition-by-transition cohesion & full-sentence fixes */}
+        {/* CC 8.5 Spotlight: 5-Rule Deterministic Checklist & Transition Audit */}
         <CcFlowAuditPanel
+          ccChecklist={gradeResult.ccChecklist}
           ccFlowAudit={gradeResult.ccFlowAudit}
           ccBand={gradeResult.criteria.cc.band}
           accent={accent}
@@ -164,7 +165,7 @@ export function FullEssayFeedbackPanel({
           />
           <div className={`text-xs leading-relaxed ${isOrange ? 'text-orange-950' : 'text-indigo-950'}`}>
             <p className={`font-extrabold mb-0.5 ${isOrange ? 'text-orange-800' : 'text-indigo-800'}`}>
-              Cấu trúc tổng thể &amp; Mạch chuyển giữa các đoạn (CC 9.0)
+              Cấu trúc tổng thể &amp; Mạch chuyển giữa các đoạn (CC 8.5+)
             </p>
             <p>{gradeResult.wholeEssayStructureFeedback}</p>
           </div>
@@ -272,7 +273,7 @@ export function FullEssayFeedbackPanel({
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp size={14} className="text-blue-600 flex-shrink-0" />
               <span className="text-xs font-extrabold text-blue-700">
-                Collocation B1–B2 tự nhiên chuẩn LR 7.0+ ({gradeResult.vocabularyTips.length})
+                Collocation tự nhiên chuẩn LR 7.5+ ({gradeResult.vocabularyTips.length})
               </span>
             </div>
             <div className="flex flex-col gap-2">
@@ -309,7 +310,7 @@ export function FullEssayFeedbackPanel({
             >
               <span className="flex items-center gap-1.5">
                 <Award size={14} className="text-emerald-600" />
-                Xem bài viết hoàn chỉnh tham khảo chuẩn Band 8.0+ (8 {taskShort} · 9 CC · 8 GRA · 7+ LR)
+                Xem bài viết hoàn chỉnh tham khảo chuẩn Band 8.0+ (8.0 {taskShort} · 8.5 CC · 8.0 GRA · 7.5 LR)
               </span>
               {showUpgrade ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>

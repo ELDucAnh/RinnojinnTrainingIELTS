@@ -94,9 +94,9 @@ export async function POST(req: NextRequest) {
     const previousAttemptBlock = buildPreviousAttemptBlock(previousAttempt);
 
     const sharedContext = `
-Bạn là một cựu giám khảo IELTS Academic Writing & GIA SƯ KÈM 1-1 chuyên nâng học viên từ Band 6.0 lên Band 8.0.
+Bạn là một cựu giám khảo IELTS Academic Writing & GIA SƯ KÈM 1-1 chuyên nâng học viên từ Band 6.0 lên Band 8.0, chấm điểm BÁM SÁT 100% **Official IELTS Writing Band Descriptors (May 2023)**.
 Học viên đang luyện viết IELTS Writing Task 1 theo từng Body (4 Body: Introduction, Overview, Detail 1, Detail 2).
-Mục tiêu BẮT BUỘC để vượt qua Body này là **Overall >= 8.0** theo đúng ma trận: **TA >= 8.0 · CC = 9.0 · GRA >= 8.0 · LR >= 7.0**.
+Mục tiêu BẮT BUỘC để vượt qua Body này là **Overall >= 8.0** theo đúng ma trận: **TA >= 8.0 · CC >= 8.5 · GRA >= 8.0 · LR >= 7.5**.
 
 === ĐỀ BÀI & DỮ LIỆU BIỂU ĐỒ GỐC ===
 ${chartDataSummary}
@@ -110,28 +110,25 @@ ${previousAttemptBlock}
 === BODY HIỆN TẠI ĐANG CHẤM ===
 - Vị trí: ${currentTemplate.label} (${currentOutline?.role || currentTemplate.role})
 - Dàn ý tiếng Việt cho Body này: ${currentOutline ? JSON.stringify(currentOutline.viGuide) : 'Theo chuẩn IELTS Task 1'}
-- Lưu ý chiến lược 8/9/8/7 của dàn ý: ${currentOutline?.bandStrategy ? JSON.stringify(currentOutline.bandStrategy) : 'TA >= 8.0, CC = 9.0, GRA >= 8.0, LR >= 7.0'}
+- Lưu ý chiến lược của dàn ý: ${currentOutline?.bandStrategy ? JSON.stringify(currentOutline.bandStrategy) : 'TA >= 8.0, CC >= 8.5, GRA >= 8.0, LR >= 7.5'}
 - Từ vựng & ngữ pháp đã gợi ý: ${currentOutline ? JSON.stringify({ ideaGuides: currentOutline.ideaGuides || [], vocab: currentOutline.vocabSuggestions || [], grammar: currentOutline.grammarSuggestions || [] }) : 'Theo biểu đồ'}
 - Bài viết tiếng Anh của học viên cho Body ${bodyIndex + 1}:
 """
 ${cleanContent}
 """
 
-=== RUBRIC CHẤM KHẮT KHE TASK 1 (TA 8.0 · CC 9.0 · GRA 8.0 · LR 7.0) ===
-1. "task" — Task Achievement (TA) [MỤC TIÊU >= 8.0]:
+=== RUBRIC CHẤM BÁM SÁT OFFICIAL IELTS BAND DESCRIPTORS MAY 2023 (TA 8.0 · CC 8.5 · GRA 8.0 · LR 7.5) ===
+1. "task" — Task Achievement (TA) [MỤC TIÊU >= 8.0 — Official Band 8]:
    - Body 1 (Intro): Paraphrase trôi chảy và đủ 100% chiều thông tin (loại biểu đồ, đối tượng, đơn vị đo, địa điểm/nhóm, mốc thời gian). Thiếu 1 chiều hoặc copy > 3 từ liên tiếp -> TRẦN TA <= 6.5–7.0.
    - Body 2 (Overview): Đủ 2 tầng tổng quan (xu hướng/thứ bậc chính + điểm tương phản/bước ngoặt/ngoại lệ nổi bật nhất), TUYỆT ĐỐI không chèn số liệu chi tiết -> thiếu tầng 2 hoặc chèn số liệu -> TRẦN TA <= 7.0.
    - Body 3 & Body 4 (Detail 1 & 2): Gom nhóm thông minh, đối chiếu định lượng sắc bén (gấp mấy lần, chênh lệch, đỉnh/đáy) và ĐÚNG 100% số liệu chartData. Liệt kê rời rạc, sai con số/nhãn hoặc lặp ý Body trước -> TRẦN TA <= 6.5–7.0.
-2. "cc" — Coherence and Cohesion (CC) [TÂM ĐIỂM SIÊU RÕ — MỤC TIÊU = 9.0 THEO OFFICIAL IELTS BAND 9 DESCRIPTOR]:
-   - Chấm và bóc tách bám chặt 4 trụ cột Band 9.0 CC: (1) The message can be followed effortlessly, (2) Cohesion is used in such a way that it very rarely / never attracts attention, (3) Any lapses in coherence or cohesion are minimal, (4) Paragraphing is skilfully managed.
-   - Bắt buộc phân tích TỪNG chuyển câu trong "ccFlowAudit" (Body trước → Câu 1, Câu 1 → Câu 2, Câu 2 → Câu 3...) kèm NGUYÊN VĂN CẢ CÂU sửa đúng ngữ pháp 100%.
-   - Còn dùng từ nối máy móc đầu câu ("Firstly, Secondly, Moreover, Furthermore, In addition, In conclusion") hoặc chuyển ý đột ngột / đại từ quy chiếu mơ hồ -> TRẦN CC <= 7.5–8.0 (chưa đạt 9.0!).
-3. "gra" — Grammatical Range and Accuracy (GRA) [MỤC TIÊU >= 8.0]:
-   - Đòi hỏi đa số câu hoàn toàn sạch lỗi (error-free) VÀ sử dụng linh hoạt nhiều cấu trúc phức tự nhiên (While/Whereas, mệnh đề quan hệ không xác định ", which + V", cụm phân từ, "with + N + V-ing", bị động, so sánh định lượng nâng cao), chia thì chuẩn xác 100% nhất quán với previousBodies.
-   - Chỉ dùng câu đơn/câu ghép cơ bản hoặc còn lỗi mạo từ/giới từ/chủ-vị/thì -> TRẦN GRA <= 6.5–7.5.
-4. "lr" — Lexical Resource (LR) [MỤC TIÊU CHỈ CẦN = 7.0 — TỪ VỰNG B1–B2 PHỔ THÔNG, RÕ NGHĨA, SÁT BIỂU ĐỒ]:
-   - Học viên CHỈ cần **LR 7.0**, ưu tiên collocations B1–B2 quen thuộc, chính xác với đúng biểu đồ ("account for", "make up", "reach a peak of", "rise steadily", "drop sharply", "remain steady", "compared with", "by contrast").
-   - TUYỆT ĐỐI KHÔNG hạ < 7.0 chỉ vì thiếu từ C1–C2 hiếm, và KHÔNG ĐỀ XUẤT từ cao siêu/màu mè (CẤM gợi ý kiểu: skyrocket, plummet, unprecedented surge, trajectory, preponderance, eclipse, dwarf, metamorphose, stark dichotomy) vì dễ làm lệch ngữ cảnh dữ liệu! Chỉ sửa khi học viên sai collocation, dịch từng chữ tiếng Việt, lặp từ quá nhiều hoặc dùng sai đơn vị/đối tượng.
+2. "cc" — Coherence and Cohesion (CC) [MỤC TIÊU >= 8.5 — CHẤM CỐ ĐỊNH THEO 5 QUY LUẬT R1..R5]:
+   - BẮT BUỘC kiểm tra minh bạch 5 quy luật R1..R5 trong "ccChecklist" và quy đổi điểm cố định: **5/5 = 8.5–9.0** | **4/5 = 7.5–8.0** | **3/5 = 7.0–7.5** | **<=2/5 = 5.5–6.5**.
+   - Dùng 0 hoặc 1 từ nối tự nhiên hợp ngữ cảnh ("By contrast,", "Overall,") + quy chiếu tốt ("this figure", "the former", "respectively") + không dùng "Firstly/Secondly/Moreover/Furthermore" = ĐẠT R4 100%!
+3. "gra" — Grammatical Range and Accuracy (GRA) [MỤC TIÊU >= 8.0 — Official Band 8]:
+   - "A wide range of structures is flexibly and accurately used; the majority of sentences are error-free (>75%)". Phối hợp tự nhiên câu đơn + đa dạng câu phức (While/Whereas, ", which + V", phân từ, "with + N + V-ing", bị động, so sánh), đúng 100% thì theo biểu đồ.
+4. "lr" — Lexical Resource (LR) [MỤC TIÊU >= 7.5 — Official Band 7–8 Bridge]:
+   - Vốn từ B2 vững + 2–3 cụm collocation chính xác sát dữ liệu biểu đồ ("account for the largest proportion", "experience a steady rise", "narrow the gap", "remain broadly unchanged"), xoay vòng paraphrase tránh lặp từ, rất ít lỗi word choice/word formation. Không ép từ C2 hoa mỹ lệch ngữ cảnh!
 - Nếu viết tiếng Việt, sơ sài hoặc lạc đề -> <= 4.0. Thang điểm 0.0–9.0 (bước 0.5).
 `;
 
@@ -139,11 +136,11 @@ ${cleanContent}
     if (phase === 'task-cc') {
       const p1Prompt = `${sharedContext}
 ${buildAlignedCriteriaDirectives({ taskType: 'task1', isFullEssay: false })}
-NHIỆM VỤ BƯỚC 1/3: Chấm & bóc tách SIÊU CHI TIẾT chỉ 2 tiêu chí **TA (>= 8.0)** và **CC (= 9.0)** kèm "crossBodyFeedback".
+NHIỆM VỤ BƯỚC 1/3: Chấm & bóc tách SIÊU CHI TIẾT 2 tiêu chí **TA (>= 8.0)** và **CC (>= 8.5)** kèm "ccChecklist" (5 quy luật R1..R5), "ccFlowAudit" và "crossBodyFeedback".
 Trả về DUY NHẤT JSON hợp lệ:
 ${buildTaskCcPhaseSchema({
   taskShort: 'TA',
-  extraFieldsSchema: `"crossBodyFeedback": "Nhận xét chi tiết bằng tiếng Việt về liên kết của Body này với các Body trước đó và định hướng nối sang Body sau (khớp với CC.mappings)."`,
+  extraFieldsSchema: `"crossBodyFeedback": "Nhận xét chi tiết bằng tiếng Việt về liên kết của Body này với các Body trước đó và định hướng nối sang Body sau."`,
 })}`;
 
       const { data } = await generateJsonWithFallback(
@@ -155,7 +152,7 @@ ${buildTaskCcPhaseSchema({
           }
           return parsed;
         },
-        { temperature: 0.3, maxOutputTokens: 4400, perModelTimeoutMs: 22_000, totalBudgetMs: 48_000 }
+        { temperature: 0.1, maxOutputTokens: 4600, perModelTimeoutMs: 22_000, totalBudgetMs: 48_000 }
       );
       return NextResponse.json(data, { status: 200 });
     }
@@ -166,7 +163,7 @@ ${buildTaskCcPhaseSchema({
 ${JSON.stringify(phase1Context || {})}
 
 ${buildAlignedCriteriaDirectives({ taskType: 'task1', isFullEssay: false })}
-NHIỆM VỤ BƯỚC 2/3: Chấm & bóc tách SIÊU CHI TIẾT 2 tiêu chí **GRA (>= 8.0)** và **LR (>= 7.0)** kèm "grammarErrors" và "vocabularyTips", ĐỒNG BỘ HOÀN TOÀN với kế hoạch sửa TA & CC ở trên.
+NHIỆM VỤ BƯỚC 2/3: Chấm & bóc tách SIÊU CHI TIẾT 2 tiêu chí **GRA (>= 8.0)** và **LR (>= 7.5)** kèm "grammarErrors" và "vocabularyTips", ĐỒNG BỘ HOÀN TOÀN với kế hoạch sửa TA & CC ở trên.
 Trả về DUY NHẤT JSON hợp lệ:
 ${buildGraLrPhaseSchema()}`;
 
@@ -179,22 +176,22 @@ ${buildGraLrPhaseSchema()}`;
           }
           return parsed;
         },
-        { temperature: 0.3, maxOutputTokens: 3400, perModelTimeoutMs: 22_000, totalBudgetMs: 48_000 }
+        { temperature: 0.1, maxOutputTokens: 3600, perModelTimeoutMs: 22_000, totalBudgetMs: 48_000 }
       );
       return NextResponse.json(data, { status: 200 });
     }
 
     if (phase === 'tutor-closing') {
       const p3Prompt = `${sharedContext}
-=== KẾT QUẢ 4 TIÊU CHÍ ĐÃ CHẤM ===
+=== KẾT QUẢ 4 TIÊU CHÍ & 5 QUY LUẬT CC ĐÃ CHẤM ===
 ${JSON.stringify(criteriaContext || {})}
 
-NHIỆM VỤ BƯỚC 3/3: Đóng vai GIA SƯ IELTS WRITING THỰC THỤ kèm 1-1, viết "generalFeedback", đoạn chốt bóc tách chuyên sâu bằng tiếng Việt "tutorClosingNote" (160–240 từ, 3–4 đoạn tách bằng \\n\\n: chẩn đoán Band & điểm sáng, bóc tách 1–2 nút thắt tư duy Band 6, lộ trình ưu tiên sửa 1->2->3 ngay lần tới${previousAttempt ? ', ĐỐI CHIẾU RÕ tiến bộ và điểm còn sót so với bản nháp lần trước' : ''}), và "modelUpgrade" chuẩn TA 8.0+ / CC 9.0 / GRA 8.0+ / LR 7.0+ tự nhiên.
+NHIỆM VỤ BƯỚC 3/3: Đóng vai GIA SƯ IELTS WRITING THỰC THỤ kèm 1-1, viết "generalFeedback", đoạn chốt bóc tách chuyên sâu bằng tiếng Việt "tutorClosingNote" (160–240 từ, 3–4 đoạn tách bằng \\n\\n: chẩn đoán Band & điểm sáng, nêu rõ kết quả X/5 quy luật CC & độ chính xác LR 7.5, lộ trình ưu tiên sửa 1->2->3 ngay lần tới${previousAttempt ? ', ĐỐI CHIẾU RÕ tiến bộ và điểm còn sót so với bản nháp lần trước' : ''}), và "modelUpgrade" chuẩn TA 8.0+ / CC 8.5+ / GRA 8.0+ / LR 7.5+ tự nhiên.
 Trả về DUY NHẤT JSON hợp lệ:
 ${buildTutorClosingPhaseSchema({
   taskShort: 'TA',
   modelUpgradeInstruction:
-    'Phiên bản tham khảo chuẩn TA 8.0+ · CC 9.0 · GRA 8.0+ giữ văn phong B1–B2 tự nhiên (hệ thống chỉ mở cho học viên xem sau khi đạt chuẩn Overall >= 8.0).',
+    'Phiên bản tham khảo chuẩn TA 8.0+ · CC 8.5+ · GRA 8.0+ · LR 7.5+ tự nhiên (hệ thống chỉ mở cho học viên xem sau khi đạt chuẩn Overall >= 8.0).',
 })}`;
 
       const { data } = await generateJsonWithFallback(
@@ -206,21 +203,21 @@ ${buildTutorClosingPhaseSchema({
           }
           return parsed;
         },
-        { temperature: 0.4, maxOutputTokens: 2400, perModelTimeoutMs: 20_000, totalBudgetMs: 46_000 }
+        { temperature: 0.15, maxOutputTokens: 2400, perModelTimeoutMs: 20_000, totalBudgetMs: 46_000 }
       );
       return NextResponse.json(data, { status: 200 });
     }
 
-    // ─── DEFAULT FULL SINGLE-SHOT MODE (with truncation-fast-fail) ───
+    // ─── DEFAULT FULL SINGLE-SHOT MODE (temperature 0.1 for deterministic grading!) ───
     const fullPrompt = `${sharedContext}
 ${buildAlignedCriteriaDirectives({ taskType: 'task1', isFullEssay: false })}
 
 YÊU CẦU ĐẦU RA JSON (BẮT BUỘC CHỈ TRẢ VỀ JSON HỢP LỆ, KHÔNG MARKDOWN):
 ${buildUnifiedGradeJsonSchema({
   taskShort: 'TA',
-  extraFieldsSchema: `"crossBodyFeedback": "Nhận xét chi tiết bằng tiếng Việt về liên kết của Body này với các Body trước đó và định hướng nối sang Body sau (khớp với CC.mappings).",`,
+  extraFieldsSchema: `"crossBodyFeedback": "Nhận xét chi tiết bằng tiếng Việt về liên kết của Body này với các Body trước đó và định hướng nối sang Body sau.",`,
   modelUpgradeInstruction:
-    'Phiên bản hoàn chỉnh chuẩn TA 8.0+ · CC 9.0 · GRA 8.0+ giữ văn phong B1–B2 tự nhiên (hệ thống chỉ mở cho học viên xem sau khi đạt chuẩn Overall >= 8.0).',
+    'Phiên bản hoàn chỉnh chuẩn TA 8.0+ · CC 8.5+ · GRA 8.0+ · LR 7.5+ tự nhiên (hệ thống chỉ mở cho học viên xem sau khi đạt chuẩn Overall >= 8.0).',
 })}
 `;
 
@@ -235,8 +232,8 @@ ${buildUnifiedGradeJsonSchema({
           return normalizeGradeResult(parsed);
         },
         {
-          temperature: 0.35,
-          maxOutputTokens: 8000,
+          temperature: 0.1,
+          maxOutputTokens: 8192,
           perModelTimeoutMs: 25_000,
           totalBudgetMs: 40_000,
           failFastOnTooLong: true,

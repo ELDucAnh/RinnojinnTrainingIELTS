@@ -218,7 +218,7 @@ export function VocabParaphrasePrepPanel({
           <div className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-gray-700">
             <BookMarked size={14} className={isOrange ? 'text-orange-500' : 'text-emerald-600'} />
             <span>
-              Kho Từ vựng &amp; Cụm Collocation B1–B2 sát đề ({stats.keptCollocs}/{stats.totalCollocs} cụm)
+              Kho Từ vựng &amp; Cụm Collocation chuẩn LR 7.5 sát đề ({stats.keptCollocs}/{stats.totalCollocs} cụm)
             </span>
           </div>
 
@@ -324,7 +324,7 @@ export function VocabParaphrasePrepPanel({
             className={`flex-shrink-0 mt-0.5 ${isOrange ? 'text-amber-700' : 'text-teal-700'}`}
           />
           <div>
-            <span className="font-extrabold">Mẹo xoay vòng chống lặp từ (LR 7.0 &amp; CC 9.0): </span>
+            <span className="font-extrabold">Mẹo xoay vòng chống lặp từ (LR 7.5 &amp; CC 8.5): </span>
             <span>{vocabPrep.antiRepetitionTip}</span>
           </div>
         </div>
@@ -396,7 +396,7 @@ export function VocabParaphrasePrepPanel({
               Bước 1/2 · Chuẩn bị Từ vựng &amp; Paraphrase
             </span>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white border border-gray-200 text-gray-600">
-              Chuẩn LR 7.0 (B1–B2 sát đề)
+              Chuẩn LR 7.5 (B2 + Collocation sát đề)
             </span>
           </div>
           <h2 className="text-base sm:text-lg font-extrabold text-gray-900 mt-0.5">

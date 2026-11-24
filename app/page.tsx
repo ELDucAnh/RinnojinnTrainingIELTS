@@ -227,7 +227,7 @@ export default function HomePage() {
               </p>
               <h2 className="text-base font-extrabold text-white">IELTS Task 1 &amp; Task 2</h2>
               <p className="text-xs text-white/85 mt-1 leading-relaxed">
-                Dàn ý Band 8.0+ tiếng Việt, chấm 4 tiêu chí 8/9/8/7 (Overall 8.0), gia sư chốt nhận xét và tự viết lại toàn bài.
+                Dàn ý Band 8.0+ tiếng Việt, chấm 4 tiêu chí 8.0/8.5/8.0/7.5 (Overall 8.0), 5 quy luật CC cố định và tự viết lại toàn bài.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2">

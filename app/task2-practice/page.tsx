@@ -469,7 +469,7 @@ export default function Task2PracticePage() {
           Luyện IELTS Writing Task 2
         </h1>
         <p className="text-gray-600 max-w-2xl z-10 text-[13px] leading-relaxed">
-          Nhập đề bài Task 2 của bạn — Gia sư AI phân tích đề &amp; thiết kế <b>dàn bài 5 Body nâng band 6 → 8</b> theo chiến lược <b>TR 8.0 · CC 9.0 · GRA 8.0 · LR 7.0</b> (Overall ≥ 8.0), kèm lưu ý từng Body &amp; đoạn chốt gia sư 1-1.
+          Nhập đề bài Task 2 của bạn — Gia sư AI phân tích đề &amp; thiết kế <b>dàn bài 5 Body nâng band 6 → 8</b> theo chiến lược <b>TR 8.0 · CC 8.5 · GRA 8.0 · LR 7.5</b> (Overall ≥ 8.0), chấm cố định 5 quy luật CC chuẩn IELTS &amp; đoạn chốt gia sư 1-1.
         </p>
 
         <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 bg-white/75 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-gray-200/60 z-10">
@@ -669,8 +669,8 @@ export default function Task2PracticePage() {
                 <p className="font-bold">
                   {genStatus ||
                     (isGeneratingVocab
-                      ? 'Bước 1/2: Đang phân tích đề & lập Bảng Paraphrase + Kho Collocation B1–B2...'
-                      : 'Bước 2/2: Đang thiết kế dàn ý 5 Body chuẩn 8 TR · 9 CC · 8 GRA · 7 LR...')}
+                      ? 'Bước 1/2: Đang phân tích đề & lập Bảng Paraphrase + Kho Collocation LR 7.5...'
+                      : 'Bước 2/2: Đang thiết kế dàn ý 5 Body chuẩn 8.0 TR · 8.5 CC · 8.0 GRA · 7.5 LR...')}
                 </p>
                 <p className="text-xs text-emerald-600/80 mt-0.5">
                   Nếu phản hồi dài hệ thống sẽ tự chia nhỏ &amp; thử lại tự động cho bạn
@@ -808,7 +808,7 @@ export default function Task2PracticePage() {
                       ref={textareaRef}
                       rows={7}
                       disabled={isCurrentBodyLocked}
-                      placeholder={`Dựa vào dàn ý & lưu ý 8 TR · 9 CC · 8 GRA · 7 LR phía trên, hãy tự viết ${currentOutline?.label || 'Body này'} bằng tiếng Anh...`}
+                      placeholder={`Dựa vào dàn ý từng câu & lưu ý 8.0 TR · 8.5 CC · 8.0 GRA · 7.5 LR phía trên, hãy tự viết ${currentOutline?.label || 'Body này'} bằng tiếng Anh...`}
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       onKeyDown={(e) => {
@@ -834,7 +834,7 @@ export default function Task2PracticePage() {
                           {isGrading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                           {gradeResult && !gradeResult.passed
                             ? `Gửi Gia sư chấm lại Body ${currentBodyIndex + 1}`
-                            : `Chấm Body ${currentBodyIndex + 1} (8 TR · 9 CC · 8 GRA · 7 LR)`}
+                            : `Chấm Body ${currentBodyIndex + 1} (8.0 TR · 8.5 CC · 8.0 GRA · 7.5 LR)`}
                         </button>
                       </div>
                     )}
@@ -870,18 +870,18 @@ export default function Task2PracticePage() {
               {[
                 {
                   num: '01',
-                  title: 'Chốt Bảng Paraphrase & Từ vựng trước',
-                  desc: 'AI lập bảng Paraphrase từ khóa & kho Collocation B1–B2 sát đề chống lặp từ trước; bạn bấm xác nhận rồi mới mở dàn ý 5 Body.',
+                  title: 'Chốt Bảng Paraphrase & Từ vựng LR 7.5',
+                  desc: 'AI lập bảng Paraphrase từ khóa & kho Collocation chuẩn LR 7.5 sát đề chống lặp từ trước; bạn bấm xác nhận rồi mới mở dàn ý 5 Body.',
                 },
                 {
                   num: '02',
-                  title: 'Gia sư 1-1 bóc tách tư duy',
-                  desc: 'Feedback siêu chi tiết từng vị trí câu, chỉ rõ cần đổi tư duy Band 6 → 8 ra sao, nên học thêm gì và chốt nhận xét bằng tiếng Việt ở cuối.',
+                  title: '5 quy luật chấm CC 8.5 cố định',
+                  desc: 'Chấm minh bạch theo Official IELTS Band Descriptors (May 2023): 5/5 quy luật = CC 8.5+, chỉ rõ vi phạm quy luật nào & sửa trọn vẹn cả câu.',
                 },
                 {
                   num: '03',
                   title: 'Hoàn tất 5/5 Body chuẩn 8.0',
-                  desc: 'Vượt qua đủ 5 Body (TR 8.0 · CC 9.0 · GRA 8.0 · LR 7.0 — Overall ≥ 8.0) để lưu bài và luyện tự viết toàn bài hoàn chỉnh.',
+                  desc: 'Vượt qua đủ 5 Body (TR 8.0 · CC 8.5 · GRA 8.0 · LR 7.5 — Overall ≥ 8.0) để lưu bài và luyện tự viết toàn bài hoàn chỉnh.',
                 },
               ].map((c) => (
                 <div key={c.num} className="bg-[var(--card)] rounded-2xl p-5 shadow-sm border border-emerald-100/90">

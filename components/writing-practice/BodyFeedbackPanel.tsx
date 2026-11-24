@@ -60,7 +60,7 @@ export function BodyFeedbackPanel({
   const isOrange = accent === 'orange';
   const taskShort = taskType === 'task1' ? 'TA' : 'TR';
   const taskLabel = taskType === 'task1' ? 'Task Achievement (TA)' : 'Task Response (TR)';
-  const targetLabel = `${taskShort} 8.0 • CC 9.0 • GRA 8.0 • LR 7.0`;
+  const targetLabel = `${taskShort} 8.0 • CC 8.5 • GRA 8.0 • LR 7.5`;
 
   if (isGrading) {
     return (
@@ -157,8 +157,9 @@ export function BodyFeedbackPanel({
           accent={accent}
         />
 
-        {/* CC 9.0 Spotlight: Transition-by-transition cohesion & full-sentence fixes */}
+        {/* CC 8.5 Spotlight: 5-Rule Deterministic Checklist & Transition Audit */}
         <CcFlowAuditPanel
+          ccChecklist={gradeResult.ccChecklist}
           ccFlowAudit={gradeResult.ccFlowAudit}
           ccBand={gradeResult.criteria.cc.band}
           accent={accent}
@@ -174,7 +175,7 @@ export function BodyFeedbackPanel({
           {!isOrange && <Link2 size={16} className="text-indigo-600 flex-shrink-0 mt-0.5" />}
           <div className={`text-xs leading-relaxed ${isOrange ? 'text-orange-950' : 'text-indigo-950'}`}>
             <p className={`font-extrabold mb-0.5 ${isOrange ? 'text-orange-800' : 'text-indigo-800'}`}>
-              Liên kết với các Body khác trong bài (CC 9.0)
+              Liên kết với các Body khác trong bài (CC 8.5+)
             </p>
             <p>{gradeResult.crossBodyFeedback}</p>
           </div>
@@ -219,7 +220,7 @@ export function BodyFeedbackPanel({
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp size={14} className="text-blue-600 flex-shrink-0" />
               <span className="text-xs font-extrabold text-blue-700">
-                Collocation B1–B2 tự nhiên chuẩn LR 7.0+ ({gradeResult.vocabularyTips.length})
+                Collocation tự nhiên chuẩn LR 7.5+ ({gradeResult.vocabularyTips.length})
               </span>
             </div>
             <div className="flex flex-col gap-2">
@@ -256,7 +257,7 @@ export function BodyFeedbackPanel({
             >
               <span className="flex items-center gap-1.5">
                 <Award size={14} className="text-emerald-600" />
-                Tham khảo phiên bản chuẩn 8 {taskShort} · 9 CC · 8 GRA cho Body này
+                Tham khảo phiên bản chuẩn 8.0 {taskShort} · 8.5 CC · 8.0 GRA · 7.5 LR cho Body này
               </span>
               {showUpgrade ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>

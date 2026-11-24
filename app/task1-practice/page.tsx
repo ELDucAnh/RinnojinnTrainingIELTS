@@ -529,7 +529,7 @@ export default function Task1PracticePage() {
           Luyện IELTS Writing Task 1
         </h1>
         <p className="text-gray-600 max-w-2xl z-10 text-[13px] leading-relaxed">
-          Gia sư AI tạo đề &amp; thiết kế <b>dàn bài 4 Body nâng band 6 → 8</b> theo chiến lược <b>TA 8.0 · CC 9.0 · GRA 8.0 · LR 7.0</b> (Overall ≥ 8.0), kèm lưu ý từng Body &amp; đoạn chốt nhận xét gia sư 1-1.
+          Gia sư AI tạo đề &amp; thiết kế <b>dàn bài 4 Body nâng band 6 → 8</b> theo chiến lược <b>TA 8.0 · CC 8.5 · GRA 8.0 · LR 7.5</b> (Overall ≥ 8.0), chấm cố định 5 quy luật CC chuẩn IELTS &amp; đoạn chốt nhận xét gia sư 1-1.
         </p>
 
         <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2 bg-white/80 backdrop-blur-sm p-1 rounded-xl shadow-sm ring-1 ring-orange-200/60 z-10">
@@ -601,7 +601,7 @@ export default function Task1PracticePage() {
                     Chọn dạng biểu đồ & chủ đề mong muốn
                   </h2>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    AI sinh dữ liệu biểu đồ kèm dàn ý 4 Body chuẩn 8 TA · 9 CC · 8 GRA · 7 LR bằng tiếng Việt
+                    AI sinh dữ liệu biểu đồ kèm dàn ý 4 Body chuẩn 8.0 TA · 8.5 CC · 8.0 GRA · 7.5 LR bằng tiếng Việt
                   </p>
                 </div>
                 {chartData && (
@@ -920,7 +920,7 @@ export default function Task1PracticePage() {
                       ref={textareaRef}
                       rows={6}
                       disabled={isCurrentBodyLocked}
-                      placeholder={`Dựa vào dàn ý & lưu ý 8 TA · 9 CC · 8 GRA · 7 LR phía trên, hãy tự viết ${currentOutline?.label || 'Body này'} bằng tiếng Anh...`}
+                      placeholder={`Dựa vào dàn ý từng câu & lưu ý 8.0 TA · 8.5 CC · 8.0 GRA · 7.5 LR phía trên, hãy tự viết ${currentOutline?.label || 'Body này'} bằng tiếng Anh...`}
                       value={inputText}
                       onChange={(e) => setInputText(e.target.value)}
                       onKeyDown={(e) => {
@@ -946,7 +946,7 @@ export default function Task1PracticePage() {
                           {isGrading ? <Loader2 size={15} className="animate-spin" /> : <Send size={15} />}
                           {gradeResult && !gradeResult.passed
                             ? `Gửi Gia sư chấm lại Body ${currentBodyIndex + 1}`
-                            : `Chấm Body ${currentBodyIndex + 1} (8 TA · 9 CC · 8 GRA · 7 LR)`}
+                            : `Chấm Body ${currentBodyIndex + 1} (8.0 TA · 8.5 CC · 8.0 GRA · 7.5 LR)`}
                         </button>
                       </div>
                     )}
@@ -982,18 +982,18 @@ export default function Task1PracticePage() {
               {[
                 {
                   num: '01',
-                  title: 'Chốt Bảng Paraphrase & Từ vựng trước',
-                  desc: 'Sau khi tạo biểu đồ, AI lập bảng Paraphrase & kho Collocation B1–B2 sát biểu đồ để bạn xác nhận trước khi mở dàn ý 4 Body.',
+                  title: 'Chốt Bảng Paraphrase & Từ vựng LR 7.5',
+                  desc: 'Sau khi tạo biểu đồ, AI lập bảng Paraphrase & kho Collocation chuẩn LR 7.5 sát biểu đồ để bạn xác nhận trước khi mở dàn ý 4 Body.',
                 },
                 {
                   num: '02',
-                  title: 'Gia sư 1-1 bóc tách tư duy',
-                  desc: 'Chấm siêu chi tiết từng vị trí câu, chỉ rõ cần đổi tư duy Band 6 → 8 ra sao, nên học thêm gì và có đoạn chốt nhận xét gia sư bằng tiếng Việt.',
+                  title: '5 quy luật chấm CC 8.5 cố định',
+                  desc: 'Chấm minh bạch theo Official IELTS Band Descriptors (May 2023): 5/5 quy luật = CC 8.5+, sửa trọn vẹn cả câu không lo gãy ngữ pháp.',
                 },
                 {
                   num: '03',
                   title: 'Hoàn tất 4/4 Body chuẩn 8.0',
-                  desc: 'Vượt qua đủ 4 Body (TA 8.0 · CC 9.0 · GRA 8.0 · LR 7.0 — Overall ≥ 8.0) để lưu bài và luyện viết toàn bài hoàn chỉnh.',
+                  desc: 'Vượt qua đủ 4 Body (TA 8.0 · CC 8.5 · GRA 8.0 · LR 7.5 — Overall ≥ 8.0) để lưu bài và luyện viết toàn bài hoàn chỉnh.',
                 },
               ].map((c) => (
                 <div key={c.num} className="bg-[var(--card)] rounded-2xl p-5 shadow-sm border border-orange-100/90">

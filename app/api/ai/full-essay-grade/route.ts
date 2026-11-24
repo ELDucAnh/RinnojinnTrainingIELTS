@@ -150,23 +150,23 @@ export async function POST(req: NextRequest) {
   + Đoạn 1 (Intro): Paraphrase sắc gọn, đủ 100% chiều thông tin (đối tượng, đơn vị, địa điểm, mốc thời gian). Copy > 3 từ liên tiếp -> hạ TA.
   + Đoạn 2 (Overview): Bao quát đủ 2 tầng nổi bật (xu hướng/thứ bậc chính + điểm tương phản/bước ngoặt), KHÔNG đưa số liệu chi tiết.
   + Các đoạn Detail: Gom nhóm thông minh, có đối chiếu định lượng (gấp mấy lần/chênh lệch/đỉnh-đáy) và ĐÚNG 100% số liệu trong chartData.
-- "cc" — Coherence & Cohesion (CC) [TÂM ĐIỂM SIÊU RÕ — MỤC TIÊU = 9.0 THEO OFFICIAL IELTS BAND 9 DESCRIPTOR]:
-  + Phân đoạn chuẩn 4 đoạn (Intro -> Overview -> Detail 1 -> Detail 2) và bám chặt 4 trụ cột Band 9 CC: (1) The message can be followed effortlessly, (2) Cohesion very rarely / never attracts attention, (3) Minimal lapses, (4) Paragraphing skilfully managed.
-  + Bắt buộc soi các điểm chuyển đoạn & chuyển câu trọng yếu trong "ccFlowAudit" kèm NGUYÊN VĂN CẢ CÂU sửa đúng ngữ pháp 100%. Lạm dụng từ nối máy móc ("Firstly, Secondly, Moreover, In conclusion") -> TRẦN CC <= 7.5–8.0.`
+- "cc" — Coherence & Cohesion (CC) [MỤC TIÊU >= 8.5 — CHẤM CỐ ĐỊNH THEO 5 QUY LUẬT R1..R5]:
+  + Phân đoạn chuẩn 4 đoạn (Intro -> Overview -> Detail 1 -> Detail 2) và kiểm tra cố định 5 quy luật R1..R5 trong "ccChecklist" (**5/5 = 8.5–9.0**, **4/5 = 7.5–8.0**, **3/5 = 7.0–7.5**, **<=2/5 = 5.5–6.5**).
+  + Tối đa 4 câu toàn bài mở đầu bằng trạng từ nối có dấu phẩy, 0 "Firstly/Secondly/Moreover/Furthermore" máy móc, và soi chi tiết các điểm chuyển câu/đoạn trong "ccFlowAudit" kèm NGUYÊN VĂN CẢ CÂU sửa đúng ngữ pháp 100%.`
         : `
 - "task" — Task Response (TR) [CHẤM CỰC GẮT — MỤC TIÊU >= 8.0]:
   + Độ dài: ${wordCount} từ (IELTS Task 2 yêu cầu >= 250 từ; nếu < 250 từ -> TRẦN TR <= 6.5).
   + Mở bài: Paraphrase tự nhiên + Thesis trả lời TRỰC DIỆN mọi vế câu hỏi và lộ trình lập luận rõ.
   + Các thân bài (chuẩn cấu trúc 5 đoạn): Topic sentence bám Thesis -> Cơ chế nhân-quả SÂU ("tại sao & bằng cách nào") -> Ví dụ/bối cảnh thực tế hợp lý -> Chốt luận điểm. Hời hợt, bịa thống kê ảo hoặc tự mâu thuẫn Thesis -> TRẦN TR <= 6.5–7.0.
   + Kết bài: Tổng hợp đủ các mạch ý chính và khẳng định lại Thesis, không đưa ý mới.
-- "cc" — Coherence & Cohesion (CC) [TÂM ĐIỂM SIÊU RÕ — MỤC TIÊU = 9.0 THEO OFFICIAL IELTS BAND 9 DESCRIPTOR]:
-  + Bố cục chuẩn 5 đoạn mạch lạc tuyệt đối và bám chặt 4 trụ cột Band 9 CC: (1) The message can be followed effortlessly, (2) Cohesion very rarely / never attracts attention, (3) Minimal lapses, (4) Paragraphing skilfully managed.
-  + Bắt buộc soi các điểm chuyển đoạn & chuyển câu trọng yếu trong "ccFlowAudit" kèm NGUYÊN VĂN CẢ CÂU sửa đúng ngữ pháp 100%. Lạm dụng "Firstly, Secondly, Thirdly, Moreover, Furthermore, In conclusion" -> TRẦN CC <= 7.5–8.0.`;
+- "cc" — Coherence & Cohesion (CC) [MỤC TIÊU >= 8.5 — CHẤM CỐ ĐỊNH THEO 5 QUY LUẬT R1..R5]:
+  + Bố cục chuẩn 5 đoạn mạch lạc và kiểm tra cố định 5 quy luật R1..R5 trong "ccChecklist" (**5/5 = 8.5–9.0**, **4/5 = 7.5–8.0**, **3/5 = 7.0–7.5**, **<=2/5 = 5.5–6.5**).
+  + Tối đa 4 câu toàn bài mở đầu bằng trạng từ nối có dấu phẩy, 0 "Firstly/Secondly/Moreover/Furthermore" máy móc, và soi chi tiết các điểm chuyển câu/đoạn trong "ccFlowAudit" kèm NGUYÊN VĂN CẢ CÂU sửa đúng ngữ pháp 100%.`;
 
     const sharedContext = `
-Bạn là cựu giám khảo IELTS Academic Writing & GIA SƯ KÈM 1-1 chuyên nâng học viên từ Band 6.0 lên Band 8.0.
+Bạn là cựu giám khảo IELTS Academic Writing & GIA SƯ KÈM 1-1 chuyên nâng học viên từ Band 6.0 lên Band 8.0, chấm điểm BÁM SÁT 100% **Official IELTS Writing Band Descriptors (May 2023)**.
 Học viên đang ở chế độ **TỰ VIẾT & CHẤM CHỮA TOÀN BÀI CHUYÊN SÂU** (${taskType === 'task1' ? 'Task 1' : 'Task 2'} — mục tiêu chuẩn ${expectedBodyCount} đoạn, độ dài >= ${minWordTarget} từ, bài hiện tại ${wordCount} từ).
-Mục tiêu đạt chuẩn: **${taskShort} >= 8.0 · CC = 9.0 · GRA >= 8.0 · LR >= 7.0 (Overall >= 8.0)**.
+Mục tiêu đạt chuẩn: **${taskShort} >= 8.0 · CC >= 8.5 · GRA >= 8.0 · LR >= 7.5 (Overall >= 8.0)**.
 
 ${promptContext}
 
@@ -178,26 +178,25 @@ ${previousAttemptBlock}
 ${cleanEssay}
 """
 
-=== RUBRIC CHẤM TOÀN BÀI (${taskShort} 8.0 · CC 9.0 · GRA 8.0 · LR 7.0) ===
+=== RUBRIC CHẤM TOÀN BÀI (${taskShort} 8.0 · CC 8.5 · GRA 8.0 · LR 7.5) ===
 ${taskSpecificRules}
-- "gra" — Grammatical Range & Accuracy (GRA) [MỤC TIÊU >= 8.0]:
-  + Đa số câu xuyên suốt toàn bài phải sạch lỗi (error-free) VÀ sử dụng đa dạng cấu trúc phức tự nhiên (mệnh đề nhượng bộ While/Whereas/Although, mệnh đề quan hệ không xác định ", which + V", cụm phân từ, with + N + V-ing, bị động/điều kiện/so sánh), chia thì nhất quán toàn bài, kiểm soát chuẩn mạo từ/giới từ/dấu câu. Nếu lặp câu đơn giản hoặc còn lỗi ngữ pháp rải rác -> TRẦN GRA <= 6.5–7.5.
-- "lr" — Lexical Resource (LR) [MỤC TIÊU CHỈ CẦN = 7.0 — TỪ VỰNG B1–B2 PHỔ THÔNG, RÕ NGHĨA, SÁT ĐỀ]:
-  + Học viên CHỈ cần **LR 7.0** — ưu tiên **collocation B1–B2 quen thuộc, tự nhiên, bám sát 100% chủ đề bài viết**${taskType === 'task1' ? ' (VD: account for, make up, reach a peak of, rise steadily, drop sharply, remain steady, compared with, by contrast)' : ' (VD: play an important role in, have a negative effect on, reduce financial pressure, raise public awareness, equal opportunities, lead to serious problems)'}.
-  + TUYỆT ĐỐI KHÔNG trừ xuống < 7.0 chỉ vì học viên dùng từ phổ thông rõ nghĩa, và **CẤM TUYỆT ĐỐI** đề xuất từ C1–C2 cao siêu/hoa mỹ dễ gây lệch đề (CẤM kiểu: ubiquitous, exacerbate, mitigate, proliferate, paramount, deleterious, detrimental, unprecedented, multifaceted, paradigm shift, galvanize, bolster, unyielding, supremacy, ramifications, trajectory, skyrocket, plummet, eclipse, dwarf). Chỉ sửa khi lặp từ sơ đẳng xuyên suốt nhiều đoạn, dịch word-by-word từ tiếng Việt, sai collocation hoặc dùng từ lệch đề.
+- "gra" — Grammatical Range & Accuracy (GRA) [MỤC TIÊU >= 8.0 — Official Band 8]:
+  + Đa số câu xuyên suốt toàn bài sạch lỗi (>75% error-free) VÀ sử dụng đa dạng cấu trúc câu đơn + câu phức tự nhiên, kiểm soát tốt mạo từ/giới từ/chia thì/dấu câu.
+- "lr" — Lexical Resource (LR) [MỤC TIÊU >= 7.5 — Official Band 7–8 Bridge]:
+  + Vốn từ **B2 vững + các collocation học thuật tự nhiên bám sát 100% chủ đề bài viết**${taskType === 'task1' ? ' (VD: account for the largest proportion, experience a steady rise, narrow the gap, remain broadly unchanged)' : ' (VD: ease the financial burden on, widen access to, allocate public funds, pose a long-term challenge)'}, xoay vòng paraphrase không lặp từ xuyên suốt các đoạn, rất ít lỗi word choice / word formation. Không ép từ C2 hoa mỹ học vẹt!
 `;
 
     // ─── CHUNKED PHASE HANDLERS ───
     if (phase === 'task-cc') {
       const p1Prompt = `${sharedContext}
 ${buildAlignedCriteriaDirectives({ taskType, isFullEssay: true })}
-NHIỆM VỤ BƯỚC 1/3: Chấm & bóc tách SIÊU CHI TIẾT **${taskShort} (>= 8.0)** và **CC (= 9.0)** kèm "wholeEssayStructureFeedback" và "repetitionAlerts".
+NHIỆM VỤ BƯỚC 1/3: Chấm & bóc tách SIÊU CHI TIẾT **${taskShort} (>= 8.0)** và **CC (>= 8.5)** kèm "ccChecklist" (5 quy luật R1..R5), "ccFlowAudit", "wholeEssayStructureFeedback" và "repetitionAlerts".
 Trả về DUY NHẤT JSON hợp lệ:
 ${buildTaskCcPhaseSchema({
   taskShort,
   extraFieldsSchema: `"wholeEssayStructureFeedback": "Nhận xét tổng thể cấu trúc toàn bài, cân đối dung lượng, mạch chuyển giữa các đoạn và độ dài ${wordCount} từ.",
   "repetitionAlerts": [
-    "Lặp từ/cụm X ở Đoạn 1 & Đoạn 3 -> Đoạn 1 giữ ..., Đoạn 3 đổi sang B1–B2 collocation ..."
+    "Lặp từ/cụm X ở Đoạn 1 & Đoạn 3 -> Đoạn 1 giữ ..., Đoạn 3 đổi sang collocation tự nhiên ..."
   ]`,
 })}`;
 
@@ -210,7 +209,7 @@ ${buildTaskCcPhaseSchema({
           }
           return parsed;
         },
-        { temperature: 0.3, maxOutputTokens: 4800, perModelTimeoutMs: 24_000, totalBudgetMs: 50_000 }
+        { temperature: 0.1, maxOutputTokens: 5200, perModelTimeoutMs: 24_000, totalBudgetMs: 50_000 }
       );
       return NextResponse.json(data, { status: 200 });
     }
@@ -221,7 +220,7 @@ ${buildTaskCcPhaseSchema({
 ${JSON.stringify(phase1Context || {})}
 
 ${buildAlignedCriteriaDirectives({ taskType, isFullEssay: true })}
-NHIỆM VỤ BƯỚC 2/3: Chấm & bóc tách SIÊU CHI TIẾT **GRA (>= 8.0)** và **LR (>= 7.0)** kèm "grammarErrors" và "vocabularyTips" toàn bài, khớp 100% với kế hoạch Bước 1.
+NHIỆM VỤ BƯỚC 2/3: Chấm & bóc tách SIÊU CHI TIẾT **GRA (>= 8.0)** và **LR (>= 7.5)** kèm "grammarErrors" và "vocabularyTips" toàn bài, khớp 100% với kế hoạch Bước 1.
 Trả về DUY NHẤT JSON hợp lệ:
 ${buildGraLrPhaseSchema()}`;
 
@@ -234,20 +233,20 @@ ${buildGraLrPhaseSchema()}`;
           }
           return parsed;
         },
-        { temperature: 0.3, maxOutputTokens: 3800, perModelTimeoutMs: 24_000, totalBudgetMs: 50_000 }
+        { temperature: 0.1, maxOutputTokens: 4000, perModelTimeoutMs: 24_000, totalBudgetMs: 50_000 }
       );
       return NextResponse.json(data, { status: 200 });
     }
 
     if (phase === 'paragraphs-tutor') {
       const p3Prompt = `${sharedContext}
-=== KẾT QUẢ 4 TIÊU CHÍ ĐÃ CHẤM ===
+=== KẾT QUẢ 4 TIÊU CHÍ & 5 QUY LUẬT CC ĐÃ CHẤM ===
 ${JSON.stringify(criteriaContext || {})}
 
 NHIỆM VỤ BƯỚC 3/3:
-1. "paragraphBreakdown": Mổ xẻ TỪNG ĐOẠN thực tế trong bài học viên (strengths, weaknesses, suggestedEdit = hướng tự sửa & bổ sung cụ thể ngay trên câu cũ + cụm B1–B2, KHÔNG dán đoạn viết mới).
+1. "paragraphBreakdown": Mổ xẻ TỪNG ĐOẠN thực tế trong bài học viên (strengths, weaknesses, suggestedEdit = hướng tự sửa & bổ sung cụ thể ngay trên câu cũ, KHÔNG dán nguyên đoạn mới).
 2. "generalFeedback": Tóm tắt 2 câu tiếng Việt.
-3. "tutorClosingNote": Đoạn chốt nhận xét sâu sắc 180–260 từ của GIA SƯ IELTS WRITING bằng tiếng Việt (tách 3–4 đoạn bằng \\n\\n): bóc tách điểm mạnh/nút thắt tư duy Band 6, đối chiếu tiến bộ nếu có bản nháp cũ, lộ trình sửa 1->2->3 toàn bài để chạm mốc ${taskShort} 8.0 · CC 9.0 · GRA 8.0 · LR 7.0.
+3. "tutorClosingNote": Đoạn chốt nhận xét sâu sắc 180–260 từ của GIA SƯ IELTS WRITING bằng tiếng Việt (tách 3–4 đoạn bằng \\n\\n): bóc tách điểm mạnh/nút thắt (nêu rõ kết quả X/5 quy luật CC & độ chính xác LR 7.5), đối chiếu tiến bộ nếu có bản nháp cũ, lộ trình sửa 1->2->3 toàn bài để chạm mốc ${taskShort} 8.0 · CC 8.5 · GRA 8.0 · LR 7.5.
 4. "modelUpgrade": Toàn bài essay tham khảo chuẩn Band 8.0+ (chỉ mở sau khi đạt chuẩn).
 
 Trả về DUY NHẤT JSON hợp lệ:
@@ -255,7 +254,7 @@ ${buildTutorClosingPhaseSchema({
   taskShort,
   includeParagraphBreakdown: true,
   modelUpgradeInstruction:
-    'Toàn bộ bài essay tham khảo chuẩn TA/TR 8.0+ · CC 9.0 · GRA 8.0+ (ngắt đoạn bằng \\n\\n, giữ văn phong B1–B2 tự nhiên — hệ thống chỉ mở SAU KHI ĐẠT CHUẨN Overall >= 8.0).',
+    'Toàn bộ bài essay tham khảo chuẩn TA/TR 8.0+ · CC 8.5+ · GRA 8.0+ · LR 7.5+ (ngắt đoạn bằng \\n\\n — hệ thống chỉ mở SAU KHI ĐẠT CHUẨN Overall >= 8.0).',
 })}`;
 
       const { data } = await generateJsonWithFallback(
@@ -267,21 +266,22 @@ ${buildTutorClosingPhaseSchema({
           }
           return parsed;
         },
-        { temperature: 0.35, maxOutputTokens: 4200, perModelTimeoutMs: 24_000, totalBudgetMs: 50_000 }
+        { temperature: 0.15, maxOutputTokens: 4200, perModelTimeoutMs: 24_000, totalBudgetMs: 50_000 }
       );
       return NextResponse.json(data, { status: 200 });
     }
 
-    // ─── DEFAULT FULL SINGLE-SHOT MODE (fail fast on truncation so client runs 3 crisp phases) ───
+    // ─── DEFAULT FULL SINGLE-SHOT MODE (temperature 0.1 for deterministic grading!) ───
     const fullPrompt = `${sharedContext}
 ${buildAlignedCriteriaDirectives({ taskType, isFullEssay: true })}
 
 === YÊU CẦU CHỮA CHI TIẾT TOÀN BÀI ===
-1. Cả 4 tiêu chí trong "criteria" ĐỒNG BỘ HOÀN TOÀN qua "mappings" (gọi rõ từng Đoạn & từng Câu trong bài, VD: "Đoạn 2 — sau Câu 1").
-2. "paragraphBreakdown": Mổ xẻ TỪNG ĐOẠN thực tế trong bài học viên: nêu "strengths", "weaknesses", và "suggestedEdit" = HƯỚNG TỰ SỬA / BỔ SUNG CỤ THỂ ngay trên câu cũ (KHÔNG dán nguyên đoạn mới thay thế!).
-3. "repetitionAlerts": Liệt kê tất cả từ/cụm từ/từ nối bị lặp xuyên suốt các đoạn kèm gợi ý thay thế B1–B2.
-4. "wholeEssayStructureFeedback": Đánh giá mạch liên kết tổng thể, phân bổ dung lượng giữa các đoạn và độ dài ${wordCount} từ.
-5. "tutorClosingNote": Đoạn chốt nhận xét sâu sắc 180–260 từ của GIA SƯ IELTS WRITING bằng tiếng Việt ở cuối cùng.
+1. Cả 4 tiêu chí trong "criteria" ĐỒNG BỘ HOÀN TOÀN qua "mappings" (gọi rõ từng Đoạn & từng Câu trong bài).
+2. "ccChecklist": Đánh giá đầy đủ 5 quy luật R1..R5 toàn bài và quy đổi đúng điểm CC!
+3. "paragraphBreakdown": Mổ xẻ TỪNG ĐOẠN thực tế trong bài học viên: nêu "strengths", "weaknesses", và "suggestedEdit" = HƯỚNG TỰ SỬA / BỔ SUNG CỤ THỂ ngay trên câu cũ (KHÔNG dán nguyên đoạn mới thay thế!).
+4. "repetitionAlerts": Liệt kê tất cả từ/cụm từ/từ nối bị lặp xuyên suốt các đoạn kèm gợi ý thay thế tự nhiên.
+5. "wholeEssayStructureFeedback": Đánh giá mạch liên kết tổng thể, phân bổ dung lượng giữa các đoạn và độ dài ${wordCount} từ.
+6. "tutorClosingNote": Đoạn chốt nhận xét sâu sắc 180–260 từ của GIA SƯ IELTS WRITING bằng tiếng Việt ở cuối cùng.
 
 TRẢ VỀ DUY NHẤT JSON HỢP LỆ (KHÔNG MARKDOWN):
 ${buildUnifiedGradeJsonSchema({
@@ -293,14 +293,14 @@ ${buildUnifiedGradeJsonSchema({
       "role": "Chức năng đoạn này trong cấu trúc chuẩn",
       "strengths": "Điểm làm tốt của đoạn",
       "weaknesses": "Điểm còn yếu / mất điểm của đoạn",
-      "suggestedEdit": "Hướng dẫn tự sửa & bổ sung cụ thể ngay trên câu cũ của đoạn này + liệt kê cụm B1–B2 nên dùng (KHÔNG dán nguyên đoạn viết mới)."
+      "suggestedEdit": "Hướng dẫn tự sửa & bổ sung cụ thể ngay trên câu cũ của đoạn này (KHÔNG dán nguyên đoạn viết mới)."
     }
   ],
   "repetitionAlerts": [
-    "Lặp từ/cụm X ở Đoạn 1 & Đoạn 3 -> Đoạn 1 giữ ..., Đoạn 3 đổi sang B1–B2 collocation ..."
+    "Lặp từ/cụm X ở Đoạn 1 & Đoạn 3 -> Đoạn 1 giữ ..., Đoạn 3 đổi sang collocation tự nhiên ..."
   ],`,
   modelUpgradeInstruction:
-    'Toàn bộ bài essay tham khảo chuẩn TA/TR 8.0+ · CC 9.0 · GRA 8.0+ (ngắt đoạn bằng \\n\\n, giữ văn phong B1–B2 tự nhiên — hệ thống chỉ mở SAU KHI ĐẠT CHUẨN Overall >= 8.0).',
+    'Toàn bộ bài essay tham khảo chuẩn TA/TR 8.0+ · CC 8.5+ · GRA 8.0+ · LR 7.5+ (ngắt đoạn bằng \\n\\n — hệ thống chỉ mở SAU KHI ĐẠT CHUẨN Overall >= 8.0).',
 })}`.trim();
 
     try {
@@ -314,7 +314,7 @@ ${buildUnifiedGradeJsonSchema({
           return normalizeFullEssayGradeResult(parsed);
         },
         {
-          temperature: 0.35,
+          temperature: 0.1,
           maxOutputTokens: 8192,
           perModelTimeoutMs: 26_000,
           totalBudgetMs: 42_000,

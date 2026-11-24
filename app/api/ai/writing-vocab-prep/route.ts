@@ -11,19 +11,16 @@ import { normalizeVocabPrep, type ChartData } from '@/lib/writing-practice-types
 type PrepPhase = 'full' | 'paraphrase' | 'collocations';
 
 const STRICT_B1_B2_VOCAB_RULES = `
-STRICT VOCABULARY CEILING = B1–B2 ONLY (MỤC TIÊU LR 7.0 — CHỐNG TỪ CAO SIÊU & CHỐNG LỆCH ĐỀ 100%):
-- Learner ONLY needs **LR 7.0** (because strategy is 8 TA/TR · 9 CC · 8 GRA · 7 LR = Overall 8.0).
-- Band 7.0 LR does NOT require fancy C1–C2 words! Every single word, paraphrase, and collocation MUST be:
-  1. Plain, clear, natural **B1–B2** English that native speakers actually use in straightforward academic writing.
-  2. 100% ON-TOPIC and faithful to the exact meaning/scope of the prompt or chart (ZERO exaggerated, vague, or off-topic metaphors).
-  3. Easy for a Band 6.0 learner to plug directly into their own sentences without risking wrong collocation or wrong register.
-- STRICTLY BANNED OVERKILL / POMPOUS WORDS (NEVER output any of these):
-  "ubiquitous", "exacerbate", "ameliorate", "mitigate", "proliferate", "paramount", "deleterious", "detrimental",
-  "unprecedented", "multifaceted", "paradigm shift", "galvanize", "bolster", "perpetuate", "unyielding", "supremacy",
-  "indispensable", "myriad", "plethora", "ramifications", "repercussions", "ostensibly", "inherently", "stark contrast",
-  "stark dichotomy", "double-edged sword", "spark heated debate", "trajectory", "skyrocket", "plummet", "preponderance",
-  "predominance", "eclipse", "dwarf", "metamorphose", "burgeoning", "outstrip", "socio-economic stratification".
-- Self-check EVERY item before outputting: "Is this plain B1–B2 English? Does it preserve the exact meaning of the prompt/chart without sounding overly dramatic or off-topic?" If not -> replace with a simpler, clearer B1–B2 phrase!
+VOCABULARY CALIBRATION = BAND 7.5 LR (OFFICIAL IELTS BAND DESCRIPTORS MAY 2023 — CHÍNH XÁC, LINH HOẠT, SÁT ĐỀ, KHÔNG SÁO RỖNG):
+- Learner's target is **LR = 7.5** (matrix: 8.0 TA/TR · 8.5 CC · 8.0 GRA · 7.5 LR = Overall 8.0).
+- Official May 2023 IELTS Band 7–8 LR Descriptors:
+  * Band 7 LR: "The resource is sufficient to allow some flexibility and precision. There is some ability to use less common and/or idiomatic items. An awareness of style and collocation is evident."
+  * Band 8 LR: "A wide resource is fluently and flexibly used to convey precise meanings within the scope of the task. Skilful use of uncommon and/or idiomatic items when appropriate."
+- Therefore, EVERY word, paraphrase, and collocation you suggest MUST hit the **Band 7.5 sweet spot**:
+  1. Strong **B2 + natural topic-specific academic collocations** ("less common items used naturally within the scope of the task") — precise, formal, idiomatic written English!
+  2. **100% ON-TOPIC** and faithful to the exact meaning/scope of THIS prompt or chart (ZERO exaggerated or off-topic metaphors).
+  3. Still **BANNED**: artificial/pompous/memorised C2 thesaurus clichés that IELTS examiners penalize ("ubiquitous", "exacerbate", "ameliorate", "unyielding", "supremacy", "plethora", "myriad", "paradigm shift", "double-edged sword", "spark heated debate", "skyrocket", "plummet", "stark dichotomy").
+  4. Focus on **accurate verb + noun, adjective + noun, and verb + adverb collocations** (e.g. Task 1: "account for the largest proportion", "experience a steady upward trend", "widen the gap between", "remain broadly unchanged"; Task 2: "ease the financial burden on", "widen access to higher education", "allocate public funds to", "impose stricter regulations on", "pose a long-term threat to").
 `;
 
 function buildTask1Context(chartData: ChartData): string {
@@ -64,7 +61,7 @@ TASK:
 2. Build "collocationGroups" (**3 focused groups**, **4–5 plain B1–B2 collocations per group**):
    - Group 1: "Mở bài & Tổng quan (Intro & Overview)"
    - Group 2: "Mô tả số liệu & Biến động sát biểu đồ (Detail 1 & 2)" — directly using this chart's topic/unit!
-   - Group 3: "So sánh đối chiếu & Quy chiếu tránh lặp từ (CC 9.0 + LR 7.0)"
+   - Group 3: "So sánh đối chiếu & Quy chiếu tránh lặp từ (CC 8.5 + LR 7.5)"
 3. Write "antiRepetitionTip": 1–2 concise Vietnamese sentences explaining how to rotate these rows across the 4 Bodies.
 
 Return ONLY valid JSON:
@@ -109,7 +106,7 @@ TASK:
    - Group 2: "Triển khai luận điểm chính sát đề (Body 2 & Body 3)"
    - Group 3: "Phản biện, Giới hạn & Giải pháp thực tế (Body 4)"
    - Group 4: "Động từ & Cụm diễn đạt nguyên nhân – kết quả B1–B2 (tránh lặp cause / lead to / good / bad)"
-4. Write "antiRepetitionTip": 1–2 crisp Vietnamese sentences explaining how to rotate the paraphrase table across Bodies 1–5 to keep LR 7.0 clean and CC 9.0 natural.
+4. Write "antiRepetitionTip": 1–2 crisp Vietnamese sentences explaining how to rotate the paraphrase table across Bodies 1–5 to hit LR 7.5 precision and CC 8.5+ referencing cleanly.
 
 Return ONLY valid JSON:
 {

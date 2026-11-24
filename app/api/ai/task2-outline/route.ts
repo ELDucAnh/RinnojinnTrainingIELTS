@@ -84,7 +84,7 @@ function buildTask2OutlinePrompt(params: {
   const vocabBlock = buildConfirmedVocabBlock(vocabPrep);
 
   return `You are an elite IELTS Academic Writing Task 2 strategist & 1-on-1 tutor coaching a Band 6.0 Vietnamese learner to reach **Overall Band 8.0** via the exact score matrix:
-**TR >= 8.0 · CC = 9.0 · GRA >= 8.0 · LR = 7.0 ONLY (STRICTLY clear, everyday B1–B2 on-topic collocations — NEVER fancy C1–C2 words!)**
+**TR >= 8.0 · CC >= 8.5 · GRA >= 8.0 · LR >= 7.5 (flexible, precise B2 + natural topic-specific academic collocations within task scope — ZERO memorised C2 clichés!)**
 
 Task 2 prompt:
 """
@@ -95,32 +95,36 @@ ${metaContext}${vocabBlock}${prevBlock}
 Generate ${isPartial ? `ONLY the requested ${bodyIndices.length} Body item(s) (bodyIndex: ${bodyIndices.join(', ')})` : 'ALL 5 Body items (bodyIndex 0..4)'}:
 ${targetSpecs}
 
-STRICT COACHING RULES (tailor 100% to THIS exact prompt — NEVER generic rote tokens):
+STRICT COACHING RULES (grounded in Official IELTS Writing Band Descriptors May 2023 — tailor 100% to THIS exact prompt):
 - Write "role", "viGuide", "bandStrategy.*", "ideaGuides[].ideaLabel", "ideaGuides[].ideaVi", and "linkingTip" in sharp VIETNAMESE. Do NOT write full sample English sentences or paragraphs!
-- STRICT VOCABULARY CEILING = B1–B2 (LR 7.0 ONLY — CHỐNG TỪ CAO SIÊU & CHỐNG LỆCH ĐỀ):
-  * Learner ONLY aims for **LR 7.0** (TR 8 + CC 9 + GRA 8 + LR 7 = Overall 8.0). Do NOT push vocabulary toward Band 8–9 or C1–C2!
-  * Every phrase in "vocabPhrases" MUST be plain, clear, natural **B1–B2** English anchored 100% directly to the EXACT topic and scope of THIS prompt (so using it NEVER shifts the meaning off-topic or sounds unnatural/over-dramatic).
-  * GOOD LR 7.0 Task 2 style: "play an important role in", "have a negative effect on", "reduce financial pressure", "equal access to", "public funding", "create job opportunities", "rely heavily on", "face high living costs", "raise public awareness of", "find a balance between", "lead to serious problems", "gain practical skills" — plus concrete, plain nouns directly from THIS prompt's topic.
-  * STRICTLY BANNED (overly fancy C1–C2 / pompous / off-topic buzzwords): "ubiquitous", "exacerbate", "ameliorate", "mitigate", "proliferate", "paramount", "deleterious", "detrimental", "unprecedented", "multifaceted", "paradigm shift", "galvanize", "bolster", "perpetuate", "unyielding", "supremacy", "indispensable", "myriad", "plethora", "ramifications", "repercussions", "ostensibly", "inherently", "socio-economic stratification", "stark contrast", "double-edged sword", "spark heated debate".
-- MANDATORY "bandStrategy" OBJECT ON EVERY BODY (crystal-clear rules so the learner knows EXACTLY how to earn 8 TR · 9 CC · 8 GRA · 7 LR in THIS body):
-  * "task8Note": Yêu cầu bắt buộc ở Body này để đạt **TR >= 8.0** (vế câu hỏi bắt buộc chạm tới, độ sâu cơ chế nhân-quả để thoát bẫy Band 6 chung chung/nhảy cóc).
-  * "cc9Note": Lưu ý CỰC KỸ để Body này đạt **CC = 9.0** (cách nối ý "tàng hình" bằng chuỗi thông tin Cũ -> Mới, phép quy chiếu danh từ khái quát như "this trend", "such policies", "this problem", cách neo ngược vào Thesis ở Body 1, và CHỈ RÕ từ nối máy móc nào phải loại bỏ).
-  * "gra8Note": Yêu cầu bắt buộc để Body này đạt **GRA >= 8.0** (những cấu trúc phức hợp tự nhiên cần phối hợp trong đoạn này như mệnh đề nhượng bộ While/Whereas, mệnh đề quan hệ không xác định ", which + V", cụm phân từ, câu điều kiện/giả định, và các bẫy mạo từ/chia động từ hay gặp).
-  * "lrNote": Lưu ý CỰC KỸ để giữ vững **LR 7.0 tự nhiên, sát đề** ở Body này (chỉ cần dùng từ B1–B2 quen thuộc, đúng collocation và bám sát chủ đề đề bài, biết paraphrase đơn giản để tránh lặp từ, TUYỆT ĐỐI không cố nhồi từ C1–C2 cao siêu gây lệch ý đề).
+- VOCABULARY CALIBRATION = LR 7.5 (Official Band 7–8 Bridge: flexible, precise, natural topic-specific collocations, 100% on-topic):
+  * Suggest **accurate B2 + natural topic-specific academic collocations** anchored 100% to THIS prompt's topic ("ease the financial burden on", "widen access to higher education", "allocate public funding to", "impose stricter regulations", "pose a long-term challenge to", "foster social mobility").
+  * Still BANNED: artificial/pompous C2 clichés ("ubiquitous", "exacerbate", "ameliorate", "unyielding", "supremacy", "myriad", "plethora", "paradigm shift", "double-edged sword", "spark heated debate", "stark dichotomy").
+- DETERMINISTIC 5-RULE CC >= 8.5 BLUEPRINT (so the learner ALWAYS passes all 5 CC rules):
+  * R1: 1 clear central topic & logical sentence sequencing per Body.
+  * R2: Linear progression (Old -> New info / Rheme -> Theme) across every sentence transition.
+  * R3: At least 1–2 clear referencing/substitution devices ("this policy", "such measures", "this financial strain", "doing so", "those who...") with clear antecedents.
+  * R4: 0 mechanical sequence linkers ("Firstly/Secondly/Moreover/Furthermore"), and AT MOST 1 sentence-initial adverbial linker with comma per Body!
+  * R5: 100% accurate logical & grammatical connector use (0 comma splices, 0 "Although... but...").
+- MANDATORY "bandStrategy" OBJECT ON EVERY BODY:
+  * "task8Note": Yêu cầu bắt buộc ở Body này để đạt **TR >= 8.0** theo chuẩn IELTS May 2023 (trả lời thẳng đề, phát triển sâu cơ chế nhân-quả & minh họa thực tế thuyết phục).
+  * "cc9Note": Lưu ý CỰC KỸ để Body này đạt **CC >= 8.5 (thỏa trọn 5/5 quy luật R1–R5)**: chỉ rõ mạch Old->New, phép quy chiếu R3 cụ thể nên dùng, và kiểm soát R4 (0 Firstly/Moreover, tối đa 1 trạng từ nối đầu câu).
+  * "gra8Note": Yêu cầu bắt buộc để Body này đạt **GRA >= 8.0** (phối hợp Câu đơn sắc gọn + đa dạng Câu phức, >75% câu sạch lỗi ngữ pháp & dấu câu).
+  * "lrNote": Lưu ý CỰC KỸ để đạt **LR >= 7.5** ở Body này (dùng collocation B2 + thuật ngữ sát đề chính xác sắc thái, xoay vòng bảng Paraphrase không lặp từ, tránh từ khẩu ngữ và tránh từ C2 học vẹt).
 - MANDATORY SENTENCE-BY-SENTENCE INTERLOCKING BLUEPRINT ("targetSentenceCount", "sentenceMixSummary", "ideaGuides" — CẤM GỢI Ý LẺ TẺ):
   For EACH Body, design an EXACT **Sentence-by-Sentence Blueprint** ("ideaGuides.length === targetSentenceCount" — EVERY object in "ideaGuides" maps 1-to-1 to ONE numbered sentence: Câu 1, Câu 2, Câu 3, Câu 4!):
   * "targetSentenceCount": Exact integer count (Body 1: 2, Body 2: 4, Body 3: 4, Body 4: 4, Body 5: 2).
   * "sentenceMixSummary": Crisp Vietnamese summary showing the exact simple/complex rhythm, e.g. "4 câu: Câu 1 (Câu đơn) → Câu 2 (Câu phức) → Câu 3 (Câu phức) → Câu 4 (Câu đơn)".
   * Inside EACH sentence item of "ideaGuides":
     - "sentenceNumber": 1, 2, 3, 4...
-    - "sentenceType": EXACTLY one of "simple" | "compound" | "complex" | "compound-complex" (deliberately mix Simple + Complex across the Body so Topic/Closing sentences are punchy Simple and Explanation/Example sentences are smooth Complex — essential for GRA 8.0 & effortless CC 9.0!).
+    - "sentenceType": EXACTLY one of "simple" | "compound" | "complex" | "compound-complex" (deliberately mix Simple + Complex across the Body for GRA 8.0 & smooth CC 8.5+!).
     - "sentenceTypeLabel": e.g. "Câu đơn (Simple)", "Câu phức (Complex)", "Câu ghép (Compound)".
     - "ideaLabel": Exact role of THIS sentence, e.g. "Câu 1 — Topic Sentence (Chốt luận điểm 1)".
     - "ideaVi": Spell out EXACTLY what goes inside THIS sentence (clause 1 -> clause 2 if complex/compound).
-    - "ccLinkFromPrev": **INTERLOCKING CC 9.0 GUIDE FOR THIS EXACT SENTENCE** (grounded in Official Band 9 CC: "The message can be followed effortlessly" & "Cohesion very rarely attracts attention"): state EXPLICITLY how Câu N connects straight out of Câu N-1 (or previous Body for Câu 1) — WHICH exact concept at the end of Câu N-1 becomes the Old-Info anchor/referencing subject of Câu N so the whole paragraph locks together like gears! CẤM nói chung chung!
+    - "ccLinkFromPrev": **INTERLOCKING CC 8.5+ GUIDE FOR THIS EXACT SENTENCE** (aligned with R2, R3, R4, R5): state EXPLICITLY how Câu N connects straight out of Câu N-1 (or previous Body for Câu 1) — WHICH exact concept at the end of Câu N-1 becomes the Old-Info anchor/referencing subject of Câu N, keeping <=1 initial adverbial linker across the whole Body!
     - "ccLinkPhrases": 2–3 exact natural referencing/cohesion phrases for THIS specific sentence transition (e.g. ["this financial burden", "such policies", "doing so", "in practice, ..."]).
-    - "ccAvoid": 1 sharp warning naming the mechanical linker or CC error to AVOID at THIS exact sentence (e.g. "Cấm mở câu bằng 'Moreover,' hoặc 'Furthermore,' — dùng danh từ quy chiếu để mạch đọc tàng hình").
-    - "vocabPhrases": **3–4 plain, everyday B1–B2 written collocations** strictly tied to THIS sentence & prompt topic (prioritized from confirmed vocabPrep if provided; ZERO fancy C1–C2 words): [{ "phrase": "...", "meaning": "..." }].
+    - "ccAvoid": 1 sharp warning naming the mechanical linker or CC error that would violate R3/R4/R5 at THIS sentence.
+    - "vocabPhrases": **3–4 precise B2 / natural topic-specific collocations (LR 7.5)** strictly tied to THIS sentence & prompt topic (prioritized from confirmed vocabPrep if provided; ZERO pompous C2 clichés): [{ "phrase": "...", "meaning": "..." }].
     - "grammarPatterns": **1–2 grammar frames MATCHING "sentenceType"** of THIS sentence (Simple crisp frame for "simple"; Band 8.0 Complex frame for "complex"): [{ "structure": "...", "usage": "..." }].
 - "linkingTip": 1 sharp summary of how this Body's full sentence chain bridges from previous Body to next Body.
 

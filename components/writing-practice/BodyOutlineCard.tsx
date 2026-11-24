@@ -120,7 +120,7 @@ export function BodyOutlineCard({
           </span>
           <div>
             <p className="text-xs font-extrabold uppercase tracking-wider text-gray-400">
-              Dàn ý từng câu &amp; Mạch CC 9.0 ({taskShort} 8.0 · CC 9.0 · GRA 8.0 · LR 7.0)
+              Dàn ý từng câu &amp; 5 quy luật CC 8.5 ({taskShort} 8.0 · CC 8.5 · GRA 8.0 · LR 7.5)
             </p>
             <h3 className="text-sm sm:text-base font-extrabold text-gray-900 mt-0.5">
               {currentOutline.role}
@@ -148,7 +148,7 @@ export function BodyOutlineCard({
               <span className={accent === 'orange' ? 'text-orange-600' : 'text-emerald-700'}>
                 {targetSentenceCount} câu
               </span>{' '}
-              nối khớp mạch CC 9.0
+              đạt đủ 5/5 quy luật CC 8.5
             </span>
             <span className="text-[11px] font-semibold text-gray-500">
               Phối hợp Câu đơn (sắc gọn) + Câu phức (GRA 8.0)
@@ -183,7 +183,7 @@ export function BodyOutlineCard({
         </div>
       )}
 
-      {/* Yêu cầu bắt buộc cho Body này để đạt 8 TA/TR · 9 CC · 8 GRA · 7 LR */}
+      {/* Yêu cầu bắt buộc cho Body này để đạt 8.0 TA/TR · 8.5 CC · 8.0 GRA · 7.5 LR */}
       {bandStrategy && (
         <div className="bg-white/95 rounded-xl border border-gray-200/90 p-3.5 sm:p-4 flex flex-col gap-2.5">
           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -195,11 +195,11 @@ export function BodyOutlineCard({
                 />
               )}
               <span>
-                Lưu ý bắt buộc cho Body {currentBodyIndex + 1} để đạt chuẩn 8 {taskShort} · 9 CC · 8 GRA · 7 LR
+                Lưu ý bắt buộc cho Body {currentBodyIndex + 1} để đạt chuẩn 8.0 {taskShort} · 8.5 CC · 8.0 GRA · 7.5 LR
               </span>
             </div>
             <span className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-              Đọc kỹ trước khi viết
+              5/5 quy luật CC = 8.5+
             </span>
           </div>
 
@@ -218,14 +218,14 @@ export function BodyOutlineCard({
                       accent === 'orange' ? 'text-orange-800' : 'text-emerald-800'
                     }`}
                   >
-                    Đạt CC 9.0 (Liên kết tàng hình)
+                    Đạt CC 8.5 (5 quy luật cố định R1–R5)
                   </span>
                   <span
                     className={`text-[10px] font-black px-1.5 py-0.5 rounded text-white ${
                       accent === 'orange' ? 'bg-orange-500' : 'bg-emerald-600'
                     }`}
                   >
-                    9.0 CC
+                    8.5 CC
                   </span>
                 </div>
                 <p>{bandStrategy.cc9Note}</p>
@@ -236,10 +236,10 @@ export function BodyOutlineCard({
               <div className="rounded-xl p-3 border bg-sky-50/70 border-sky-200/80 text-sky-950 text-xs leading-relaxed">
                 <div className="flex items-center justify-between gap-1.5 mb-1">
                   <span className="font-black text-[11px] uppercase tracking-wider text-sky-800">
-                    Từ vựng LR 7.0 (B1–B2 sát đề)
+                    Từ vựng LR 7.5 (B2 + Collocation sát đề)
                   </span>
                   <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-600 text-white">
-                    7.0 LR
+                    7.5 LR
                   </span>
                 </div>
                 <p>{bandStrategy.lrNote}</p>
@@ -284,7 +284,7 @@ export function BodyOutlineCard({
             <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700">
               {!showMinimalIcons && <Lightbulb size={14} className="text-amber-500 flex-shrink-0" />}
               <span>
-                Bản thiết kế từng câu cho Body {currentBodyIndex + 1} (Loại câu · Nội dung · Mạch CC 9.0 · Từ vựng &amp; Ngữ pháp):
+                Bản thiết kế từng câu cho Body {currentBodyIndex + 1} (Loại câu · Nội dung · Mạch CC 8.5 · Từ vựng LR 7.5 &amp; GRA 8.0):
               </span>
             </div>
             <span className="text-[11px] font-semibold text-gray-400">
@@ -350,7 +350,7 @@ export function BodyOutlineCard({
                           className={accent === 'orange' ? 'text-orange-600' : 'text-teal-700'}
                         />
                         <span className={accent === 'orange' ? 'text-orange-800' : 'text-teal-800'}>
-                          Cách nối CC 9.0 cho Câu {sentNum}{' '}
+                          Cách nối CC 8.5 cho Câu {sentNum}{' '}
                           {sentNum === 1 ? '(Nối từ Body trước / mở đoạn)' : `(Khớp nối từ Câu ${sentNum - 1} → Câu ${sentNum})`}
                         </span>
                       </div>
@@ -389,7 +389,7 @@ export function BodyOutlineCard({
                       {guide.vocabPhrases.length > 0 && (
                         <div className="flex flex-col gap-1.5">
                           <span className="text-[11px] font-extrabold text-gray-600">
-                            Collocation B1–B2 (LR 7.0) cho Câu {sentNum} ({guide.vocabPhrases.length}):
+                            Collocation LR 7.5 cho Câu {sentNum} ({guide.vocabPhrases.length}):
                           </span>
                           <div className="flex flex-col gap-1">
                             {guide.vocabPhrases.map((v, vi) => (
@@ -457,7 +457,7 @@ export function BodyOutlineCard({
       <div className={`flex items-start gap-2 border rounded-xl px-3.5 py-2.5 text-xs ${linkBoxStyle}`}>
         {!showMinimalIcons && <Link2 size={14} className="text-blue-600 flex-shrink-0 mt-0.5" />}
         <div>
-          <span className="font-bold">Cầu nối tổng thể Body {currentBodyIndex + 1} (CC 9.0): </span>
+          <span className="font-bold">Cầu nối tổng thể Body {currentBodyIndex + 1} (CC 8.5): </span>
           <span>{currentOutline.linkingTip}</span>
         </div>
       </div>
@@ -467,7 +467,7 @@ export function BodyOutlineCard({
         (hasLanguageSuggestions ? (
           <div className="bg-white/95 rounded-xl border border-gray-200/80 p-3.5 sm:p-4 flex flex-col gap-3">
             <p className="text-[11px] font-extrabold uppercase tracking-wider text-gray-500">
-              Gợi ý chi tiết — Collocation B1–B2 (LR 7.0) &amp; Ngữ pháp (GRA 8.0) cho Body {currentBodyIndex + 1}
+              Gợi ý chi tiết — Collocation chuẩn LR 7.5 &amp; Ngữ pháp GRA 8.0 cho Body {currentBodyIndex + 1}
             </p>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">

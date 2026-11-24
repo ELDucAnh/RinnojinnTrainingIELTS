@@ -149,13 +149,23 @@ export interface PreviousAttemptSummary {
   keyIssues: string[];
 }
 
+export type CcRuleId = 'R1' | 'R2' | 'R3' | 'R4' | 'R5';
+
+export interface CcChecklistItem {
+  ruleId: CcRuleId;
+  ruleTitle: string;
+  passed: boolean;
+  evidence: string;
+  fixAction?: string;
+}
+
 export type CcTransitionStatus = 'seamless' | 'mechanical' | 'abrupt' | 'unclear_ref';
 
 export interface CcSentenceLinkAudit {
   transition: string;        // VD: "Body trước → Câu 1", "Câu 1 → Câu 2"
   status: CcTransitionStatus;
   currentSentence: string;   // Nguyên văn CẢ CÂU hiện tại của học viên
-  diagnosis: string;         // Chẩn đoán chi tiết theo 4 tiêu chí Official IELTS Band 9 CC
+  diagnosis: string;         // Chẩn đoán chi tiết theo Official IELTS Band Descriptors (May 2023)
   howToFix: string;          // Cách sửa phép nối / quy chiếu / mạch Cũ -> Mới cụ thể
   fixedFullSentence: string; // Nguyên văn CẢ CÂU HOÀN CHỈNH sau khi sửa nối (đảm bảo 100% đúng ngữ pháp)
 }
@@ -165,11 +175,12 @@ export interface BodyGradeResult {
   passed: boolean;
   criteria: {
     task: CriterionFeedback; // TA (Task 1) >= 8.0 or TR (Task 2) >= 8.0
-    cc: CriterionFeedback;   // Coherence & Cohesion >= 9.0
+    cc: CriterionFeedback;   // Coherence & Cohesion >= 8.5
     gra: CriterionFeedback;  // Grammatical Range & Accuracy >= 8.0
-    lr: CriterionFeedback;   // Lexical Resource >= 7.0
+    lr: CriterionFeedback;   // Lexical Resource >= 7.5
   };
-  ccFlowAudit?: CcSentenceLinkAudit[]; // Mổ xẻ chi tiết từng chuyển câu theo chuẩn CC 9.0
+  ccChecklist?: CcChecklistItem[];     // Bộ 5 quy luật chấm CC cố định (5/5 = đạt >= 8.5)
+  ccFlowAudit?: CcSentenceLinkAudit[]; // Mổ xẻ chi tiết từng chuyển câu
   crossBodyFeedback: string;
   grammarErrors: BodyGrammarError[];
   vocabularyTips: BodyVocabularyTip[];
@@ -203,11 +214,12 @@ export interface FullEssayGradeResult {
   passed: boolean;
   criteria: {
     task: CriterionFeedback; // TA (Task 1) >= 8.0 or TR (Task 2) >= 8.0
-    cc: CriterionFeedback;   // Coherence & Cohesion >= 9.0
+    cc: CriterionFeedback;   // Coherence & Cohesion >= 8.5
     gra: CriterionFeedback;  // Grammatical Range & Accuracy >= 8.0
-    lr: CriterionFeedback;   // Lexical Resource >= 7.0
+    lr: CriterionFeedback;   // Lexical Resource >= 7.5
   };
-  ccFlowAudit?: CcSentenceLinkAudit[]; // Mổ xẻ chi tiết từng chuyển đoạn & chuyển câu theo chuẩn CC 9.0
+  ccChecklist?: CcChecklistItem[];     // Bộ 5 quy luật chấm CC cố định toàn bài
+  ccFlowAudit?: CcSentenceLinkAudit[]; // Mổ xẻ chi tiết từng chuyển đoạn & chuyển câu
   wholeEssayStructureFeedback: string;
   paragraphBreakdown: FullEssayParagraphFeedback[];
   repetitionAlerts: string[];
@@ -263,14 +275,24 @@ export interface Task2CompletedSession {
 }
 
 // ─── Constants & Helpers ──────────────────────────────────────────────────────
-// Chiến lược Band 8.0 Overall: (8.0 TA/TR + 9.0 CC + 8.0 GRA + 7.0 LR) / 4 = 8.0
+// Chiến lược Band 8.0 Overall: (8.0 TA/TR + 8.5 CC + 8.0 GRA + 7.5 LR) / 4 = 8.0
 
 export const BAND_PASS_THRESHOLD = 8.0;
 export const MIN_TASK_BAND = 8.0;
-export const MIN_CC_BAND = 9.0;
+export const MIN_CC_BAND = 8.5;
 export const MIN_GRA_BAND = 8.0;
-export const MIN_LR_BAND = 7.0;
-export const MIN_CRITERION_BAND = 7.0;
+export const MIN_LR_BAND = 7.5;
+export const MIN_CRITERION_BAND = 7.5;
+
+export const CC_RULE_ORDER: CcRuleId[] = ['R1', 'R2', 'R3', 'R4', 'R5'];
+
+export const CC_RULE_TITLES: Record<CcRuleId, string> = {
+  R1: 'Quy luật 1 — Một trọng tâm duy nhất & Trật tự câu logic (Paragraphing & Logical Sequencing)',
+  R2: 'Quy luật 2 — Mạch tiến triển Cũ → Mới liền mạch, không nhảy ý (Linear Thematic Progression)',
+  R3: 'Quy luật 3 — Có phép quy chiếu/thay thế rõ gốc, không lặp danh từ thô (Clear Referencing & Substitution)',
+  R4: 'Quy luật 4 — Kiểm soát từ nối: 0 từ liệt kê máy móc (Firstly/Moreover) & tối đa 1 trạng từ nối đầu câu/đoạn',
+  R5: 'Quy luật 5 — Đúng 100% quan hệ logic & ngữ pháp từ nối (0 sai nghĩa từ nối, 0 comma splice)',
+};
 
 export const TASK1_BODY_TEMPLATES: Array<{ bodyIndex: number; label: string; role: string }> = [
   { bodyIndex: 0, label: 'Body 1', role: 'Introduction (Mở bài — Paraphrase đề bài)' },
@@ -565,7 +587,7 @@ export function normalizeVocabPrep(raw: any): WritingVocabPrep {
     antiRepetitionTip:
       typeof raw?.antiRepetitionTip === 'string' && raw.antiRepetitionTip.trim()
         ? raw.antiRepetitionTip.trim()
-        : 'Xoay vòng lần lượt các cách paraphrase ở cột bên phải giữa Mở bài, các Thân bài và Kết bài để giữ LR 7.0 tự nhiên mà không bị lặp từ.',
+        : 'Xoay vòng lần lượt các cách paraphrase ở cột bên phải giữa Mở bài, các Thân bài và Kết bài để đạt chuẩn LR 7.5 linh hoạt mà không bị lặp từ.',
   };
 }
 
@@ -619,7 +641,7 @@ export function normalizeOutlineBodyItem(
     typeof safeFound.linkingTip === 'string' && safeFound.linkingTip.trim()
       ? safeFound.linkingTip.trim()
       : idx === 0
-        ? 'Mở đầu tự nhiên, xác lập khung thông tin rõ ràng để tạo điểm neo quy chiếu (CC 9.0) cho các body sau.'
+        ? 'Mở đầu tự nhiên, xác lập khung thông tin rõ ràng để tạo điểm neo quy chiếu (CC 8.5+) cho các body sau.'
         : 'Liên kết "tàng hình" với body trước bằng phép quy chiếu danh từ (this shift / such measures / the former) thay cho từ nối máy móc.';
 
   const rawSentenceCount = Number(safeFound.targetSentenceCount ?? safeFound.sentenceCount);
@@ -801,19 +823,88 @@ function normalizeCcFlowAudit(raw: unknown): CcSentenceLinkAudit[] {
   return results;
 }
 
+function normalizeCcChecklist(raw: unknown): CcChecklistItem[] {
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  const results: CcChecklistItem[] = [];
+
+  for (let idx = 0; idx < CC_RULE_ORDER.length; idx++) {
+    const expectedId = CC_RULE_ORDER[idx];
+    const found =
+      raw.find((it: any) => String(it?.ruleId ?? '').toUpperCase().trim() === expectedId) ??
+      raw[idx];
+    if (!found || typeof found !== 'object') continue;
+
+    const obj = found as any;
+    const passed =
+      typeof obj.passed === 'boolean'
+        ? obj.passed
+        : String(obj.passed ?? obj.status ?? '')
+            .toLowerCase()
+            .match(/^(true|pass|passed|yes|ok|đạt)$/) !== null;
+
+    const evidence = String(obj.evidence ?? obj.quote ?? obj.detail ?? '').trim();
+    const fixAction = String(obj.fixAction ?? obj.howToFix ?? obj.fix ?? '').trim();
+    const customTitle = String(obj.ruleTitle ?? '').trim();
+
+    results.push({
+      ruleId: expectedId,
+      ruleTitle: customTitle || CC_RULE_TITLES[expectedId],
+      passed,
+      evidence: evidence || (passed ? 'Đạt yêu cầu ở đoạn này.' : 'Chưa đạt quy luật này.'),
+      fixAction: !passed && fixAction ? fixAction : undefined,
+    });
+  }
+
+  return results;
+}
+
+function calibrateCcBandFromChecklist(
+  rawCcBand: number,
+  checklist: CcChecklistItem[],
+  taskBand: number
+): number {
+  // Nếu bài lạc đề / tiếng Việt / quá sơ sài (TA/TR <= 4.5) thì không nâng điểm CC theo công thức
+  if (checklist.length < 5 || taskBand <= 4.5 || rawCcBand <= 4.5) {
+    return rawCcBand;
+  }
+
+  const passedCount = checklist.filter((r) => r.passed).length;
+  if (passedCount === 5) {
+    return rawCcBand >= 9.0 ? 9.0 : 8.5;
+  }
+  if (passedCount === 4) {
+    return Math.min(8.0, Math.max(7.5, rawCcBand));
+  }
+  if (passedCount === 3) {
+    return Math.min(7.5, Math.max(7.0, rawCcBand));
+  }
+  if (passedCount === 2) {
+    return Math.min(6.5, Math.max(6.0, rawCcBand));
+  }
+  return Math.min(6.0, rawCcBand);
+}
+
 export function normalizeGradeResult(raw: any): BodyGradeResult {
   const rawCriteria = raw?.criteria || {};
+  const ccChecklist = normalizeCcChecklist(raw?.ccChecklist);
 
   const taskCrit = normalizeSingleCriterion(
     rawCriteria.task ?? rawCriteria.ta ?? rawCriteria.tr ?? rawCriteria.TA ?? rawCriteria.TR ?? rawCriteria.TASK,
     'Tiêu chí nội dung',
     MIN_TASK_BAND
   );
-  const ccCrit = normalizeSingleCriterion(
+  const rawCcCrit = normalizeSingleCriterion(
     rawCriteria.cc ?? rawCriteria.CC,
     'Coherence & Cohesion',
     MIN_CC_BAND
   );
+  const calibratedCcBand = calibrateCcBandFromChecklist(rawCcCrit.band, ccChecklist, taskCrit.band);
+  const ccCrit: CriterionFeedback = {
+    ...rawCcCrit,
+    band: calibratedCcBand,
+    passed75: calibratedCcBand >= MIN_CC_BAND,
+  };
+
   const graCrit = normalizeSingleCriterion(
     rawCriteria.gra ?? rawCriteria.GRA,
     'Grammatical Range & Accuracy',
@@ -859,7 +950,7 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
       ? raw.tutorClosingNote.trim()
       : undefined;
 
-  // Chỉ mở khóa modelUpgrade khi đã đạt chuẩn Band 8.0 (8/9/8/7) để học viên tự sửa & ngấm tư duy trước
+  // Chỉ mở khóa modelUpgrade khi đã đạt chuẩn Band 8.0 (8.0 / 8.5 / 8.0 / 7.5)
   const modelUpgrade =
     passed && typeof raw?.modelUpgrade === 'string' && raw.modelUpgrade.trim()
       ? raw.modelUpgrade.trim()
@@ -874,6 +965,7 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
       gra: graCrit,
       lr: lrCrit,
     },
+    ccChecklist: ccChecklist.length > 0 ? ccChecklist : undefined,
     ccFlowAudit: ccFlowAudit.length > 0 ? ccFlowAudit : undefined,
     crossBodyFeedback:
       typeof raw?.crossBodyFeedback === 'string' && raw.crossBodyFeedback.trim()
@@ -885,8 +977,8 @@ export function normalizeGradeResult(raw: any): BodyGradeResult {
       typeof raw?.generalFeedback === 'string' && raw.generalFeedback.trim()
         ? raw.generalFeedback.trim()
         : passed
-          ? 'Đoạn văn đã đạt chuẩn mục tiêu (TA/TR ≥ 8.0, CC ≥ 9.0, GRA ≥ 8.0, LR ≥ 7.0 — Overall ≥ 8.0).'
-          : 'Đoạn văn chưa đạt mục tiêu (TA/TR ≥ 8.0, CC ≥ 9.0, GRA ≥ 8.0, LR ≥ 7.0). Hãy đọc kỹ từng tiêu chí & lời chốt của gia sư ở cuối để sửa lại.',
+          ? 'Đoạn văn đã đạt chuẩn mục tiêu (TA/TR ≥ 8.0, CC ≥ 8.5, GRA ≥ 8.0, LR ≥ 7.5 — Overall ≥ 8.0).'
+          : 'Đoạn văn chưa đạt mục tiêu (TA/TR ≥ 8.0, CC ≥ 8.5, GRA ≥ 8.0, LR ≥ 7.5). Hãy đối chiếu bảng 5 quy luật CC & từng tiêu chí bên dưới để sửa lại.',
     tutorClosingNote,
     modelUpgrade,
   };
@@ -917,6 +1009,7 @@ export function normalizeFullEssayGradeResult(raw: any): FullEssayGradeResult {
     overallBand: base.overallBand,
     passed: base.passed,
     criteria: base.criteria,
+    ccChecklist: base.ccChecklist,
     ccFlowAudit: base.ccFlowAudit,
     wholeEssayStructureFeedback:
       typeof raw?.wholeEssayStructureFeedback === 'string' && raw.wholeEssayStructureFeedback.trim()
@@ -930,8 +1023,8 @@ export function normalizeFullEssayGradeResult(raw: any): FullEssayGradeResult {
       typeof raw?.generalFeedback === 'string' && raw.generalFeedback.trim()
         ? raw.generalFeedback.trim()
         : base.passed
-          ? 'Bài viết toàn bài đã đạt chuẩn (TA/TR ≥ 8.0, CC ≥ 9.0, GRA ≥ 8.0, LR ≥ 7.0 — Overall ≥ 8.0) và được lưu vào Bài đã hoàn tất!'
-          : 'Bài viết toàn bài chưa đạt ngưỡng (TA/TR ≥ 8.0, CC ≥ 9.0, GRA ≥ 8.0, LR ≥ 7.0). Hãy sửa theo phân tích từng đoạn, 4 tiêu chí và lời chốt của gia sư bên dưới rồi chấm lại.',
+          ? 'Bài viết toàn bài đã đạt chuẩn (TA/TR ≥ 8.0, CC ≥ 8.5, GRA ≥ 8.0, LR ≥ 7.5 — Overall ≥ 8.0) và được lưu vào Bài đã hoàn tất!'
+          : 'Bài viết toàn bài chưa đạt ngưỡng (TA/TR ≥ 8.0, CC ≥ 8.5, GRA ≥ 8.0, LR ≥ 7.5). Hãy sửa theo bảng 5 quy luật CC, phân tích từng đoạn & lời chốt gia sư bên dưới rồi chấm lại.',
     tutorClosingNote: base.tutorClosingNote,
     modelUpgrade,
   };

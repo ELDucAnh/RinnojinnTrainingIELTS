@@ -46,7 +46,7 @@ export function BodyProgressStepper({
           <p className="text-xs text-[var(--text-muted)] mt-0.5">
             Mỗi Body cần đạt{' '}
             <span className="font-bold text-emerald-600">
-              {taskShort} 8.0 • CC 9.0 • GRA 8.0 • LR 7.0
+              {taskShort} 8.0 • CC 8.5 • GRA 8.0 • LR 7.5
             </span>{' '}
             (Overall ≥ 8.0) mới mở khóa Body tiếp theo
           </p>

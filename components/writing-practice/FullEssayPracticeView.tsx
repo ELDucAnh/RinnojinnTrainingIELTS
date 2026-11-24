@@ -267,7 +267,7 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
               Chọn từ các bài đã hoàn tất đủ {expectedBodies} Body ({eligibleSessions.length} đề)
             </p>
             <p className="text-xs text-gray-500 mt-0.5">
-              Tự viết lại toàn bộ bài hoàn chỉnh không có sẵn câu mẫu — Gia sư AI chấm chữa chi tiết từng đoạn &amp; toàn bài ({taskShort} 8.0 · CC 9.0 · GRA 8.0 · LR 7.0 — Overall ≥ 8.0).
+              Tự viết lại toàn bộ bài hoàn chỉnh không có sẵn câu mẫu — Gia sư AI chấm chữa chi tiết từng đoạn &amp; toàn bài ({taskShort} 8.0 · CC 8.5 · GRA 8.0 · LR 7.5 — Overall ≥ 8.0).
             </p>
           </div>
         </div>
@@ -374,7 +374,7 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
           >
             <span className="flex items-center gap-2">
               <ListChecks size={15} className={isTask1 ? 'text-orange-500' : 'text-emerald-600'} />
-              Xem lại dàn ý &amp; lưu ý 8/9/8/7 đã học ({activeSession.outline.length} Body) — tùy chọn
+              Xem lại dàn ý &amp; lưu ý 8.0/8.5/8.0/7.5 đã học ({activeSession.outline.length} Body) — tùy chọn
             </span>
             {showOutlineHint ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
           </button>
@@ -392,13 +392,13 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
                   </ul>
                   {item.bandStrategy?.cc9Note && (
                     <p className="text-[11px] bg-emerald-50/70 border border-emerald-100 rounded-md px-2 py-1 text-emerald-900">
-                      <b>CC 9.0: </b>
+                      <b>CC 8.5: </b>
                       {item.bandStrategy.cc9Note}
                     </p>
                   )}
                   {item.bandStrategy?.lrNote && (
                     <p className="text-[11px] bg-sky-50/70 border border-sky-100 rounded-md px-2 py-1 text-sky-900">
-                      <b>LR 7.0: </b>
+                      <b>LR 7.5: </b>
                       {item.bandStrategy.lrNote}
                     </p>
                   )}
@@ -417,7 +417,7 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
               Tự viết bài hoàn chỉnh bằng tiếng Anh (nhấn Enter 2 lần để xuống đoạn mới)
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              Khuyến nghị viết đủ cấu trúc {expectedBodies} đoạn và đạt tối thiểu {minWordGoal} từ. Đạt chuẩn Overall ≥ 8.0 ({taskShort} 8.0 · CC 9.0 · GRA 8.0 · LR 7.0) bài sẽ tự động lưu vào <b>Bài đã hoàn tất</b>.
+              Khuyến nghị viết đủ cấu trúc {expectedBodies} đoạn và đạt tối thiểu {minWordGoal} từ. Đạt chuẩn Overall ≥ 8.0 ({taskShort} 8.0 · CC 8.5 · GRA 8.0 · LR 7.5) bài sẽ tự động lưu vào <b>Bài đã hoàn tất</b>.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -479,7 +479,7 @@ export function FullEssayPracticeView(props: FullEssayPracticeViewProps) {
               </>
             ) : (
               <>
-                <Send size={15} /> Chấm &amp; chữa toàn bài (8/9/8/7)
+                <Send size={15} /> Chấm &amp; chữa toàn bài (8.0/8.5/8.0/7.5)
               </>
             )}
           </button>

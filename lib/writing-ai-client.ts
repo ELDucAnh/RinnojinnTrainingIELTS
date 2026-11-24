@@ -248,7 +248,7 @@ export async function generateTask1OutlineResilient(
   const { signal, onStatus, vocabPrep } = options;
 
   try {
-    onStatus?.('Đang thiết kế dàn ý 4 Body chuẩn 8 TA · 9 CC · 8 GRA · 7 LR...');
+    onStatus?.('Đang thiết kế dàn ý 4 Body chuẩn 8.0 TA · 8.5 CC · 8.0 GRA · 7.5 LR...');
     const full = await postWritingAiOnce<{ outline: OutlineBodyItem[] }>(
       '/api/ai/task1-generate',
       { mode: 'outline-only', chartData, vocabPrep: vocabPrep || undefined },
@@ -465,7 +465,7 @@ export async function gradeBodyResilient(
   const { signal, onStatus } = options;
 
   try {
-    onStatus?.('Gia sư AI đang chấm & bóc tách 4 tiêu chí (8 TA/TR · 9 CC · 8 GRA · 7 LR)...');
+    onStatus?.('Gia sư AI đang chấm & kiểm tra 5 quy luật CC (8.0 TA/TR · 8.5 CC · 8.0 GRA · 7.5 LR)...');
     const full = await postWritingAiOnce<BodyGradeResult>(endpoint, basePayload, {
       timeoutMs: 58_000,
       signal,
@@ -479,7 +479,7 @@ export async function gradeBodyResilient(
   }
 
   // Phase 1: Task + CC
-  onStatus?.('Phản hồi siêu chi tiết khá dài — tự động chia nhỏ bước 1/3: Chấm TA/TR (8.0) & CC (9.0)...');
+  onStatus?.('Phản hồi siêu chi tiết khá dài — tự động chia nhỏ bước 1/3: Chấm TA/TR (8.0) & 5 quy luật CC (8.5)...');
   const phase1 = await postWritingAi<any>(
     endpoint,
     { ...basePayload, phase: 'task-cc' },
@@ -487,7 +487,7 @@ export async function gradeBodyResilient(
   );
 
   // Phase 2: GRA + LR (aligned with Phase 1)
-  onStatus?.('Đang xử lý bước 2/3: Chấm GRA (8.0) & LR (7.0) đồng bộ với TA/TR & CC...');
+  onStatus?.('Đang xử lý bước 2/3: Chấm GRA (8.0) & LR (7.5) đồng bộ với TA/TR & CC...');
   const phase2 = await postWritingAi<any>(
     endpoint,
     {
@@ -499,6 +499,7 @@ export async function gradeBodyResilient(
         taskMappings: phase1?.criteria?.task?.mappings,
         ccBand: phase1?.criteria?.cc?.band,
         ccReason: phase1?.criteria?.cc?.reason,
+        ccChecklist: phase1?.ccChecklist,
         ccMappings: phase1?.criteria?.cc?.mappings,
       },
     },
@@ -515,6 +516,7 @@ export async function gradeBodyResilient(
       criteriaContext: {
         task: phase1?.criteria?.task,
         cc: phase1?.criteria?.cc,
+        ccChecklist: phase1?.ccChecklist,
         gra: phase2?.criteria?.gra,
         lr: phase2?.criteria?.lr,
         crossBodyFeedback: phase1?.crossBodyFeedback,
@@ -530,6 +532,7 @@ export async function gradeBodyResilient(
       gra: phase2?.criteria?.gra,
       lr: phase2?.criteria?.lr,
     },
+    ccChecklist: phase1?.ccChecklist || [],
     ccFlowAudit: phase1?.ccFlowAudit || [],
     crossBodyFeedback: phase1?.crossBodyFeedback,
     grammarErrors: phase2?.grammarErrors || [],
@@ -544,8 +547,8 @@ export async function gradeBodyResilient(
  * Full-Essay Grading (Task 1 & Task 2):
  * 1) Try full single-shot whole-essay grading.
  * 2) If response is too long / times out -> automatically split into 3 focused phases:
- *    - Phase 1: TA/TR (8.0) + CC (9.0) + wholeEssayStructureFeedback + repetitionAlerts
- *    - Phase 2: GRA (8.0) + LR (7.0) + grammarErrors + vocabularyTips
+ *    - Phase 1: TA/TR (8.0) + CC (8.5) + ccChecklist + wholeEssayStructureFeedback + repetitionAlerts
+ *    - Phase 2: GRA (8.0) + LR (7.5) + grammarErrors + vocabularyTips
  *    - Phase 3: paragraphBreakdown + tutorClosingNote + generalFeedback + modelUpgrade
  */
 export async function gradeFullEssayResilient(
@@ -556,7 +559,7 @@ export async function gradeFullEssayResilient(
   const endpoint = '/api/ai/full-essay-grade';
 
   try {
-    onStatus?.('Gia sư AI đang chấm chữa chuyên sâu toàn bài (8 TA/TR · 9 CC · 8 GRA · 7 LR)...');
+    onStatus?.('Gia sư AI đang chấm chữa chuyên sâu toàn bài (8.0 TA/TR · 8.5 CC · 8.0 GRA · 7.5 LR)...');
     const full = await postWritingAiOnce<FullEssayGradeResult>(endpoint, basePayload, {
       timeoutMs: 58_000,
       signal,
@@ -569,14 +572,14 @@ export async function gradeFullEssayResilient(
     console.warn('[full-essay-grade] Full grade failed, switching to 3-phase chunked fallback:', err?.message);
   }
 
-  onStatus?.('Bài viết & nhận xét toàn bài dài — tự động chia nhỏ bước 1/3: Chấm TA/TR (8.0) & CC (9.0)...');
+  onStatus?.('Bài viết & nhận xét toàn bài dài — tự động chia nhỏ bước 1/3: Chấm TA/TR (8.0) & 5 quy luật CC (8.5)...');
   const phase1 = await postWritingAi<any>(
     endpoint,
     { ...basePayload, phase: 'task-cc' },
     { timeoutMs: 45_000, signal, maxRetries: 2, onStatus }
   );
 
-  onStatus?.('Đang xử lý bước 2/3: Soi GRA (8.0), LR (7.0), lỗi ngữ pháp & collocation toàn bài...');
+  onStatus?.('Đang xử lý bước 2/3: Soi GRA (8.0), LR (7.5), lỗi ngữ pháp & collocation toàn bài...');
   const phase2 = await postWritingAi<any>(
     endpoint,
     {
@@ -588,6 +591,7 @@ export async function gradeFullEssayResilient(
         taskMappings: phase1?.criteria?.task?.mappings,
         ccBand: phase1?.criteria?.cc?.band,
         ccReason: phase1?.criteria?.cc?.reason,
+        ccChecklist: phase1?.ccChecklist,
         ccMappings: phase1?.criteria?.cc?.mappings,
         repetitionAlerts: phase1?.repetitionAlerts,
       },
@@ -604,6 +608,7 @@ export async function gradeFullEssayResilient(
       criteriaContext: {
         task: phase1?.criteria?.task,
         cc: phase1?.criteria?.cc,
+        ccChecklist: phase1?.ccChecklist,
         gra: phase2?.criteria?.gra,
         lr: phase2?.criteria?.lr,
         wholeEssayStructureFeedback: phase1?.wholeEssayStructureFeedback,
@@ -620,6 +625,7 @@ export async function gradeFullEssayResilient(
       gra: phase2?.criteria?.gra,
       lr: phase2?.criteria?.lr,
     },
+    ccChecklist: phase1?.ccChecklist || [],
     ccFlowAudit: phase1?.ccFlowAudit || [],
     wholeEssayStructureFeedback: phase1?.wholeEssayStructureFeedback,
     repetitionAlerts: phase1?.repetitionAlerts || [],

@@ -198,7 +198,7 @@ function buildTask1OutlinePrompt(
   const vocabBlock = buildConfirmedVocabBlock(vocabPrep);
 
   return `You are an elite IELTS Academic Writing Task 1 tutor coaching a Band 6.0 learner to reach **Overall Band 8.0** with the exact score blueprint:
-**TA >= 8.0 · CC = 9.0 · GRA >= 8.0 · LR = 7.0 ONLY (STRICTLY everyday B1–B2 clear collocations, NEVER fancy C1–C2 vocabulary)**
+**TA >= 8.0 · CC >= 8.5 · GRA >= 8.0 · LR >= 7.5 (precise B2 + natural topic-specific collocations within task scope, ZERO memorised C2 clichés)**
 
 Chart Data:
 ${JSON.stringify(chartData)}
@@ -206,33 +206,37 @@ ${vocabBlock}${prevBlock}
 Generate ${isPartial ? `ONLY the requested ${bodyIndices.length} Body item(s) (bodyIndex: ${bodyIndices.join(', ')})` : 'ALL 4 Body items (bodyIndex 0..3)'}:
 ${targetSpecs}
 
-STRICT COACHING RULES (NO generic boilerplate — tailor 100% to THIS chart's exact labels, units, and numbers):
+STRICT COACHING RULES (grounded in Official IELTS Writing Band Descriptors May 2023 — tailor 100% to THIS chart):
 - Write "role", "viGuide", "bandStrategy.*", "ideaGuides[].ideaLabel", "ideaGuides[].ideaVi", and "linkingTip" in sharp, insightful VIETNAMESE. Embed exact chart numbers, units, and labels inside Body 3 & 4.
 - DO NOT write full sample English sentences or paragraphs!
-- STRICT VOCABULARY CEILING = B1–B2 (LR 7.0 ONLY — CHỐNG TỪ CAO SIÊU & CHỐNG LỆCH ĐỀ):
-  * Learner ONLY needs **LR 7.0** — do NOT push vocabulary to Band 8–9 or C1–C2!
-  * Every single phrase in "vocabPhrases" MUST be plain, clear, natural **B1–B2** English that matches THIS chart's EXACT topic, categories, and unit (so the learner can drop it straight into a sentence with ZERO risk of going off-topic or misusing register).
-  * GOOD LR 7.0 Task 1 style: "rise steadily", "increase slightly", "grow sharply", "fall gradually", "drop sharply", "remain steady", "reach a peak of", "account for", "make up the largest share", "be twice as high as", "compared with", "over the period shown", "be replaced by", "be turned into", plus exact topic nouns from this chart.
-  * STRICTLY BANNED (too fancy/overkill/prone to off-topic drift): "skyrocket", "plummet", "exponentially", "unprecedented surge", "trajectory", "preponderance", "predominance", "eclipse", "dwarf", "metamorphose", "ubiquitous", "burgeoning", "stark dichotomy", "escalate dramatically", "outstrip".
-- MANDATORY "bandStrategy" OBJECT ON EVERY BODY (ultra-specific notes on how THIS exact Body achieves the target):
-  * "task8Note": Lưu ý bắt buộc ở Body này để đạt **TA >= 8.0** (chỉ rõ chi tiết/đối chiếu nào thiếu là rớt Band 6-7, bẫy sai số liệu/sai phạm vi).
-  * "cc9Note": Lưu ý CỰC KỸ để Body này đạt **CC = 9.0** (cách triển khai dòng thông tin Cũ -> Mới, phép quy chiếu/thay thế cụ thể nên dùng như "this figure", "the former", "similarly", "respectively", và CHỈ RÕ từ nối máy móc nào tuyệt đối tránh).
-  * "gra8Note": Lưu ý bắt buộc để Body này đạt **GRA >= 8.0** (kết hợp ít nhất 2-3 cấu trúc phức hợp tự nhiên không lỗi như "While/Whereas...", ", which + V", "with + N + V-ing", phân từ rút gọn, bị động/so sánh nâng cao; nhắc bẫy thì/mạo từ/chủ-vị).
-  * "lrNote": Lưu ý CỰC KỸ để giữ vững **LR 7.0 tự nhiên, sát đề** ở Body này (chỉ cần dùng từ B1–B2 rõ nghĩa, đúng đối tượng & đơn vị của biểu đồ, paraphrase đơn giản tránh lặp 1 từ quá nhiều, KHÔNG nhồi từ C1–C2 khó dễ gây sai sắc thái hoặc lệch dữ liệu).
+- VOCABULARY CALIBRATION = LR 7.5 (Official Band 7–8 Bridge: flexible, precise, natural topic-specific collocations, 100% on-topic):
+  * Suggest **accurate B2 + natural topic-specific academic collocations** tailored directly to THIS chart's topic, categories, and unit ("account for the largest proportion", "experience a steady rise", "narrow/widen the gap", "remain broadly stable", "by contrast", "compared with").
+  * Still BANNED: artificial/overkill C2 clichés ("skyrocket", "plummet", "preponderance", "eclipse", "dwarf", "metamorphose", "ubiquitous", "stark dichotomy").
+- DETERMINISTIC 5-RULE CC >= 8.5 BLUEPRINT (so the learner ALWAYS passes all 5 CC rules):
+  * R1: 1 clear focus & logical sequencing per Body.
+  * R2: Linear progression (Old -> New info) across every sentence transition.
+  * R3: At least 1–2 clear referencing/substitution devices ("this figure", "these categories", "the former/latter", "respectively") with clear antecedents.
+  * R4: 0 mechanical sequence linkers ("Firstly/Secondly/Moreover/Furthermore"), and AT MOST 1 sentence-initial adverbial linker with comma per Body!
+  * R5: 100% accurate logical & grammatical connector use (0 comma splices).
+- MANDATORY "bandStrategy" OBJECT ON EVERY BODY:
+  * "task8Note": Lưu ý bắt buộc ở Body này để đạt **TA >= 8.0** theo chuẩn IELTS May 2023 (đủ yêu cầu đề, chọn lọc & đối chiếu số liệu nổi bật, không sai con số/đơn vị).
+  * "cc9Note": Lưu ý CỰC KỸ để Body này đạt **CC >= 8.5 (thỏa trọn 5/5 quy luật R1–R5)**: chỉ rõ mạch Old->New, phép quy chiếu R3 cụ thể nên dùng, và kiểm soát R4 (0 Firstly/Moreover, tối đa 1 trạng từ nối đầu câu).
+  * "gra8Note": Lưu ý bắt buộc để Body này đạt **GRA >= 8.0** (đa dạng cấu trúc Câu đơn + Câu phức, >75% câu hoàn toàn sạch lỗi ngữ pháp & dấu câu).
+  * "lrNote": Lưu ý CỰC KỸ để đạt **LR >= 7.5** ở Body này (dùng collocation B2 + thuật ngữ chủ đề chính xác sắc thái, xoay vòng bảng Paraphrase tránh lặp từ, không dùng từ khẩu ngữ và không nhồi từ C2 sáo rỗng).
 - MANDATORY SENTENCE-BY-SENTENCE INTERLOCKING BLUEPRINT ("targetSentenceCount", "sentenceMixSummary", "ideaGuides" — CẤM GỢI Ý LẺ TẺ):
   For EACH Body, design an EXACT **Sentence-by-Sentence Blueprint** (so "ideaGuides.length === targetSentenceCount" — EVERY object in "ideaGuides" is ONE specific sentence in exact order: Câu 1, Câu 2, Câu 3, Câu 4!):
   * "targetSentenceCount": Exact integer count of sentences to write in this Body (Body 1: 1–2, Body 2: 2, Body 3: 3–4, Body 4: 3–4).
   * "sentenceMixSummary": Crisp Vietnamese summary showing the exact simple/complex rhythm, e.g. "3 câu: Câu 1 (Câu đơn) → Câu 2 (Câu phức) → Câu 3 (Câu phức)".
   * Inside EACH sentence item of "ideaGuides":
     - "sentenceNumber": 1, 2, 3, ...
-    - "sentenceType": EXACTLY one of "simple" | "compound" | "complex" | "compound-complex" (deliberately mix Simple + Complex across the Body for natural Band 8.0 GRA rhythm & effortless Band 9.0 CC readability — do NOT make every sentence bloated!).
+    - "sentenceType": EXACTLY one of "simple" | "compound" | "complex" | "compound-complex" (deliberately mix Simple + Complex across the Body for natural Band 8.0 GRA rhythm & smooth Band 8.5+ CC readability!).
     - "sentenceTypeLabel": Vietnamese + English label, e.g. "Câu đơn (Simple)", "Câu phức (Complex)", "Câu ghép (Compound)".
     - "ideaLabel": Exact role of this sentence, e.g. "Câu 1 — Câu mở nhóm dữ liệu dẫn đầu".
     - "ideaVi": Spell out EXACTLY what goes inside THIS sentence (clause by clause if complex/compound, with exact chart numbers & units for Body 3 & 4!).
-    - "ccLinkFromPrev": **INTERLOCKING CC 9.0 GUIDE FOR THIS EXACT SENTENCE** (grounded in Official Band 9 CC: "effortless to follow" & "cohesion very rarely attracts attention"): explain concretely HOW Câu N hooks directly into Câu N-1 (or previous Body for Câu 1) — WHICH exact concept/figure from the previous sentence is picked up as Old Info at the start of Câu N, and how linking flows invisibly! NEVER vague/scattered tips!
+    - "ccLinkFromPrev": **INTERLOCKING CC 8.5+ GUIDE FOR THIS EXACT SENTENCE** (aligned with R2, R3, R4, R5): explain concretely HOW Câu N hooks directly into Câu N-1 (or previous Body for Câu 1) — WHICH exact concept/figure from Câu N-1 is picked up via referencing/thematic progression, ensuring <=1 initial adverbial linker in the whole Body!
     - "ccLinkPhrases": 2–3 specific natural referencing/linking phrases tailored to THIS exact sentence transition (e.g. ["Looking first at ...", "this figure", "by contrast", "followed closely by", "respectively"]).
-    - "ccAvoid": 1 concise note naming mechanical/clunky linkers or cohesion mistakes to AVOID in this exact sentence (e.g. "Tránh 'Firstly,' hoặc liệt kê rời rạc lặp chủ ngữ 'In 2000... In 2010...'").
-    - "vocabPhrases": **3–4 plain, natural B1–B2 collocations** strictly tied to THIS sentence (ZERO C1–C2 show-off words, prioritized from confirmed vocabPrep if provided): [{ "phrase": "...", "meaning": "..." }].
+    - "ccAvoid": 1 concise note naming mechanical linkers or cohesion mistakes that would violate R3/R4/R5 in this sentence.
+    - "vocabPhrases": **3–4 precise B2 / natural topic-specific collocations (LR 7.5)** strictly tied to THIS sentence (prioritized from confirmed vocabPrep if provided): [{ "phrase": "...", "meaning": "..." }].
     - "grammarPatterns": **1–2 grammar frames MATCHING "sentenceType"** of THIS sentence (Simple frame for "simple"; Complex GRA 8.0 frame for "complex"): [{ "structure": "...", "usage": "..." }].
 - "linkingTip": 1 concise summary of how this Body's sentence chain connects smoothly from previous Body to next Body.
 
