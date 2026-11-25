@@ -223,11 +223,11 @@ export default function HomePage() {
           <div className="bg-gradient-to-br from-orange-500 via-amber-500 to-emerald-600 rounded-2xl p-5 text-white shadow-sm flex flex-col justify-between gap-4 relative overflow-hidden">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-white/80 mb-1">
-                Luyện Writing theo Body
+                Gia sư IELTS Writing · Aim 6.5+
               </p>
               <h2 className="text-base font-extrabold text-white">IELTS Task 1 &amp; Task 2</h2>
               <p className="text-xs text-white/85 mt-1 leading-relaxed">
-                Dàn ý Band 8.0+ tiếng Việt, chấm 4 tiêu chí 8.0/8.5/8.0/7.5 (Overall 8.0), 5 quy luật CC cố định và tự viết lại toàn bài.
+                Tải/dán ảnh đề Task 1 hoặc đề Task 2, tự viết dàn ý Việt để AI duyệt TA/TR ≥ 7.0, dựng Template GRA/CC &gt; 7 (Conjunction Band 8) và chấm chuẩn Cambridge.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2">

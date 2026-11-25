@@ -35,12 +35,21 @@ function delayMs(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+export interface GeminiInlineImage {
+  mimeType: string;
+  data: string; // raw base64 (without data:image/...;base64, prefix)
+}
+
 export interface GeminiGenerateOptions {
   temperature?: number;
   maxOutputTokens?: number;
   perModelTimeoutMs?: number;
   totalBudgetMs?: number;
   modelProfile?: GeminiModelProfile;
+  /**
+   * Ảnh đính kèm (VD: biểu đồ/bản đồ/quy trình IELTS Writing Task 1).
+   */
+  images?: GeminiInlineImage[];
   /**
    * Giới hạn số lượng model tối đa thử trong 1 lần gọi HTTP để tránh tạo bão request (request storm)
    * đốt sạch nhiều bucket Free Tier cùng lúc khi mạng hoặc TPM đang nghẽn. Mặc định: 4 model nhẹ.
@@ -287,7 +296,8 @@ function orderHealthyCandidates(candidates: string[]): string[] {
 async function generateWithTimeout(
   model: ReturnType<GoogleGenerativeAI['getGenerativeModel']>,
   prompt: string,
-  timeoutMs: number
+  timeoutMs: number,
+  images?: GeminiInlineImage[]
 ) {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -300,7 +310,20 @@ async function generateWithTimeout(
     }, timeoutMs);
   });
 
-  const apiPromise = model.generateContent(prompt, { signal: controller.signal });
+  const contentInput: any =
+    Array.isArray(images) && images.length > 0
+      ? [
+          ...images.map((img) => ({
+            inlineData: {
+              mimeType: img.mimeType || 'image/jpeg',
+              data: img.data,
+            },
+          })),
+          prompt,
+        ]
+      : prompt;
+
+  const apiPromise = model.generateContent(contentInput, { signal: controller.signal });
   apiPromise.catch(() => {});
 
   try {
@@ -318,9 +341,18 @@ export async function generateViaInteractionsApi(params: {
   maxOutputTokens: number;
   timeoutMs: number;
   jsonMode?: boolean;
+  images?: GeminiInlineImage[];
 }): Promise<{ text: string; finishReason?: string }> {
-  const { apiKey, modelName, prompt, temperature, maxOutputTokens, timeoutMs, jsonMode = true } =
-    params;
+  const {
+    apiKey,
+    modelName,
+    prompt,
+    temperature,
+    maxOutputTokens,
+    timeoutMs,
+    jsonMode = true,
+    images,
+  } = params;
 
   const controller = new AbortController();
   const timer = setTimeout(() => {
@@ -328,9 +360,21 @@ export async function generateViaInteractionsApi(params: {
   }, timeoutMs);
 
   try {
+    const inputValue: any =
+      Array.isArray(images) && images.length > 0
+        ? [
+            ...images.map((img) => ({
+              type: 'image',
+              data: img.data,
+              mime_type: img.mimeType || 'image/jpeg',
+            })),
+            { type: 'text', text: prompt },
+          ]
+        : prompt;
+
     const payload: Record<string, any> = {
       model: modelName.replace(/^models\//, ''),
-      input: prompt,
+      input: inputValue,
       generation_config: {
         temperature,
         max_output_tokens: maxOutputTokens,
@@ -480,6 +524,7 @@ async function runModelAttempt(params: {
   temperature: number;
   maxOutputTokens: number;
   attemptTimeoutMs: number;
+  images?: GeminiInlineImage[];
 }): Promise<{ rawText: string; finishReason?: string }> {
   const {
     genAI,
@@ -489,6 +534,7 @@ async function runModelAttempt(params: {
     temperature,
     maxOutputTokens,
     attemptTimeoutMs,
+    images,
   } = params;
 
   const isGemma = modelName.startsWith('gemma-');
@@ -506,7 +552,7 @@ async function runModelAttempt(params: {
       },
     });
 
-    const result = await generateWithTimeout(model, effectivePrompt, attemptTimeoutMs);
+    const result = await generateWithTimeout(model, effectivePrompt, attemptTimeoutMs, images);
     const finishReason = result.response.candidates?.[0]?.finishReason;
     const rawText = result.response.text();
     return { rawText, finishReason };
@@ -522,7 +568,8 @@ async function runModelAttempt(params: {
       const retryRes = await generateWithTimeout(
         plainModel,
         `${prompt}\n\nCRITICAL: Output RAW valid JSON only, starting with { and ending with }.`,
-        attemptTimeoutMs
+        attemptTimeoutMs,
+        images
       );
       return {
         rawText: retryRes.response.text(),
@@ -539,6 +586,7 @@ async function runModelAttempt(params: {
         maxOutputTokens,
         timeoutMs: attemptTimeoutMs,
         jsonMode: !isGemma,
+        images,
       });
       return { rawText: inter.text, finishReason: inter.finishReason };
     }
@@ -599,6 +647,7 @@ export async function generateJsonWithFallback<T = any>(
     perModelTimeoutMs = 19_000,
     totalBudgetMs = 46_000,
     modelProfile = 'fast',
+    images,
     maxModelsToTry = 4,
     failFastOnTooLong = false,
   } = options;
@@ -639,6 +688,7 @@ export async function generateJsonWithFallback<T = any>(
           temperature,
           maxOutputTokens,
           attemptTimeoutMs,
+          images,
         });
 
         if (!rawText || !rawText.trim()) {

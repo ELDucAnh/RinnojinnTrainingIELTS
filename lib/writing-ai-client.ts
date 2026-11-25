@@ -12,6 +12,17 @@ import {
   type Task2OutlineResponse,
   type WritingVocabPrep,
 } from '@/lib/writing-practice-types';
+import {
+  normalizeCambridgeGradeResult,
+  normalizeDetailedTemplate,
+  normalizeOutlineEvaluation,
+  type CambridgeGradeResult,
+  type DetailedEssayTemplate,
+  type DetailedParagraphTemplate,
+  type GuidedTaskType,
+  type OutlineEvaluationResult,
+  type UserOutlineParagraph,
+} from '@/lib/writing-guided-types';
 
 export interface WritingAiFetchOptions {
   timeoutMs?: number;
@@ -667,5 +678,285 @@ export async function gradeFullEssayResilient(
     generalFeedback: phase3?.generalFeedback,
     tutorClosingNote: phase3?.tutorClosingNote,
     modelUpgrade: phase3?.modelUpgrade,
+  });
+}
+
+// ─── New Aim 6.5+ Guided Writing Orchestrators (User Vietnamese Outline -> Detailed Template -> Cambridge Grade) ───
+
+/**
+ * Bước 1 -> 2A: Gia sư AI đánh giá tiêu chí TA/TR của dàn ý tiếng Việt do học viên tự chia đoạn (Gate >= 7.0).
+ */
+export async function evaluateUserOutlineResilient(
+  params: {
+    taskType: GuidedTaskType;
+    promptText: string;
+    imageDataUrl?: string;
+    userParagraphs: UserOutlineParagraph[];
+  },
+  options: { signal?: AbortSignal; onStatus?: (msg: string) => void } = {}
+): Promise<OutlineEvaluationResult> {
+  const { signal, onStatus } = options;
+  onStatus?.(
+    params.taskType === 'task1' && params.imageDataUrl
+      ? 'Gia sư AI đang đọc ảnh đề Task 1 & kiểm định TA dàn ý tiếng Việt của bạn (chuẩn >= 7.0)...'
+      : `Gia sư AI đang kiểm định ${params.taskType === 'task1' ? 'TA' : 'TR'} dàn ý tiếng Việt của bạn (chuẩn >= 7.0)...`
+  );
+
+  const raw = await postWritingAi<OutlineEvaluationResult>(
+    '/api/ai/writing-template',
+    {
+      mode: 'evaluate-outline',
+      taskType: params.taskType,
+      promptText: params.promptText,
+      imageDataUrl: params.imageDataUrl,
+      userParagraphs: params.userParagraphs,
+    },
+    { timeoutMs: 48_000, signal, maxRetries: 3, onStatus }
+  );
+
+  return normalizeOutlineEvaluation(raw, params.userParagraphs);
+}
+
+/**
+ * Bước 2B: Sau khi dàn ý đạt TA/TR >= 7.0, dựng Template SIÊU CHI TIẾT cho nguyên bài
+ * theo từng chặng 1–2 đoạn có nhịp nghỉ 1.3s để đảm bảo chi tiết tối đa và KHÔNG bao giờ nổ TPM Free Tier!
+ */
+export async function buildDetailedTemplateResilient(
+  params: {
+    taskType: GuidedTaskType;
+    promptText: string;
+    userParagraphs: UserOutlineParagraph[];
+    evaluation: OutlineEvaluationResult;
+  },
+  options: { signal?: AbortSignal; onStatus?: (msg: string) => void } = {}
+): Promise<DetailedEssayTemplate> {
+  const { signal, onStatus } = options;
+  const total = params.userParagraphs.length;
+
+  // Chia chặng 2 đoạn/lượt (nếu tổng lẻ, đoạn cuối đi 1 mình) — nếu 2 đoạn quá dài tự rớt xuống 1 đoạn/lượt
+  const chunkGroups: number[][] = [];
+  for (let i = 0; i < total; i += 2) {
+    if (i + 1 < total) chunkGroups.push([i, i + 1]);
+    else chunkGroups.push([i]);
+  }
+
+  const collected: DetailedParagraphTemplate[] = [];
+  let overallStrategyVi = '';
+  let targetWordCount = '';
+  let substitutionMatrix: any[] = [];
+
+  for (let gIdx = 0; gIdx < chunkGroups.length; gIdx++) {
+    if (gIdx > 0) {
+      await sleep(INTER_CHUNK_PACE_MS, signal);
+    }
+
+    const group = chunkGroups[gIdx];
+    const isLastGroup = gIdx === chunkGroups.length - 1;
+    onStatus?.(
+      `Đang dựng Template siêu chi tiết (GRA & CC > 7 · Conjunction Band 8) — Đoạn ${group
+        .map((i) => i + 1)
+        .join(' & ')}/${total}...`
+    );
+
+    const buildPreviousSummary = () =>
+      collected.map((p) => ({
+        paragraphIndex: p.paragraphIndex,
+        heading: p.userHeading,
+        usedConnectors: p.sentences.map((s) => s.conjunctionBand8.usedConnector).filter(Boolean),
+        usedGrammar: p.sentences.map((s) => s.advancedGrammar.structureName).filter(Boolean),
+      }));
+
+    try {
+      const res = await postWritingAi<{
+        overallStrategyVi?: string;
+        targetWordCount?: string;
+        paragraphs: DetailedParagraphTemplate[];
+        substitutionMatrix?: any[];
+      }>(
+        '/api/ai/writing-template',
+        {
+          mode: 'build-template-chunk',
+          taskType: params.taskType,
+          promptText: params.promptText,
+          chartOrPromptSummaryEn: params.evaluation.chartOrPromptSummaryEn,
+          userParagraphs: params.userParagraphs,
+          targetIndices: group,
+          paragraphPlans: params.evaluation.paragraphPlans,
+          previousTemplatesSummary: buildPreviousSummary(),
+          includeMatrix: isLastGroup,
+        },
+        { timeoutMs: 48_000, signal, maxRetries: 2, onStatus }
+      );
+
+      if (res.overallStrategyVi) overallStrategyVi = res.overallStrategyVi;
+      if (res.targetWordCount) targetWordCount = res.targetWordCount;
+      if (Array.isArray(res.substitutionMatrix) && res.substitutionMatrix.length > 0) {
+        substitutionMatrix = res.substitutionMatrix;
+      }
+      if (Array.isArray(res.paragraphs) && res.paragraphs.length > 0) {
+        collected.push(...res.paragraphs);
+        continue;
+      }
+      throw new Error('Chunk template trả về rỗng');
+    } catch (chunkErr: any) {
+      if (chunkErr?.name === 'AbortError' || !isRetriableError(chunkErr)) throw chunkErr;
+      if (group.length === 1) throw chunkErr;
+
+      // Tách siêu nhỏ xuống từng đoạn 1 để luôn đảm bảo đủ độ chi tiết
+      for (let sPos = 0; sPos < group.length; sPos++) {
+        const singleIdx = group[sPos];
+        await sleep(INTER_CHUNK_PACE_MS, signal);
+        onStatus?.(`Đang dựng siêu chi tiết riêng Đoạn ${singleIdx + 1}/${total}...`);
+        const singleRes = await postWritingAi<{
+          overallStrategyVi?: string;
+          targetWordCount?: string;
+          paragraphs: DetailedParagraphTemplate[];
+          substitutionMatrix?: any[];
+        }>(
+          '/api/ai/writing-template',
+          {
+            mode: 'build-template-chunk',
+            taskType: params.taskType,
+            promptText: params.promptText,
+            chartOrPromptSummaryEn: params.evaluation.chartOrPromptSummaryEn,
+            userParagraphs: params.userParagraphs,
+            targetIndices: [singleIdx],
+            paragraphPlans: params.evaluation.paragraphPlans,
+            previousTemplatesSummary: buildPreviousSummary(),
+            includeMatrix: isLastGroup && sPos === group.length - 1,
+          },
+          { timeoutMs: 46_000, signal, maxRetries: 3, onStatus }
+        );
+
+        if (singleRes.overallStrategyVi) overallStrategyVi = singleRes.overallStrategyVi;
+        if (singleRes.targetWordCount) targetWordCount = singleRes.targetWordCount;
+        if (Array.isArray(singleRes.substitutionMatrix) && singleRes.substitutionMatrix.length > 0) {
+          substitutionMatrix = singleRes.substitutionMatrix;
+        }
+        if (Array.isArray(singleRes.paragraphs)) {
+          collected.push(...singleRes.paragraphs);
+        }
+      }
+    }
+  }
+
+  return normalizeDetailedTemplate(
+    collected,
+    { overallStrategyVi, targetWordCount, substitutionMatrix },
+    params.taskType
+  );
+}
+
+/**
+ * Bước 4: Gia sư AI chấm bài viết hoàn chỉnh của học viên theo Official Cambridge IELTS Band Descriptors
+ * (chạy 3 pha nhỏ tuần tự có nhịp nghỉ 1.3s để bảo vệ Free Tier & giữ độ chi tiết tối đa).
+ */
+export async function gradeCambridgeEssayResilient(
+  params: {
+    taskType: GuidedTaskType;
+    promptText: string;
+    imageDataUrl?: string;
+    chartOrPromptSummaryEn?: string;
+    userParagraphs: UserOutlineParagraph[];
+    template?: DetailedEssayTemplate | null;
+    essay: string;
+    previousGrade?: CambridgeGradeResult | null;
+  },
+  options: { signal?: AbortSignal; onStatus?: (msg: string) => void } = {}
+): Promise<CambridgeGradeResult> {
+  const { signal, onStatus } = options;
+  const endpoint = '/api/ai/cambridge-grade';
+
+  const compactTemplateSummary = params.template
+    ? params.template.paragraphs
+        .map(
+          (p) =>
+            `Đoạn ${p.paragraphIndex + 1} (${p.userHeading}): ${p.assembledParagraphTemplate}`
+        )
+        .join('\n')
+        .slice(0, 1800)
+    : '';
+
+  const previousGradeSummary = params.previousGrade
+    ? `Lần trước: Overall ${params.previousGrade.overallBand.toFixed(1)} (TA/TR ${params.previousGrade.criteria.task.band.toFixed(1)}, CC ${params.previousGrade.criteria.cc.band.toFixed(1)}, LR ${params.previousGrade.criteria.lr.band.toFixed(1)}, GRA ${params.previousGrade.criteria.gra.band.toFixed(1)}). Ưu tiên cũ: ${params.previousGrade.top3PrioritiesVi.join(' | ')}`
+    : '';
+
+  const basePayload = {
+    taskType: params.taskType,
+    promptText: params.promptText,
+    chartOrPromptSummaryEn: params.chartOrPromptSummaryEn || '',
+    userParagraphs: params.userParagraphs,
+    templateSummary: compactTemplateSummary,
+    previousGradeSummary,
+    essay: params.essay,
+  };
+
+  // Pha 1/3: TA/TR & CC (gửi kèm ảnh biểu đồ nếu là Task 1 để kiểm số liệu chính xác)
+  onStatus?.(
+    `Bước 1/3: Gia sư đang chấm ${params.taskType === 'task1' ? 'TA' : 'TR'} & CC chuẩn Cambridge Band Descriptors...`
+  );
+  const p1 = await postWritingAi<any>(
+    endpoint,
+    {
+      ...basePayload,
+      imageDataUrl: params.taskType === 'task1' ? params.imageDataUrl : undefined,
+      phase: 'task-cc',
+    },
+    { timeoutMs: 48_000, signal, maxRetries: 3, onStatus }
+  );
+
+  await sleep(INTER_CHUNK_PACE_MS, signal);
+
+  // Pha 2/3: LR & GRA
+  onStatus?.('Bước 2/3: Gia sư đang chấm LR & GRA, soi lỗi ngữ pháp & từ vựng chuẩn Cambridge...');
+  const p2 = await postWritingAi<any>(
+    endpoint,
+    {
+      ...basePayload,
+      phase: 'lr-gra',
+      phase1Context: {
+        taskBand: p1?.criteria?.task?.band,
+        taskReason: p1?.criteria?.task?.reasonVi,
+        ccBand: p1?.criteria?.cc?.band,
+        ccReason: p1?.criteria?.cc?.reasonVi,
+      },
+    },
+    { timeoutMs: 48_000, signal, maxRetries: 3, onStatus }
+  );
+
+  await sleep(INTER_CHUNK_PACE_MS, signal);
+
+  // Pha 3/3: Nhận xét từng đoạn & Gia sư chốt tổng thể
+  onStatus?.('Bước 3/3: Gia sư Writing đang tổng hợp nhận xét chung & 3 ưu tiên sửa bài...');
+  const p3 = await postWritingAi<any>(
+    endpoint,
+    {
+      ...basePayload,
+      phase: 'tutor-verdict',
+      phase2Context: {
+        task: { band: p1?.criteria?.task?.band, weaknesses: p1?.criteria?.task?.weaknessesVi },
+        cc: { band: p1?.criteria?.cc?.band, weaknesses: p1?.criteria?.cc?.weaknessesVi },
+        lr: { band: p2?.criteria?.lr?.band, weaknesses: p2?.criteria?.lr?.weaknessesVi },
+        gra: { band: p2?.criteria?.gra?.band, weaknesses: p2?.criteria?.gra?.weaknessesVi },
+        advancedGrammarUsedWell: p2?.advancedGrammarUsedWell || [],
+      },
+    },
+    { timeoutMs: 46_000, signal, maxRetries: 3, onStatus }
+  );
+
+  return normalizeCambridgeGradeResult({
+    criteria: {
+      task: p1?.criteria?.task,
+      cc: p1?.criteria?.cc,
+      lr: p2?.criteria?.lr,
+      gra: p2?.criteria?.gra,
+    },
+    advancedGrammarUsedWell: p2?.advancedGrammarUsedWell || [],
+    grammarErrors: p2?.grammarErrors || [],
+    vocabularyTips: p2?.vocabularyTips || [],
+    paragraphReviews: p3?.paragraphReviews || [],
+    templateUsageFeedbackVi: p3?.templateUsageFeedbackVi || '',
+    tutorOverallFeedbackVi: p3?.tutorOverallFeedbackVi || '',
+    top3PrioritiesVi: p3?.top3PrioritiesVi || [],
   });
 }
